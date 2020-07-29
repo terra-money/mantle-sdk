@@ -1,8 +1,6 @@
 package badger
 
 import (
-	"bytes"
-
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	"github.com/terra-project/mantle/db"
@@ -33,7 +31,7 @@ func NewBadgerDB(path string) *BadgerDB {
 }
 
 func (bdb *BadgerDB) GetCosmosAdapter() tmdb.DB {
-	return NewBadgerCosmosAdapter(bdb)
+	return NewBadgerCosmosAdapter(bdb.db)
 }
 
 func (bdb *BadgerDB) GetDB() *bd.DB {
@@ -83,12 +81,14 @@ type BadgerIterator struct {
 	it             *bd.Iterator
 	txn            *bd.Txn
 	start          []byte
-	end            []byte
 	indexKeyLength int
 	reverse        bool
 }
 
-func (bdb *BadgerDB) Iterator(start, end []byte, reverse bool) db.Iterator {
+func (bdb *BadgerDB) Iterator(
+	start []byte,
+	reverse bool,
+) db.Iterator {
 	txn := bdb.db.NewTransaction(false)
 	itOpts := bd.DefaultIteratorOptions
 	itOpts.PrefetchValues = true
@@ -101,13 +101,15 @@ func (bdb *BadgerDB) Iterator(start, end []byte, reverse bool) db.Iterator {
 		txn:            txn,
 		it:             it,
 		start:          start,
-		end:            end,
 		indexKeyLength: len(start),
 		reverse:        reverse,
 	}
 }
 
-func (bdb *BadgerDB) IndexIterator(start, end []byte, reverse bool) db.Iterator {
+func (bdb *BadgerDB) IndexIterator(
+	start []byte,
+	reverse bool,
+) db.Iterator {
 	txn := bdb.db.NewTransaction(false)
 	itOpts := bd.DefaultIteratorOptions
 	itOpts.PrefetchValues = false
@@ -120,7 +122,6 @@ func (bdb *BadgerDB) IndexIterator(start, end []byte, reverse bool) db.Iterator 
 		txn:            txn,
 		it:             it,
 		start:          start,
-		end:            end,
 		indexKeyLength: len(start),
 		reverse:        reverse,
 	}
@@ -131,16 +132,12 @@ func (it *BadgerIterator) Close() {
 	it.txn.Discard()
 }
 
-func (it *BadgerIterator) Valid() bool {
-	if !it.it.Valid() {
+func (it *BadgerIterator) Valid(prefix []byte) bool {
+	if len(prefix) != 0 && !it.it.ValidForPrefix(prefix){
 		return false
 	}
 
-	currentKey := it.Key()
-	endLength := len(it.end)
-	comp := bytes.Compare(it.end, currentKey[:endLength])
-
-	return comp > -1
+	return it.it.Valid()
 }
 
 func (it *BadgerIterator) Next() {
