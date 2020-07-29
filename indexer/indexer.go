@@ -1,8 +1,8 @@
 package indexer
 
 import (
-	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/terra-project/mantle/graph"
@@ -12,17 +12,20 @@ import (
 
 type IndexerBaseInstance struct {
 	indexers  []types.Indexer
+	indexerOutputs [][]types.ModelType
 	committer types.GraphQLCommitter
 	querier   types.GraphQLQuerier
 }
 
 func NewIndexerBaseInstance(
 	indexers []types.Indexer,
+	indexerOutputs [][]types.ModelType,
 	querier types.GraphQLQuerier,
 	committer types.GraphQLCommitter,
 ) *IndexerBaseInstance {
 	return &IndexerBaseInstance{
 		indexers:  indexers,
+		indexerOutputs: indexerOutputs,
 		committer: committer,
 		querier:   querier,
 	}
@@ -33,16 +36,17 @@ func (instance *IndexerBaseInstance) RunIndexerRound() {
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(len(instance.indexers))
 
-	// baseCtx, cancel := context.WithTimeout(context.TODO(), 10*1000*time.Millisecond)
-	baseCtx := context.TODO()
+	for i, indexer := range instance.indexers {
 
-	for idx, indexer := range instance.indexers {
+		// indexer outputs are necessary for detecting self-reference
+		indexerOutput := instance.indexerOutputs[i]
+
 		runIndexer(
 			&waitGroup,
-			context.WithValue(baseCtx, "round", idx),
 			instance.committer,
 			instance.querier,
 			indexer,
+			indexerOutput,
 		)
 	}
 
@@ -51,13 +55,13 @@ func (instance *IndexerBaseInstance) RunIndexerRound() {
 
 func runIndexer(
 	wg *sync.WaitGroup,
-	ctx context.Context,
 	committer types.GraphQLCommitter,
 	querier types.GraphQLQuerier,
 	indexer types.Indexer,
+	indexerOutput []types.ModelType,
 ) {
-	var isolatedQuerier types.IndexerQuerier = createIsolatedQuerier(querier)
-	var isolatedCommitter types.IndexerCommitter = createIsolatedCommitter(committer)
+	var isolatedQuerier = createIsolatedQuerier(querier, indexerOutput)
+	var isolatedCommitter = createIsolatedCommitter(committer)
 
 	go func() {
 		defer wg.Done()
@@ -65,14 +69,20 @@ func runIndexer(
 	}()
 }
 
-func createIsolatedQuerier(querier types.GraphQLQuerier) types.IndexerQuerier {
+func createIsolatedQuerier(
+	querier types.GraphQLQuerier,
+	indexerOutput []types.ModelType,
+) types.IndexerQuerier {
 	return func(query interface{}, variables types.GraphQLParams) error {
-		qs := generate.GenerateQuery(query)
-		result := querier(qs, variables)
+		qs := generate.GenerateQuery(query, variables)
+		result := querier(qs, variables, indexerOutput)
+
+		log.Print("IsolatedQuerier Failed. --")
+		log.Printf("query string: %s", qs)
 
 		if result.HasErrors() {
 			for _, err := range result.Errors {
-				fmt.Println(err)
+				fmt.Println(err, err.Locations)
 			}
 
 			return fmt.Errorf("Isolated Querier error")
