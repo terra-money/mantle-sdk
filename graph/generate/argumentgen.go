@@ -2,6 +2,7 @@ package generate
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/graphql-go/graphql"
 	"github.com/terra-project/mantle/db/kvindex"
@@ -10,6 +11,13 @@ import (
 
 func GenerateArgument(kvindex *kvindex.KVIndex) graphql.FieldConfigArgument {
 	args := graphql.FieldConfigArgument{}
+
+	// by default, all entities have "Height (uint64)" index
+	// since it's not part of KVIndex, add them here.
+	args["Height"] = &graphql.ArgumentConfig{
+		Description: fmt.Sprint("Height is the absolute block height when indexed"),
+		Type: utils.GetGraphQLType(reflect.Uint64),
+	}
 
 	entries := kvindex.GetEntries()
 	for indexName, indexEntry := range entries {
