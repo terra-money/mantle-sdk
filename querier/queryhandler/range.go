@@ -3,6 +3,7 @@ package queryhandler
 import (
 	"bytes"
 	"fmt"
+	"github.com/terra-project/mantle/utils"
 	"regexp"
 
 	"github.com/terra-project/mantle/db"
@@ -66,7 +67,7 @@ func NewRangeResolver(
 	}
 }
 
-func (resolver RangeResolver) Resolve() (interface{}, error) {
+func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	kviEntry := resolver.kvindexEntry
 	startKey, err := kviEntry.ResolveKeyType(resolver.startKey)
 	if err != nil {
@@ -94,19 +95,56 @@ func (resolver RangeResolver) Resolve() (interface{}, error) {
 	entityName := kviEntry.GetEntityName()
 	it := db.IndexIterator(
 		append([]byte(entityName), append([]byte(indexName), startKey...)...),
-		append([]byte(entityName), append([]byte(indexName), endKey...)...),
 		resolver.reverse,
 	)
 
-	// collect all document keys
-	documentKeys := [][]byte{}
-	for it.Valid() {
-		documentKey := append([]byte(resolver.entityName), it.DocumentKey()...)
-		documentKeys = append(documentKeys, documentKey)
-		it.Next()
+	return NewRangeResolverIterator(entityName, indexName, endKey, it), nil
+}
+
+type RangeResolverIterator struct {
+	entityName string
+	indexName	string
+	endKey []byte
+	it db.Iterator
+}
+
+func NewRangeResolverIterator(
+	entityName string,
+	indexName string,
+	endKey []byte,
+	it db.Iterator,
+) *RangeResolverIterator {
+	return &RangeResolverIterator{
+		entityName: entityName,
+		indexName: indexName,
+		endKey: endKey,
+		it: it,
 	}
+}
 
-	it.Close()
+func (resolver *RangeResolverIterator) Valid() bool {
+	prefix := utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName))
 
-	return documentKeys, nil
+	isPrefixValid := resolver.it.Valid(prefix)
+
+	// iteration is valid until
+	// the compare{slice(len(item.Key)), endKey} is equal or lower
+	isKeyValid := bytes.Compare(
+		resolver.it.Key()[:len(resolver.endKey)],
+		resolver.endKey,
+	) <= 0
+
+	return isPrefixValid && isKeyValid
+}
+
+func (resolver *RangeResolverIterator) Next() {
+	resolver.it.Next()
+}
+
+func (resolver *RangeResolverIterator) Key() []byte {
+	return append([]byte(resolver.entityName), resolver.it.DocumentKey()...)
+}
+
+func (resolver *RangeResolverIterator) Close() {
+	resolver.it.Close()
 }

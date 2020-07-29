@@ -14,5 +14,12 @@ type QueryHandlerBuilder func(
 ) QueryHandler
 
 type QueryHandler interface {
-	Resolve() (interface{}, error)
+	Resolve() (QueryHandlerIterator, error)
+}
+
+type QueryHandlerIterator interface {
+	Valid() bool
+	Next()
+	Key() []byte
+	Close()
 }

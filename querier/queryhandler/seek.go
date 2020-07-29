@@ -50,28 +50,63 @@ func NewSeekResolver(
 	}
 }
 
-func (resolver SeekResolver) Resolve() (interface{}, error) {
-	var seekKeyActual = utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName), []byte(resolver.seekKey))
+func (resolver SeekResolver) Resolve() (QueryHandlerIterator, error) {
+	var seekKeyPrefix = utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName))
+	var seekKeyActual = utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName), resolver.seekKey)
 	it := resolver.db.IndexIterator(
-		seekKeyActual,
 		seekKeyActual,
 		false,
 	)
 
-	documentKey := bytes.NewBuffer(nil)
-	documentKey.Write([]byte(resolver.entityName))
+	documentKey := new(bytes.Buffer)
+	_, err := documentKey.Write([]byte(resolver.entityName))
+	if err != nil {
+		return nil, err
+	}
 
-	if it.Valid() {
-		documentKey.Write([]byte(it.DocumentKey()))
+	if it.Valid(seekKeyPrefix) {
+		_, err := documentKey.Write([]byte(it.DocumentKey()))
+		if err != nil {
+			return nil, err
+		}
 		it.Close() // close immediately
 	} else {
 		return nil, fmt.Errorf(
-			"Index does not exist, entityName=%s, indexName=%s, indexKey=%s",
+			"Index does not exist, entityName=%s, indexName=%s, indexKey=%v",
 			resolver.entityName,
 			resolver.indexName,
 			resolver.seekKey,
 		)
 	}
 
-	return documentKey.Bytes(), nil
+	return NewSeekResolverIterator(documentKey.Bytes()), nil
+}
+
+// SeekResolverIterator never really iterates.
+// Implemented this way because of interface acceptance.
+// All methods (Valid, Next, Key, Close) will work to resolve documentKey
+// only one time.
+type SeekResolverIterator struct{
+	documentKey []byte
+	isResolved bool
+}
+
+func NewSeekResolverIterator(documentKey []byte) QueryHandlerIterator {
+	return &SeekResolverIterator{
+		documentKey: documentKey,
+		isResolved: false,
+	}
+}
+
+func (resolver *SeekResolverIterator) Valid() bool {
+	return !resolver.isResolved
+}
+func (resolver *SeekResolverIterator) Next() {
+	resolver.isResolved = true
+}
+func (resolver *SeekResolverIterator) Key() []byte {
+	return resolver.documentKey
+}
+func (resolver *SeekResolverIterator) Close() {
+	// noop
 }
