@@ -3,8 +3,8 @@ package app
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"os"
+	"io/ioutil"
+	l "log"
 
 	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/libs/log"
@@ -36,9 +36,9 @@ func NewApp(
 	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
 	config.Seal()
-
+	
 	app := TerraApp.NewTerraApp(
-		log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		log.NewTMLogger(ioutil.Discard),
 		db,
 		nil,
 		true, // need this so KVStores are set
@@ -48,40 +48,38 @@ func NewApp(
 			ContractQueryGasLimit: viper.GetUint64(wasmconfig.FlagContractQueryGasLimit),
 			CacheSize:             viper.GetUint64(wasmconfig.FlagCacheSize),
 		}},
-		fauxMerkleModeOpt,
+		fauxMerkleModeOpt, // error
+		setPruningOptions(),
 	)
 
-	lastHeight := app.LastBlockHeight()
-	lastID := app.LastCommitID()
+	// only init chain on genesis
+	if app.LastBlockHeight() == 0 {
+		// init chain
+		validators := make([]*tmtypes.Validator, len(genesis.Validators))
+		for i, val := range genesis.Validators {
+			validators[i] = tmtypes.NewValidator(val.PubKey, val.Power)
+		}
+		validatorSet := tmtypes.NewValidatorSet(validators)
+		nextVals := tmtypes.TM2PB.ValidatorUpdates(validatorSet)
+		csParams := tmtypes.TM2PB.ConsensusParams(genesis.ConsensusParams)
+		ic := abci.RequestInitChain{
+			Time:            genesis.GenesisTime,
+			ChainId:         genesis.ChainID,
+			AppStateBytes:   genesis.AppState,
+			ConsensusParams: csParams,
+			Validators:      nextVals,
+		}
 
-	fmt.Println("Stats", lastHeight, lastID)
+		initChainResponse := app.InitChain(ic)
+		initChainResponseJSON, _ := json.Marshal(initChainResponse)
+		commitResponse := app.Commit()
+		commitResponseJSON, _ := json.Marshal(commitResponse)
 
-	// init chain
-	validators := make([]*tmtypes.Validator, len(genesis.Validators))
-	for i, val := range genesis.Validators {
-		validators[i] = tmtypes.NewValidator(val.PubKey, val.Power)
+		l.Printf("Init chain finished, LastBlockHeight=%d", app.LastBlockHeight())
+		l.Printf("== InitChainResponse: %s", string(initChainResponseJSON))
+		l.Printf("== CommitResponse: %s", string(commitResponseJSON))
 	}
-	validatorSet := tmtypes.NewValidatorSet(validators)
-	nextVals := tmtypes.TM2PB.ValidatorUpdates(validatorSet)
-	csParams := tmtypes.TM2PB.ConsensusParams(genesis.ConsensusParams)
-	ic := abci.RequestInitChain{
-		Time:            genesis.GenesisTime,
-		ChainId:         genesis.ChainID,
-		AppStateBytes:   genesis.AppState,
-		ConsensusParams: csParams,
-		Validators:      nextVals,
-	}
 
-	initchainResponse := app.InitChain(ic)
-	initChainResponseJSON, _ := json.MarshalIndent(initchainResponse, "", "\t")
-	fmt.Println("InitChainResponse:", string(initChainResponseJSON))
-
-	lastHeight = app.LastBlockHeight()
-	lastID = app.LastCommitID()
-
-	fmt.Println("After InitGenesis Stats", lastHeight, lastID)
-
-	app.Commit()
 
 	return &App{
 		terra: app,
@@ -91,6 +89,16 @@ func NewApp(
 // Pass this in as an option to use a dbStoreAdapter instead of an IAVLStore for simulation speed.
 func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 	bapp.SetFauxMerkleMode()
+}
+
+func setPruningOptions() func(*baseapp.BaseApp) {
+	// prune nothing
+	pruningOptions := sdk.PruningOptions{
+		KeepRecent: 0,
+		KeepEvery: 0,
+		Interval: 10,
+	}
+	return baseapp.SetPruning(pruningOptions)
 }
 
 func (c *App) GetApp() *TerraApp.TerraApp {
@@ -113,20 +121,17 @@ func (c *App) BeginBlocker(block *types.Block) abci.ResponseBeginBlock {
 }
 
 func (c *App) EndBlocker(block *types.Block) abci.ResponseEndBlock {
-	fmt.Println("===================EndBlocker")
 	abciRequest := abci.RequestEndBlock{
 		Height: block.Header.Height,
 	}
 	abciResponse := c.terra.EndBlock(abciRequest)
-
+	
 	return abciResponse
 }
 
 func (c *App) DeliverTxs(txs []string) []abci.ResponseDeliverTx {
-	fmt.Println("==================DeliverTxs")
 	responses := make([]abci.ResponseDeliverTx, len(txs))
-	for i, tx := range txs {
-		fmt.Println("delivering tx", i)
+	for _, tx := range txs {
 		decoded, err := base64.StdEncoding.DecodeString(tx)
 		if err != nil {
 			panic(err)
