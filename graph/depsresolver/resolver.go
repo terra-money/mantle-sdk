@@ -16,7 +16,7 @@ func NewDepsResolver() DepsResolver {
 	return &DepsResolverInstance{
 		mux:       sync.RWMutex{},
 		rmux:      sync.RWMutex{},
-		channels:  make(map[reflect.Type]([]chan interface{})),
+		channels:  make(map[reflect.Type][]chan interface{}),
 		published: make(map[reflect.Type]interface{}),
 	}
 }
