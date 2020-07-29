@@ -2,181 +2,168 @@ package badger
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"log"
-
-	"github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
+
+	badger "github.com/dgraph-io/badger/v2"
 )
 
 type BadgerCosmosAdapter struct {
-	db *BadgerDB
+	db *badger.DB
 }
 
-func NewBadgerCosmosAdapter(
-	db *BadgerDB,
-) *BadgerCosmosAdapter {
+var (
+	// errBatchClosed is returned when a closed or written batch is used.
+	errBatchClosed = errors.New("batch has been written or closed")
+
+	// errKeyEmpty is returned when attempting to use an empty or nil key.
+	errKeyEmpty = errors.New("key cannot be empty")
+
+	// errValueNil is returned when attempting to set a nil value.
+	errValueNil = errors.New("value cannot be nil")
+)
+
+// NewBadgerDB creates a Badger key-value store backed to the
+// directory dir supplied. If dir does not exist, it will be created.
+func NewBadgerCosmosAdapter(db *badger.DB) (*BadgerCosmosAdapter) {
 	return &BadgerCosmosAdapter{
-		db,
+		db: db,
 	}
 }
 
-func (adapter *BadgerCosmosAdapter) Get(key []byte) ([]byte, error) {
-	ret, err := adapter.db.Get(key)
-	if err != badger.ErrKeyNotFound {
-		return nil, nil
+func (b *BadgerCosmosAdapter) Get(key []byte) ([]byte, error) {
+	if len(key) == 0 {
+		return nil, errKeyEmpty
 	}
-	return ret, nil
-}
-
-func (adapter *BadgerCosmosAdapter) Has(key []byte) (bool, error) {
-	entry, err := adapter.Get(key)
-
-	if err != nil {
-		return false, err
-	}
-
-	if entry != nil {
-		return false, nil
-	} else {
-		return false, nil
-	}
-}
-
-func (adapter *BadgerCosmosAdapter) Set(key []byte, value []byte) error {
-	return adapter.db.Set(key, value)
-}
-
-func (adapter *BadgerCosmosAdapter) SetSync(key []byte, value []byte) error {
-	return adapter.Set(key, value)
-}
-
-func (adapter *BadgerCosmosAdapter) Delete(key []byte) error {
-	err := adapter.db.Delete(key)
-	if err != nil {
-		fmt.Printf("db/badger/cosmos_adapter.Delete: entry doesn't exist, key=%s", key)
-	}
-	return err
-}
-
-func (adapter *BadgerCosmosAdapter) DeleteSync(key []byte) error {
-	return adapter.Delete(key)
-}
-
-func (adapter *BadgerCosmosAdapter) Close() error {
-	return adapter.Close()
-}
-
-func (adapter *BadgerCosmosAdapter) Print() error {
-	return nil
-}
-func (adapter *BadgerCosmosAdapter) Stats() map[string]string {
-	return nil
-}
-
-// iterator interface that follows dbm.Iterator
-type BadgerCosmosAdapterIterator struct {
-	iterator  *badger.Iterator
-	txn       *badger.Txn
-	reverse   bool
-	startKey  []byte
-	endKey    []byte
-	lastError error
-}
-
-func (adapter *BadgerCosmosAdapter) Iterator(start, end []byte) (tmdb.Iterator, error) {
-	bdb := adapter.db.GetDB()
-
-	// create readonly transaction
-	txn := bdb.NewTransaction(false)
-	itOpts := badger.DefaultIteratorOptions
-	itOpts.PrefetchSize = 10 // TODO: optimize me
-	it := txn.NewIterator(itOpts)
-
-	return &BadgerCosmosAdapterIterator{
-		iterator: it,
-		txn:      txn,
-		reverse:  false,
-		startKey: start,
-		endKey:   end,
-	}, nil
-}
-
-func (adapter *BadgerCosmosAdapter) ReverseIterator(start, end []byte) (tmdb.Iterator, error) {
-	bdb := adapter.db.GetDB()
-
-	// create readonly transaction
-	txn := bdb.NewTransaction(false)
-	itOpts := badger.DefaultIteratorOptions
-	itOpts.PrefetchSize = 10 // TODO: optimize me
-	it := txn.NewIterator(itOpts)
-
-	return &BadgerCosmosAdapterIterator{
-		iterator: it,
-		txn:      txn,
-		reverse:  true,
-		startKey: start,
-		endKey:   end,
-	}, nil
-}
-
-func (it *BadgerCosmosAdapterIterator) Error() error {
-	return it.lastError
-}
-
-func (it *BadgerCosmosAdapterIterator) Close() {
-	it.iterator.Close()
-}
-
-func (it *BadgerCosmosAdapterIterator) Domain() (start, end []byte) {
-	return it.startKey, it.endKey
-}
-
-func (it *BadgerCosmosAdapterIterator) Valid() bool {
-	if !it.iterator.Valid() {
-		return false
-	}
-	// if end key is set, check the current key and see if endKey is higher than the current key
-	if len(it.endKey) > 0 {
-		key := it.iterator.Item().Key()
-		if c := bytes.Compare(key, it.endKey); (!it.reverse && c >= 0) || (it.reverse && c < 0) {
-			// We're at the end key, or past the end.
-			return false
+	var val []byte
+	err := b.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(key)
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
+			return err
 		}
-	}
-	return true
+		val, err = item.ValueCopy(nil)
+		if err == nil && val == nil {
+			val = []byte{}
+		}
+		return err
+	})
+	return val, err
 }
 
-func (it *BadgerCosmosAdapterIterator) Next() {
-	it.iterator.Next()
+func (b *BadgerCosmosAdapter) Has(key []byte) (bool, error) {
+	if len(key) == 0 {
+		return false, errKeyEmpty
+	}
+	var found bool
+	err := b.db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get(key)
+		if err != nil && err != badger.ErrKeyNotFound {
+			return err
+		}
+		found = (err != badger.ErrKeyNotFound)
+		return nil
+	})
+	return found, err
 }
 
-func (it *BadgerCosmosAdapterIterator) Key() []byte {
-	if !it.Valid() {
-		panic("db/badger/cosmos_adapter.BadgerCosmosAdapterIterator.Value: Iteration is invalid")
+func (b *BadgerCosmosAdapter) Set(key, value []byte) error {
+	if len(key) == 0 {
+		return errKeyEmpty
 	}
-
-	return it.iterator.Item().KeyCopy(nil)
+	if value == nil {
+		return errValueNil
+	}
+	return b.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(key, value)
+	})
 }
 
-func (it *BadgerCosmosAdapterIterator) Value() []byte {
-	if !it.Valid() {
-		panic("db/badger/cosmos_adapter.BadgerCosmosAdapterIterator.Value: Iteration is invalid")
-	}
-
-	val, err := it.iterator.Item().ValueCopy(nil)
+func withSync(db *badger.DB, err error) error {
 	if err != nil {
-		it.lastError = err
+		return err
 	}
-
-	return val
+	return db.Sync()
 }
 
-// batch interface that follows dbm.Iterator
-type BadgerCosmosAdapterBatch struct {
-	db      *badger.DB
-	adapter *BadgerCosmosAdapter
-	wb      *badger.WriteBatch
+func (b *BadgerCosmosAdapter) SetSync(key, value []byte) error {
+	return withSync(b.db, b.Set(key, value))
+}
+
+func (b *BadgerCosmosAdapter) Delete(key []byte) error {
+	if len(key) == 0 {
+		return errKeyEmpty
+	}
+	return b.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete(key)
+	})
+}
+
+func (b *BadgerCosmosAdapter) DeleteSync(key []byte) error {
+	return withSync(b.db, b.Delete(key))
+}
+
+func (b *BadgerCosmosAdapter) Close() error {
+	return b.db.Close()
+}
+
+func (b *BadgerCosmosAdapter) Print() error {
+	return nil
+}
+
+func (b *BadgerCosmosAdapter) iteratorOpts(start, end []byte, opts badger.IteratorOptions) (*badgerDBIterator, error) {
+	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
+		return nil, errKeyEmpty
+	}
+	txn := b.db.NewTransaction(false)
+	iter := txn.NewIterator(opts)
+	iter.Rewind()
+	iter.Seek(start)
+	if opts.Reverse && iter.Valid() && bytes.Equal(iter.Item().Key(), start) {
+		// If we're going in reverse, our starting point was "end",
+		// which is exclusive.
+		iter.Next()
+	}
+	return &badgerDBIterator{
+		reverse: opts.Reverse,
+		start:   start,
+		end:     end,
+
+		txn:  txn,
+		iter: iter,
+	}, nil
+}
+
+func (b *BadgerCosmosAdapter) Iterator(start, end []byte) (tmdb.Iterator, error) {
+	opts := badger.DefaultIteratorOptions
+	return b.iteratorOpts(start, end, opts)
+}
+
+func (b *BadgerCosmosAdapter) ReverseIterator(start, end []byte) (tmdb.Iterator, error) {
+	opts := badger.DefaultIteratorOptions
+	opts.Reverse = true
+	return b.iteratorOpts(end, start, opts)
+}
+
+func (b *BadgerCosmosAdapter) Stats() map[string]string {
+	return nil
+}
+
+func (b *BadgerCosmosAdapter) NewBatch() tmdb.Batch {
+	wb := &badgerDBBatch{
+		db:         b.db,
+		wb:         b.db.NewWriteBatch(),
+		firstFlush: make(chan struct{}, 1),
+	}
+	wb.firstFlush <- struct{}{}
+	return wb
+}
+
+type badgerDBBatch struct {
+	db *badger.DB
+	wb *badger.WriteBatch
 
 	// Calling db.Flush twice panics, so we must keep track of whether we've
 	// flushed already on our own. If Write can receive from the firstFlush
@@ -187,53 +174,99 @@ type BadgerCosmosAdapterBatch struct {
 	firstFlush chan struct{}
 }
 
-func (adapter *BadgerCosmosAdapter) NewBatch() tmdb.Batch {
-	db := adapter.db.GetDB()
-	batch := &BadgerCosmosAdapterBatch{
-		db:         db,
-		adapter:    adapter,
-		wb:         db.NewWriteBatch(),
-		firstFlush: make(chan struct{}, 1),
-	}
-	batch.firstFlush <- struct{}{}
-	return batch
-}
-
-func (b *BadgerCosmosAdapterBatch) Set(key, value []byte) {
+func (b *badgerDBBatch) Set(key, value []byte) {
 	if len(key) == 0 {
-		log.Fatal(fmt.Errorf("db/badger/cosmos_adapter.BadgerCosmosAdapterBatch.Set: Key is empty"))
+		//return errKeyEmpty
 	}
 	if value == nil {
-		log.Fatal(fmt.Errorf("db/badger/cosmos_adapter.BadgerCosmosAdapterBatch.Set: Value is nil"))
+		//return errValueNil
 	}
-
 	b.wb.Set(key, value)
 }
 
-func (b *BadgerCosmosAdapterBatch) Delete(key []byte) {
+func (b *badgerDBBatch) Delete(key []byte) {
 	if len(key) == 0 {
-		fmt.Errorf("db/badger/cosmos_adapter.BadgerCosmosAdapterBatch.Set: Key is empty")
+		// noop
 	}
 	b.wb.Delete(key)
 }
 
-func (b *BadgerCosmosAdapterBatch) Write() error {
+func (b *badgerDBBatch) Write() error {
 	select {
 	case <-b.firstFlush:
 		return b.wb.Flush()
 	default:
-		return fmt.Errorf("db/badger/cosmos_adapter.BadgerCosmosAdapterBatch.Set: Batch is already closed")
+		return fmt.Errorf("batch already flushed")
 	}
 }
 
-func (b *BadgerCosmosAdapterBatch) WriteSync() error {
-	return b.Write()
+func (b *badgerDBBatch) WriteSync() error {
+	return withSync(b.db, b.Write())
 }
 
-func (b *BadgerCosmosAdapterBatch) Close() {
+func (b *badgerDBBatch) Close() {
 	select {
 	case <-b.firstFlush: // a Flush after Cancel panics too
 	default:
 	}
 	b.wb.Cancel()
+}
+
+type badgerDBIterator struct {
+	reverse    bool
+	start, end []byte
+
+	txn  *badger.Txn
+	iter *badger.Iterator
+
+	lastErr error
+}
+
+func (i *badgerDBIterator) Close() {
+	i.iter.Close()
+	i.txn.Discard()
+}
+
+func (i *badgerDBIterator) Domain() (start, end []byte) { return i.start, i.end }
+func (i *badgerDBIterator) Error() error                { return i.lastErr }
+
+func (i *badgerDBIterator) Next() {
+	if !i.Valid() {
+		panic("iterator is invalid")
+	}
+	i.iter.Next()
+}
+
+func (i *badgerDBIterator) Valid() bool {
+	if !i.iter.Valid() {
+		return false
+	}
+	if len(i.end) > 0 {
+		key := i.iter.Item().Key()
+		if c := bytes.Compare(key, i.end); (!i.reverse && c >= 0) || (i.reverse && c < 0) {
+			// We're at the end key, or past the end.
+			return false
+		}
+	}
+	return true
+}
+
+func (i *badgerDBIterator) Key() []byte {
+	if !i.Valid() {
+		panic("iterator is invalid")
+	}
+	// Note that we don't use KeyCopy, so this is only valid until the next
+	// call to Next.
+	return i.iter.Item().KeyCopy(nil)
+}
+
+func (i *badgerDBIterator) Value() []byte {
+	if !i.Valid() {
+		panic("iterator is invalid")
+	}
+	val, err := i.iter.Item().ValueCopy(nil)
+	if err != nil {
+		i.lastErr = err
+	}
+	return val
 }
