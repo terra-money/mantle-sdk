@@ -2,6 +2,8 @@ package generate
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/querier"
+	"github.com/vmihailenco/msgpack/v5"
 	"reflect"
 
 	"github.com/graphql-go/graphql"
@@ -32,18 +34,18 @@ var goTypeToGraphqlType = map[string]graphql.Type{
 func GenerateGraphResolver(modelType reflect.Type) (string, *graphql.Field) {
 	t := utils.GetType(modelType)
 
-	name := t.Name()
+	entityName := t.Name()
 	fields := graphql.Fields{}
 
 	for i := 0; i < t.NumField(); i++ {
 		child := t.Field(i)
-		iterate(name, fields, child.Name, child.Type)
+		iterate(entityName, fields, child.Name, child.Type)
 	}
 
 	entitiyRoot := graphql.Field{
-		Name: t.Name(),
+		Name: entityName,
 		Type: graphql.NewObject(graphql.ObjectConfig{
-			Name:   t.Name(),
+			Name:   entityName,
 			Fields: fields,
 		}),
 
@@ -59,22 +61,63 @@ func GenerateGraphResolver(modelType reflect.Type) (string, *graphql.Field) {
 			// in this schema resolver, only single object is to be handled.
 			// for list type resolvers, see CreateListSchemaBuilder
 			if args != nil {
-				// querier, ok := p.Context.Value(utils.QuerierKey).(*querier.Querier)
-				// if !ok {
-				// 	panic(fmt.Sprintf("Querier is either cleared or not set, in ResolverFunc for %s", name))
-				// }
+				q, ok := p.Context.Value(utils.QuerierKey).(querier.Querier)
+				if !ok {
+					panic(fmt.Sprintf("Querier is either cleared or not set, in ResolverFunc for %s", entityName))
+				}
+
+				for indexKey, indexParam := range args {
+					queryResolver, err := q.Build(entityName, indexKey, indexParam)
+					if err != nil {
+						return nil, err
+					}
+
+					//
+					queryResolverIterator, err := queryResolver.Resolve()
+					if err != nil {
+						return nil, err
+					}
+
+					key := []byte{}
+					for queryResolverIterator.Valid() {
+						key = queryResolverIterator.Key()
+						queryResolverIterator.Next()
+					}
+
+					defer queryResolverIterator.Close()
+
+					doc, err := q.Get(key)
+					docInterface := reflect.New(t)
+
+					if err := msgpack.Unmarshal(doc, docInterface.Interface()); err != nil {
+						return nil, err
+					}
+
+					return docInterface, err
+				}
+			}
+
+			// if current round of graphql resolve is a self-referencing (i.e. awaiting on itself to be resolved)
+			// we can't process it here.
+			// Must error.
+			var dependencies, ok = p.Context.Value(utils.DependenciesKey).(utils.DependenciesKeyType)
+			var isAwaitedDependency = p.Args["Height"] == nil
+			var isSelfReferencing = dependencies[entityName] == true
+
+			if isAwaitedDependency && isSelfReferencing {
+				return nil, fmt.Errorf("Self reference is disallowed. entityName=%s", entityName)
 			}
 
 			depsResolver, ok := p.Context.Value(utils.DepsResolverKey).(depsresolver.DepsResolver)
 			if !ok {
-				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", name))
+				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
 			}
 
 			return reflect.ValueOf(depsResolver.Resolve(t)), nil
 		},
 	}
 
-	return name, &entitiyRoot
+	return entityName, &entitiyRoot
 }
 
 func iterate(
@@ -87,6 +130,9 @@ func iterate(
 
 	// only array, struct and primitives allowed
 	switch t.Kind() {
+
+	case reflect.Ptr:
+		iterate(parentName, parentFields, name, utils.GetType(t))
 
 	case reflect.Array, reflect.Slice:
 		parentFields[name] = &graphql.Field{
@@ -125,6 +171,11 @@ func iterate(
 		for i := 0; i < t.NumField(); i++ {
 			child := t.Field(i)
 			iterate(currentName, fields, child.Name, child.Type)
+		}
+
+		// don't do anything for an empty struct
+		if len(fields) == 0 {
+			return
 		}
 
 		obj := graphql.NewObject(graphql.ObjectConfig{
@@ -172,18 +223,7 @@ func iterate(
 					return nil, fmt.Errorf("Field accessor failed, at %s", currentName)
 				}
 
-				switch gqlType {
-				case graphql.String:
-					return field.String(), nil
-				case graphql.Int:
-					return field.Int(), nil
-				case graphql.Boolean:
-					return field.Bool(), nil
-				case graphql.Float:
-					return field.Float(), nil
-				}
-
-				return nil, fmt.Errorf("Invalid type at %s", currentName)
+				return field.Interface(), nil
 			},
 		}
 
