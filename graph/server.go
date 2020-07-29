@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 
@@ -47,7 +48,7 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
-			server.prepareResolverContext(),
+			server.prepareResolverContext(nil),
 			w,
 			r,
 		)
@@ -67,12 +68,16 @@ func (server *GraphQLInstance) UpdateState(data interface{}) {
 func (server *GraphQLInstance) ResolveQuery(
 	gqlQuery string,
 	variables types.GraphQLParams,
+	dependencies []types.ModelType,
 ) *graphql.Result {
+	
+	log.Printf("[graphql] ResolveQuery\tq=%s,v=%v", gqlQuery, variables)
+
 	params := graphql.Params{
 		Schema:         server.schema,
 		RequestString:  gqlQuery,
 		VariableValues: variables,
-		Context:        server.prepareResolverContext(),
+		Context:        server.prepareResolverContext(dependencies),
 	}
 
 	// unresolved dependency are to be handled in resolver functions
@@ -84,14 +89,31 @@ func (server *GraphQLInstance) Commit(entity interface{}) {
 	server.depsResolver.Emit(entity)
 }
 
-func (server *GraphQLInstance) ExportStates() map[string]interface{} {
-	return server.depsResolver.GetState()
+func (server *GraphQLInstance) ExportStates() []interface{} {
+	entities := make([]interface{}, 0)
+	for _, entity := range server.depsResolver.GetState() {
+		if entity == nil {
+			continue
+		}
+		entities = append(entities, entity)
+	}
+
+	return entities
 }
 
-func (server *GraphQLInstance) prepareResolverContext() context.Context {
+func (server *GraphQLInstance) prepareResolverContext(dependencies []types.ModelType) context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.DepsResolverKey, server.depsResolver)
 	ctx = context.WithValue(ctx, utils.QuerierKey, server.querier)
+
+	// dependencies are only taken care of when running indexers
+	if dependencies != nil {
+		dependencyNames := make(utils.DependenciesKeyType)
+		for _, dependencyModel := range dependencies {
+			dependencyNames[dependencyModel.Name()] = true
+		}
+		ctx = context.WithValue(ctx, utils.DependenciesKey, dependencyNames)
+	}
 
 	return ctx
 }
