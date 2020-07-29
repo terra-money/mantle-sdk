@@ -1,56 +1,49 @@
 package subscriber
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/terra-project/mantle/types"
+	"io/ioutil"
 	"net/http"
 )
 
-const CloseRequest = 1
-const CloseResponse = 2
+type BlockGetter func(height interface{}) (*types.Block, error)
 
-type HTTPSubscription struct {
-	getter HTTPSubscriptionGetter
-	control chan int
+func GetBlockLCD(endpoint string) (*types.Block, error) {
+	res, err := http.Get(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	resbytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	temp := map[string]json.RawMessage{}
+	if err := json.Unmarshal(resbytes, &temp); err != nil {
+		return nil, err
+	}
+
+	block := types.Block{}
+	if err := json.Unmarshal(temp["block"], &block); err != nil {
+		return nil, err
+	}
+
+	return &block, nil
 }
 
-type HTTPSubscriptionGetter func(height uint64) string
-
-func NewHTTPSubscription(getter HTTPSubscriptionGetter) Subscriber {
-	return &HTTPSubscription{
-		getter: getter,
-		control: make(chan int),
+func CreateBlockGetterOffline() BlockGetter {
+	return func(height interface{}) (*types.Block, error) {
+		return nil, nil
 	}
 }
 
-func (c *HTTPSubscription) Subscribe() chan types.Block {
-	ch := make(chan types.Block)
-
-	go func() {
-		for {
-			select {
-			case control := <-c.control:
-				if control == CloseRequest {
-					c.control <- CloseResponse
-					return
-				}
-			default:
-				// make request
-				resp, err := http.Get(c.getter())
-			}
-		}
-	}()
-
-	return ch
-}
-
-func (c *HTTPSubscription) Close() error {
-	c.control <- CloseRequest
-	select {
-		case control := <-c.control:
-			if control == CloseResponse {
-				return nil
-			}
+func forceString(val interface{}) string {
+	if s, ok := val.(string); ok {
+		return s
+	} else {
+		return fmt.Sprintf("%s", val)
 	}
-	return nil
 }
-
