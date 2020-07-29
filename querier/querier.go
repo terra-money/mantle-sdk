@@ -25,6 +25,7 @@ func NewQuerier(db db.DB, kvindexMap kvindex.KVIndexMap) Querier {
 
 var handlersList = []queryhandler.QueryHandlerBuilder{
 	queryhandler.NewRangeResolver,
+	queryhandler.NewHeightResolver,
 	queryhandler.NewSeekResolver,
 	// queryhandler.NewAggregationResolver,
 }
@@ -35,8 +36,9 @@ func (qi *QuerierInstance) Get(absoluteDocumentKey []byte) ([]byte, error) {
 }
 
 func (qi *QuerierInstance) Build(entityName, indexName string, query interface{}) (queryhandler.QueryHandler, error) {
+	kvindexMap := qi.kvindexMap[entityName].GetIndexMap(indexName)
+
 	for _, handlerBuilder := range handlersList {
-		kvindexMap := qi.kvindexMap[entityName].GetIndexMap(indexName)
 		handler := handlerBuilder(qi.db, &kvindexMap, entityName, indexName, query)
 		if handler == nil {
 			continue
