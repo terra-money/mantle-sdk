@@ -25,11 +25,10 @@ func UnmarshalBlockResponseFromLCD(blockResponse []byte, target *types.Block) {
 func ConvertToABCIHeader(header *types.Header) abci.Header {
 	var abciHeader = abci.Header{}
 
-	t, err := strconv.Atoi(header.Time)
+	time, err := time.Parse(time.RFC3339, header.Time)
 
 	if err != nil {
-		fmt.Println(header)
-		panic("Error in time")
+		panic(err)
 	}
 
 	abciHeader.AppHash = []byte(header.AppHash)
@@ -46,7 +45,7 @@ func ConvertToABCIHeader(header *types.Header) abci.Header {
 	abciHeader.NextValidatorsHash = []byte(header.NextValidatorsHash)
 	// abciHeader.NumTxs = header.NumTxs // removed as of tendermint 0.33.0
 	abciHeader.ProposerAddress = []byte(header.ProposerAddress)
-	abciHeader.Time = time.Unix(0, int64(t))
+	abciHeader.Time = time
 	// abciHeader.TotalTxs = header.TotalTxs // remove as of tendermint 0.33.0
 	abciHeader.ValidatorsHash = []byte(header.ValidatorsHash)
 	abciHeader.Version.App = header.Version.App
