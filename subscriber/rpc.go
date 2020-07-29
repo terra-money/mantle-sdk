@@ -19,13 +19,14 @@ type (
 		JSONRPC string `json:"jsonrpc"`
 		Method  string `json:"method"`
 		ID      int    `json:"id"`
-		Params  struct {
-			Query string `json:"query"`
-		} `json:"params"`
+		Params  SubscriptionJsonRpcParams `json:"params"`
+	}
+	SubscriptionJsonRpcParams struct {
+		Query string `json:"query"`
 	}
 )
 
-func NewRpcSubscription(endpoint string) Subscriber {
+func NewRpcSubscription(endpoint string) *RPCSubscription {
 	log.Print("Opening websocket...")
 	ws, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 
@@ -112,13 +113,13 @@ func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
 
 
 		// unmarshaling to BlockEvent failed, handle me
-		blockEvent := BlockEvent{}
+		blockEvent := types.Block{}
 		if err := json.Unmarshal([]byte(sanitized), &blockEvent); err != nil {
 			panic(err)
 		}
 
 		// send!
-		onBlock <- blockEvent.Data.Value.Block
+		onBlock <- blockEvent
 	}
 }
 
