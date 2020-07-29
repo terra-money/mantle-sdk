@@ -3,6 +3,7 @@ package committer
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/terra-project/mantle/db"
@@ -41,7 +42,10 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 	// committer job
 	for _, entity := range entities {
 		t := utils.GetType(reflect.TypeOf(entity))
-		kvIndex := committer.kvIndexMap[t.Name()]
+		kvIndex, ok := committer.kvIndexMap[t.Name()]
+		if !ok {
+			return fmt.Errorf("Unknown Entity committed, entityName=%s", t.Name())
+		}
 		kvIndexEntries := kvIndex.GetEntries()
 
 		// convert height => BE
@@ -61,6 +65,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 			)
 		}
 
+		log.Printf("Committing %v", string(documentKey.Bytes()))
 		writeBatch.Set(documentKey.Bytes(), documentValue)
 		transaction = 1
 
@@ -83,6 +88,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 			// put together an index key
 			indexDocumentKey := entry.BuildIndexKey(indexKey, HeightInBE)
+			log.Printf("Committing %v", indexDocumentKey)
 			writeBatch.Set(indexDocumentKey, nil)
 		}
 		transaction = 2
