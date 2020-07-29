@@ -2,7 +2,10 @@ package app
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/committer"
 	"log"
+	"reflect"
+	"time"
 
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/graph"
@@ -21,6 +24,7 @@ type Mantle struct {
 	app *App
 	lifecycle *LifecycleContext
 	gqlInstance *graph.GraphQLInstance
+	committerInstance committer.Committer
 	indexerInstance *indexer.IndexerBaseInstance
 }
 
@@ -38,16 +42,6 @@ func NewMantle(
 	// create an auxiliary terra app lifecycle
 	lc := NewLifecycle(app, transactionalAppState)
 
-	// create rpc subscriber
-	//rpc := subscriber.NewRpcSubscription(
-	//	rpcEndpoint,
-	//	lcdEndpoint,
-	//)
-
-	// create subscriber -> app channel
-	//blockEventChannel := rpc.Subscribe() // publishes to blockEventChannel
-	//lifecycleEventChannel := lc.Start(blockEventChannel)
-
 	// gather outputs of indexer registry
 	registry := registry.NewRegistry(indexers)
 
@@ -58,12 +52,18 @@ func NewMantle(
 		depsResolverInstance,
 		querierInstance,
 		schemabuilders.CreateABCIStubSchemaBuilder(app.GetApp()),
+		schemabuilders.CreateModelSchemaBuilder(reflect.TypeOf((*types.BaseState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.Models...),
+		schemabuilders.CreateListSchemaBuilder(),
 	)
+
+	// initialize committer
+	committerInstance := committer.NewCommitter(db, registry.KVIndexMap)
 
 	// initialize indexer
 	indexerInstance := indexer.NewIndexerBaseInstance(
 		registry.Indexers,
+		registry.IndexerOutputs,
 		gqlInstance.ResolveQuery,
 		gqlInstance.Commit,
 	)
@@ -72,21 +72,75 @@ func NewMantle(
 		isSynced: false,
 		app: app,
 		lifecycle: lc,
+		committerInstance: committerInstance,
 		gqlInstance: gqlInstance,
 		indexerInstance: indexerInstance,
 	}
 }
 
 func (mantle *Mantle) Sync() {
-	for !mantle.isSynced {
-		currentBlockHeight := mantle.app.GetApp().LastBlockHeight()
-
-		mantle.isSynced = true
+	currentBlockHeight := mantle.app.GetApp().LastBlockHeight()
+	remoteBlock, err := subscriber.GetBlockLCD("https://tequila-fcd.terra.dev/blocks/latest")
+	if err != nil {
+		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
 	}
+
+	remoteHeight := remoteBlock.Header.Height
+
+	if remoteHeight <= currentBlockHeight {
+		log.Printf("[mantle] Sync unnecessary, remoteHeight=%d, currentBlockHeight=%d", remoteHeight, currentBlockHeight)
+		return
+	}
+
+	syncingBlockHeight := currentBlockHeight + 1
+	for syncingBlockHeight < remoteHeight {
+		remoteBlock, err := subscriber.GetBlockLCD(fmt.Sprintf("https://tequila-fcd.terra.dev/blocks/%d", syncingBlockHeight))
+		if err != nil {
+			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
+		}
+
+		log.Printf("[mantle] Syncing block(%d)", remoteBlock.Header.Height)
+
+		// run round
+		mantle.round(remoteBlock)
+
+		syncingBlockHeight++
+	}
+}
+
+func (mantle *Mantle) Server() {
+	go mantle.gqlInstance.ServeHTTP(1337)
+}
+
+func (mantle *Mantle) Rebuild() {
+
 }
 
 func (mantle *Mantle) Start() {
 
+}
+
+func (mantle *Mantle) round(block *types.Block) {
+	height := block.Header.Height
+
+	tStart := time.Now()
+	baseState := mantle.lifecycle.Inject(block)
+	mantle.gqlInstance.UpdateState(baseState)
+	mantle.indexerInstance.RunIndexerRound()
+
+	exportedStates := mantle.gqlInstance.ExportStates()
+	err := mantle.committerInstance.Commit(uint64(height), exportedStates...)
+	if err != nil {
+		panic(err)
+	}
+	tEnd := time.Now()
+
+	log.Printf(
+		"[mantle] Indexing finished for block(%d), committing %d indexer outputs processed in %dms",
+		height,
+		len(exportedStates),
+		tEnd.Sub(tStart).Milliseconds(),
+	)
 }
 
 func start(
