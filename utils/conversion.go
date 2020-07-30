@@ -41,6 +41,14 @@ func GetType(t reflect.Type) reflect.Type {
 	}
 }
 
+func GetValue(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		return GetValue(v.Elem())
+	}
+	return v
+}
+
+
 func GetUint64FromWhatever(v interface{}) (uint64, error) {
 	k := reflect.TypeOf(v).Kind()
 
