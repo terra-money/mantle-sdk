@@ -109,10 +109,18 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 			io.WriteString(w, "{")
 		}
 		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+
+			// if the name starts with XXX_, skip them
+			fmt.Println(f.Name, strings.Contains(f.Name, "XXX_"))
+			if strings.Contains(f.Name, "XXX_") {
+				continue
+			}
+
 			if i != 0 {
 				io.WriteString(w, ",")
 			}
-			f := t.Field(i)
+
 			value, ok := f.Tag.Lookup("mantle")
 			inlineField := f.Anonymous && !ok
 			if !inlineField {
