@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-openapi/strfmt"
+	"github.com/graphql-go/graphql/language/ast"
+
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle/lcd/lcd"
 	"github.com/terra-project/mantle/utils"
 )
 
@@ -14,72 +14,40 @@ type contextKey int
 
 const varsKey contextKey = iota
 
-func RegisterABCIQueriers(fields *graphql.Fields, localClient LocalClient) error {
+func RegisterABCIQueriers(clientFunc reflect.Value, clientFuncName string, clientFuncType reflect.Type) (*graphql.Field, error) {
+	canonicalName := clientFuncName[3:]
+	argumentsType := buildArguments(clientFuncType)
 
-	// initialize lcd
-	stubTransport, err := NewABCIStubTransport(localClient)
-	if err != nil {
-		return err
+	out, exists := clientFuncType.Out(0).Elem().FieldByName("Payload")
+	if !exists {
+		return nil, nil
 	}
 
-	cli := lcd.New(stubTransport, strfmt.Default)
+	responseType := buildResponseType(out.Type, out.Name, clientFuncName)
 
-	v := reflect.ValueOf(cli).Elem()
+	return &graphql.Field{
+		Name: canonicalName,
+		Type: responseType,
+		Args: argumentsType,
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			args := utils.GetType(clientFuncType.In(0))
 
-	for i := 0; i < v.NumField(); i++ {
-		vf := v.Field(i)
-		vt := vf.Type()
-
-		for j := 0; j < vf.NumMethod(); j++ {
-			f2 := vf.Method(j)
-
-			fnName := vt.Method(j).Name
-			fnType := f2.Type()
-
-			// do NOT handle non-get functions
-			if fnName[:3] != "Get" {
-				continue
+			// map[string]interface{} -> struct (as defined in the handler function)
+			argsStruct := reflect.New(args)
+			for key, value := range p.Args {
+				argsStruct.Elem().FieldByName(key).Set(reflect.ValueOf(value))
 			}
 
-			canonicalName := fnName[3:]
-			argumentsType := buildArguments(fnType)
+			result := clientFunc.Call([]reflect.Value{argsStruct})
+			ret, err := result[0], result[1]
 
-			out, exists := fnType.Out(0).Elem().FieldByName("Payload")
-			if !exists {
-				continue
+			if !err.IsNil() {
+				return nil, err.Interface().(error)
 			}
 
-			responseType := buildResponseType(out.Type, out.Name, fnName)
-
-			gqlField := graphql.Field{
-				Name: canonicalName,
-				Type: responseType,
-				Args: argumentsType,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					args := utils.GetType(fnType.In(0))
-
-					// map[string]interface{} -> struct (as defined in the handler function)
-					argsStruct := reflect.New(args)
-					for key, value := range p.Args {
-						argsStruct.Elem().FieldByName(key).Set(reflect.ValueOf(value))
-					}
-
-					result := f2.Call([]reflect.Value{argsStruct})
-					ret, err := result[0], result[1]
-
-					if !err.IsNil() {
-						return nil, err.Interface().(error)
-					}
-
-					return utils.GetValue(ret.Elem().FieldByName("Payload")).Interface(), nil
-				},
-			}
-
-			(*fields)[canonicalName] = &gqlField
-		}
-	}
-
-	return nil
+			return ret.Elem().FieldByName("Payload"), nil
+		},
+	}, nil
 }
 
 func buildResponseType(t reflect.Type, tName string, parentName string) graphql.Output {
@@ -92,12 +60,31 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
-
+			fieldType := buildResponseType(field.Type, field.Name, tName)
 			fields[field.Name] = &graphql.Field{
 				Name: field.Name,
-				Type: buildResponseType(field.Type, field.Name, tName),
+				Type: fieldType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return utils.GetValue(reflect.ValueOf(p.Source)).FieldByName(field.Name).Interface(), nil
+					// If resolver is triggered, it means there is a parent struct
+					// in such case the source MUST be of reflect.Value type
+					source, ok := p.Source.(reflect.Value)
+					if !ok {
+						return nil, fmt.Errorf("source is not reflect.Value, name=%s", field.Name)
+					}
+
+					// get current field value
+					currentFieldValue := reflect.Indirect(source).FieldByName(field.Name)
+
+					// if this field is scalar type (no more to be resolved)
+					// return the value itself
+					// otherwise return value
+					if _, isFieldTypeScalar := fieldType.(*graphql.Scalar); isFieldTypeScalar {
+						return currentFieldValue.Interface(), nil
+					} else if _, isFieldTypeList := fieldType.(*graphql.List); isFieldTypeList {
+						return currentFieldValue.Interface(), nil
+					} else {
+						return currentFieldValue, nil
+					}
 				},
 			}
 		}
@@ -107,7 +94,15 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 			Fields: fields,
 		})
 
-		// in case of ptr, take Elem() of the type and go deeper
+	case reflect.Interface:
+		return graphql.NewScalar(graphql.ScalarConfig{
+			Name:         fmt.Sprintf("%s%s", parentName, tName),
+			Serialize:    func(value interface{}) interface{} { return value },
+			ParseValue:   func(value interface{}) interface{} { return value },
+			ParseLiteral: func(valueAST ast.Value) interface{} { return nil },
+		})
+
+	// in case of ptr, take Elem() of the type and go deeper
 	case reflect.Ptr:
 		t := t.Elem()
 		return buildResponseType(t, t.Name(), parentName)
@@ -115,7 +110,11 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 		// in case of slice,
 	case reflect.Slice, reflect.Array:
 		t := t.Elem()
-		return graphql.NewList(buildResponseType(t, t.Name(), parentName))
+		responseType := buildResponseType(t, tName, parentName)
+		if responseType == nil {
+			return nil
+		}
+		return graphql.NewList(responseType)
 
 	default:
 		return utils.GetGraphQLType(kind)
