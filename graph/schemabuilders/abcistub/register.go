@@ -71,7 +71,7 @@ func RegisterABCIQueriers(fields *graphql.Fields, localClient LocalClient) error
 						return nil, err.Interface().(error)
 					}
 
-					return flattenPtrValue(ret.Elem().FieldByName("Payload")).Interface(), nil
+					return utils.GetValue(ret.Elem().FieldByName("Payload")).Interface(), nil
 				},
 			}
 
@@ -97,7 +97,7 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 				Name: field.Name,
 				Type: buildResponseType(field.Type, field.Name, tName),
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return flattenPtrValue(reflect.ValueOf(p.Source)).FieldByName(field.Name).Interface(), nil
+					return utils.GetValue(reflect.ValueOf(p.Source)).FieldByName(field.Name).Interface(), nil
 				},
 			}
 		}
@@ -164,11 +164,4 @@ func buildArguments(model reflect.Type) graphql.FieldConfigArgument {
 	}
 
 	return args
-}
-
-func flattenPtrValue(v reflect.Value) reflect.Value {
-	if v.Kind() == reflect.Ptr {
-		return v.Elem()
-	}
-	return v
 }
