@@ -79,6 +79,9 @@ func (resolver *DepsResolverInstance) Dispose() {
 			close(channel)
 		}
 	}
+
+	// dispose the previous published data
+	resolver.published = make(map[reflect.Type]interface{})
 }
 
 func getEvent(entity interface{}) reflect.Type {

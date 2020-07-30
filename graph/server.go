@@ -118,6 +118,10 @@ func (server *GraphQLInstance) prepareResolverContext(dependencies []types.Model
 	return ctx
 }
 
+func (server *GraphQLInstance) Flush() {
+	server.depsResolver.Dispose()
+}
+
 func buildSchema(schemabuilders ...SchemaBuilder) graphql.Schema {
 	rootFields := &graphql.Fields{}
 
