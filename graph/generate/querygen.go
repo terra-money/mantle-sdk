@@ -2,13 +2,14 @@ package generate
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/terra-project/mantle/utils"
 	"io"
+	"math/big"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/terra-project/mantle/utils"
 )
 
 func GenerateQuery(v interface{}, variables map[string]interface{}) string {
@@ -98,13 +99,17 @@ func query(v interface{}) string {
 // If inline is true, the struct fields of t are inlined into parent struct.
 func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 	switch t.Kind() {
-	case reflect.Ptr, reflect.Slice:
+	case reflect.Ptr, reflect.Slice, reflect.Array:
 		writeQuery(w, t.Elem(), false)
 	case reflect.Struct:
-		// If the type implements json.Unmarshaler, it's a scalar. Don't expand it.
-		if reflect.PtrTo(t).Implements(jsonUnmarshaler) {
+		// do not expand cosmos sdk scalar types
+		_, isScalar := IsCosmosScalar(t)
+		if isScalar {
 			return
 		}
+
+		// if
+
 		if !inline {
 			io.WriteString(w, "{")
 		}
@@ -112,7 +117,6 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 			f := t.Field(i)
 
 			// if the name starts with XXX_, skip them
-			fmt.Println(f.Name, strings.Contains(f.Name, "XXX_"))
 			if strings.Contains(f.Name, "XXX_") {
 				continue
 			}
@@ -145,5 +149,12 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 	}
 }
 
+// here are defined the types that should not be expanded
+type BigInt interface {
+	BigInt() *big.Int
+}
 
-var jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
+// var jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
+var cosmosInt = reflect.TypeOf((*interface {
+	BigInt() *big.Int
+})(nil)).Elem()

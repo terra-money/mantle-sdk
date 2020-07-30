@@ -2,9 +2,13 @@ package generate
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/graphql-go/graphql/language/ast"
+
 	"github.com/terra-project/mantle/querier"
 	"github.com/vmihailenco/msgpack/v5"
-	"reflect"
 
 	"github.com/graphql-go/graphql"
 	"github.com/terra-project/mantle/graph/depsresolver"
@@ -31,23 +35,18 @@ var goTypeToGraphqlType = map[string]graphql.Type{
 	"complex128": graphql.Float,
 }
 
-func GenerateGraphResolver(modelType reflect.Type) (string, *graphql.Field) {
+func GenerateGraphResolver(modelType reflect.Type) (*graphql.Field, error) {
 	t := utils.GetType(modelType)
-
 	entityName := t.Name()
-	fields := graphql.Fields{}
 
-	for i := 0; i < t.NumField(); i++ {
-		child := t.Field(i)
-		iterate(entityName, fields, child.Name, child.Type)
+	responseType := buildResponseType(t, "", entityName)
+	if responseType == nil {
+		return nil, nil
 	}
 
-	entitiyRoot := graphql.Field{
+	return &graphql.Field{
 		Name: entityName,
-		Type: graphql.NewObject(graphql.ObjectConfig{
-			Name:   entityName,
-			Fields: fields,
-		}),
+		Type: responseType,
 
 		// Resolve function here defines a root entity resolver.
 		// it should resolve data dependency through subscriber
@@ -83,17 +82,19 @@ func GenerateGraphResolver(modelType reflect.Type) (string, *graphql.Field) {
 						key = queryResolverIterator.Key()
 						queryResolverIterator.Next()
 					}
-
-					defer queryResolverIterator.Close()
+					queryResolverIterator.Close()
 
 					doc, err := q.Get(key)
-					docInterface := reflect.New(t)
+					if err != nil {
+						return nil, err
+					}
+					docValue := reflect.New(t)
 
-					if err := msgpack.Unmarshal(doc, docInterface.Interface()); err != nil {
+					if err := msgpack.Unmarshal(doc, docValue.Interface()); err != nil {
 						return nil, err
 					}
 
-					return docInterface, err
+					return docValue.Interface(), err
 				}
 			}
 
@@ -113,120 +114,78 @@ func GenerateGraphResolver(modelType reflect.Type) (string, *graphql.Field) {
 				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
 			}
 
-			return reflect.ValueOf(depsResolver.Resolve(t)), nil
+			return depsResolver.Resolve(t), nil
 		},
-	}
-
-	return entityName, &entitiyRoot
+	}, nil
 }
 
-func iterate(
-	parentName string,
-	parentFields graphql.Fields,
-	name string,
-	t reflect.Type,
-) {
-	currentName := fmt.Sprintf("%s_%s", parentName, name)
+func buildResponseType(t reflect.Type, tName string, parentName string) graphql.Output {
+	kind := t.Kind()
 
-	// only array, struct and primitives allowed
-	switch t.Kind() {
+	if strings.Contains(tName, "XXX_") {
+		return nil
+	}
 
-	case reflect.Ptr:
-		iterate(parentName, parentFields, name, utils.GetType(t))
-
-	case reflect.Array, reflect.Slice:
-		parentFields[name] = &graphql.Field{
-			Name: name,
-			Type: graphql.String,
-		}
-		// fields := graphql.Fields{}
-
-		// for i := 0; i < t.NumField(); i++ {
-		// 	child := t.Field(i)
-		// 	iterate(name, fields, child.Name, child.Type)
-		// }
-
-		// obj := graphql.NewObject(graphql.ObjectConfig{
-		// 	Name:   t.Name(),
-		// 	Fields: fields,
-		// })
-
-		// list := graphql.NewList(obj)
-
-		// parentFields[t.Name()] = &graphql.Field{
-		// 	Name: t.Name(),
-		// 	Type: list,
-		// }
-
-	case reflect.Interface:
-		parentFields[name] = &graphql.Field{
-			Name: name,
-			Type: graphql.String,
-		}
-		// can't make it, noop
-
+	switch kind {
+	// in case of struct,
 	case reflect.Struct:
 		fields := graphql.Fields{}
+		structName := fmt.Sprintf("%s%s", parentName, tName)
 
 		for i := 0; i < t.NumField(); i++ {
-			child := t.Field(i)
-			iterate(currentName, fields, child.Name, child.Type)
+			field := t.Field(i)
+			var fieldType graphql.Output
+
+			// see if this field should be implemented as scalar type
+			scalar, isScalar := IsCosmosScalar(field.Type)
+			if isScalar {
+				fieldType = scalar
+			} else {
+				fieldType = buildResponseType(field.Type, field.Name, structName)
+
+				// skip nil fields
+				if fieldType == nil {
+					continue
+				}
+			}
+
+			fields[field.Name] = &graphql.Field{
+				Name: field.Name,
+				Type: fieldType,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return reflect.Indirect(reflect.ValueOf(p.Source)).FieldByName(field.Name).Interface(), nil
+				},
+			}
 		}
 
-		// don't do anything for an empty struct
-		if len(fields) == 0 {
-			return
-		}
-
-		obj := graphql.NewObject(graphql.ObjectConfig{
-			Name:   currentName,
+		return graphql.NewObject(graphql.ObjectConfig{
+			Name:   structName,
 			Fields: fields,
 		})
 
-		parentFields[name] = &graphql.Field{
-			Name: name,
-			Type: obj,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				// otherwise convert to struct here
-				// TODO: benchmark against states all written in map[string]interface{}
-				// return reflect.Indirect(p.Source).FieldByName(name), nil
-				source, ok := p.Source.(reflect.Value)
-				if !ok {
-					return nil, fmt.Errorf("Invalid source was given, at %s", currentName)
-				}
+	case reflect.Interface:
+		return graphql.NewScalar(graphql.ScalarConfig{
+			Name:         fmt.Sprintf("%s%s", parentName, tName),
+			Serialize:    func(value interface{}) interface{} { return value },
+			ParseValue:   func(value interface{}) interface{} { return value },
+			ParseLiteral: func(valueAST ast.Value) interface{} { return nil },
+		})
 
-				field := reflect.Indirect(source).FieldByName(name)
-				if !field.IsValid() {
-					return nil, fmt.Errorf("Field accessor failed, at %s", currentName)
-				}
+	// in case of ptr, take Elem() of the type and go deeper
+	case reflect.Ptr:
+		t := t.Elem()
+		return buildResponseType(t, t.Name(), parentName)
 
-				return field, nil
-			},
+		// in case of slice,
+	case reflect.Slice, reflect.Array:
+		t := t.Elem()
+		responseType := buildResponseType(t, tName, parentName)
+		if responseType == nil {
+			return nil
 		}
+		return graphql.NewList(responseType)
 
-	// do not do anything for primitives (let the parent handler handle it)
 	default:
-		gqlType := goTypeToGraphqlType[t.Kind().String()]
-		current := &graphql.Field{
-			Name: name,
-			Type: gqlType,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				// otherwise convert to struct here
-				// TODO: benchmark against states all written in map[string]interface{}
-				source, ok := p.Source.(reflect.Value)
-				if !ok {
-					return nil, fmt.Errorf("Invalid struct was passed down as source, at %s", currentName)
-				}
-
-				field := reflect.Indirect(source).FieldByName(name)
-				if !field.IsValid() {
-					return nil, fmt.Errorf("Field accessor failed, at %s", currentName)
-				}
-
-				return field.Interface(), nil
-			},
-		}
-
-		parentFields[name] = current
+		return utils.GetGraphQLType(kind)
 	}
 }
