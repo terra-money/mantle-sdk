@@ -11,10 +11,10 @@ import (
 )
 
 type IndexerBaseInstance struct {
-	indexers  []types.Indexer
+	indexers       []types.Indexer
 	indexerOutputs [][]types.ModelType
-	committer types.GraphQLCommitter
-	querier   types.GraphQLQuerier
+	committer      types.GraphQLCommitter
+	querier        types.GraphQLQuerier
 }
 
 func NewIndexerBaseInstance(
@@ -24,10 +24,10 @@ func NewIndexerBaseInstance(
 	committer types.GraphQLCommitter,
 ) *IndexerBaseInstance {
 	return &IndexerBaseInstance{
-		indexers:  indexers,
+		indexers:       indexers,
 		indexerOutputs: indexerOutputs,
-		committer: committer,
-		querier:   querier,
+		committer:      committer,
+		querier:        querier,
 	}
 }
 
@@ -81,13 +81,13 @@ func createIsolatedQuerier(
 			log.Print("IsolatedQuerier Failed. --")
 
 			for _, err := range result.Errors {
-				fmt.Println(err, err.Locations)
+				fmt.Println(err, err.Locations, err.Path)
 			}
 
 			return fmt.Errorf("Isolated Querier error")
 		}
 
-		return graph.UnmarshalGraphQLResult(result, &query)
+		return graph.UnmarshalGraphQLResult(result, query)
 	}
 }
 

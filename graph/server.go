@@ -70,7 +70,7 @@ func (server *GraphQLInstance) ResolveQuery(
 	variables types.GraphQLParams,
 	dependencies []types.ModelType,
 ) *graphql.Result {
-	
+
 	log.Printf("[graphql] ResolveQuery\tq=%s,v=%v", gqlQuery, variables)
 
 	params := graphql.Params{

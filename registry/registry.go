@@ -14,12 +14,12 @@ type Registry struct {
 	KVIndexMap kvindex.KVIndexMap
 }
 
+
 func NewRegistry(indexRegisterers []types.IndexerRegisterer) Registry {
 	registry := Registry{
 		Indexers: []types.Indexer{},
 		IndexerOutputs: [][]types.ModelType{},
 		Models:   []types.ModelType{},
-
 	}
 
 	// add BaseState to kvindexes

@@ -86,15 +86,15 @@ func (resolver SeekResolver) Resolve() (QueryHandlerIterator, error) {
 // Implemented this way because of interface acceptance.
 // All methods (Valid, Next, Key, Close) will work to resolve documentKey
 // only one time.
-type SeekResolverIterator struct{
+type SeekResolverIterator struct {
 	documentKey []byte
-	isResolved bool
+	isResolved  bool
 }
 
 func NewSeekResolverIterator(documentKey []byte) QueryHandlerIterator {
 	return &SeekResolverIterator{
 		documentKey: documentKey,
-		isResolved: false,
+		isResolved:  false,
 	}
 }
 

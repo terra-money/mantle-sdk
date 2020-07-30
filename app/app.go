@@ -2,10 +2,11 @@ package app
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle/committer"
 	"log"
 	"reflect"
 	"time"
+
+	"github.com/terra-project/mantle/committer"
 
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/graph"
@@ -20,12 +21,12 @@ import (
 )
 
 type Mantle struct {
-	isSynced bool
-	app *App
-	lifecycle *LifecycleContext
-	gqlInstance *graph.GraphQLInstance
+	isSynced          bool
+	app               *App
+	lifecycle         *LifecycleContext
+	gqlInstance       *graph.GraphQLInstance
 	committerInstance committer.Committer
-	indexerInstance *indexer.IndexerBaseInstance
+	indexerInstance   *indexer.IndexerBaseInstance
 }
 
 func NewMantle(
@@ -69,12 +70,12 @@ func NewMantle(
 	)
 
 	return &Mantle{
-		isSynced: false,
-		app: app,
-		lifecycle: lc,
+		isSynced:          false,
+		app:               app,
+		lifecycle:         lc,
 		committerInstance: committerInstance,
-		gqlInstance: gqlInstance,
-		indexerInstance: indexerInstance,
+		gqlInstance:       gqlInstance,
+		indexerInstance:   indexerInstance,
 	}
 }
 

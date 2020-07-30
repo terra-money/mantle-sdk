@@ -24,9 +24,9 @@ func NewQuerier(db db.DB, kvindexMap kvindex.KVIndexMap) Querier {
 // note that precedence matters
 
 var handlersList = []queryhandler.QueryHandlerBuilder{
-	queryhandler.NewRangeResolver,
-	queryhandler.NewHeightResolver,
-	queryhandler.NewSeekResolver,
+	queryhandler.NewRangeResolver, // @range(1,2)
+	queryhandler.NewHeightResolver, // Height: 2222
+	queryhandler.NewSeekResolver, // someIndex: 2222
 	// queryhandler.NewAggregationResolver,
 }
 
