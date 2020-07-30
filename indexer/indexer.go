@@ -77,10 +77,9 @@ func createIsolatedQuerier(
 		qs := generate.GenerateQuery(query, variables)
 		result := querier(qs, variables, indexerOutput)
 
-		log.Print("IsolatedQuerier Failed. --")
-		log.Printf("query string: %s", qs)
-
 		if result.HasErrors() {
+			log.Print("IsolatedQuerier Failed. --")
+
 			for _, err := range result.Errors {
 				fmt.Println(err, err.Locations)
 			}
