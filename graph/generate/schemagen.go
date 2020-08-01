@@ -91,7 +91,7 @@ func GenerateGraphResolver(modelType reflect.Type) (*graphql.Field, error) {
 					docValue := reflect.New(t)
 
 					if err := msgpack.Unmarshal(doc, docValue.Interface()); err != nil {
-						return nil, err
+						return nil, fmt.Errorf("Could not unmarshal msgpack")
 					}
 
 					return docValue.Interface(), err
@@ -153,7 +153,12 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 				Name: field.Name,
 				Type: fieldType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return reflect.Indirect(reflect.ValueOf(p.Source)).FieldByName(field.Name).Interface(), nil
+					source, isSourceValue := p.Source.(reflect.Value)
+					if !isSourceValue {
+						source = reflect.ValueOf(p.Source)
+					}
+
+					return reflect.Indirect(source).FieldByName(field.Name).Interface(), nil
 				},
 			}
 		}
@@ -174,7 +179,7 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 	// in case of ptr, take Elem() of the type and go deeper
 	case reflect.Ptr:
 		t := t.Elem()
-		return buildResponseType(t, t.Name(), parentName)
+		return buildResponseType(t, tName, parentName)
 
 		// in case of slice,
 	case reflect.Slice, reflect.Array:
