@@ -133,7 +133,7 @@ func (it *BadgerIterator) Close() {
 }
 
 func (it *BadgerIterator) Valid(prefix []byte) bool {
-	if len(prefix) != 0 && !it.it.ValidForPrefix(prefix){
+	if len(prefix) != 0 && !it.it.ValidForPrefix(prefix) {
 		return false
 	}
 

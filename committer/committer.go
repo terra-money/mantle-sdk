@@ -3,7 +3,6 @@ package committer
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/terra-project/mantle/db"
@@ -65,7 +64,6 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 			)
 		}
 
-		log.Printf("Committing %v", string(documentKey.Bytes()))
 		writeBatch.Set(documentKey.Bytes(), documentValue)
 		transaction = 1
 
@@ -88,7 +86,6 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 			// put together an index key
 			indexDocumentKey := entry.BuildIndexKey(indexKey, HeightInBE)
-			log.Printf("Committing %v", indexDocumentKey)
 			writeBatch.Set(indexDocumentKey, nil)
 		}
 		transaction = 2
