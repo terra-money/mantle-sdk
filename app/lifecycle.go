@@ -1,6 +1,7 @@
 package app
 
 import (
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
 )
@@ -47,9 +48,6 @@ func (c *LifecycleContext) Inject(block *types.Block) types.BaseState {
 	// run end blocker
 	endBlockerResponse := c.app.EndBlocker(block)
 
-	// commit to store
-	c.app.Commit(c.transactionalAppState)
-
 	// put together a primitive state
 	txs := make([]types.Tx, 0)
 	for _, tx := range block.Data.Txs {
@@ -72,4 +70,8 @@ func (c *LifecycleContext) Inject(block *types.Block) types.BaseState {
 	}
 
 	return primState
+}
+
+func (c *LifecycleContext) Commit() abci.ResponseCommit {
+	return c.app.Commit(c.transactionalAppState)
 }

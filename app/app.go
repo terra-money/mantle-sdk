@@ -129,8 +129,15 @@ func (mantle *Mantle) round(block *types.Block) {
 	mantle.gqlInstance.UpdateState(baseState)
 	mantle.indexerInstance.RunIndexerRound()
 
+	// flush states to database
+	// note that indexer outputs are committed __BEFORE__ IAVL
+	// because reversing indexer outputs is trivial (i.e. overwrite them)
+	// whereas IAVL reversal is a little tricky.
 	exportedStates := mantle.gqlInstance.ExportStates()
 	err := mantle.committerInstance.Commit(uint64(height), exportedStates...)
+
+	_ := mantle.lifecycle.Commit()
+
 	if err != nil {
 		panic(err)
 	}
