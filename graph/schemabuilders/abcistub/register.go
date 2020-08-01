@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/terra-project/mantle/graph/generate"
+
 	"github.com/graphql-go/graphql/language/ast"
 
 	"github.com/graphql-go/graphql"
@@ -45,7 +47,7 @@ func RegisterABCIQueriers(clientFunc reflect.Value, clientFuncName string, clien
 				return nil, err.Interface().(error)
 			}
 
-			return ret.Elem().FieldByName("Payload"), nil
+			return ret.Elem().FieldByName("Payload").Interface(), nil
 		},
 	}, nil
 }
@@ -57,40 +59,40 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 	// in case of struct,
 	case reflect.Struct:
 		fields := graphql.Fields{}
+		structName := fmt.Sprintf("%s%s", parentName, tName)
 
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
-			fieldType := buildResponseType(field.Type, field.Name, tName)
+			var fieldType graphql.Output
+
+			// see if this field should be implemented as scalar type
+			scalar, isScalar := generate.IsCosmosScalar(field.Type)
+			if isScalar {
+				fieldType = scalar
+			} else {
+				fieldType = buildResponseType(field.Type, field.Name, structName)
+
+				// skip nil fields
+				if fieldType == nil {
+					continue
+				}
+			}
+
 			fields[field.Name] = &graphql.Field{
 				Name: field.Name,
 				Type: fieldType,
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					// If resolver is triggered, it means there is a parent struct
-					// in such case the source MUST be of reflect.Value type
-					source, ok := p.Source.(reflect.Value)
-					if !ok {
-						return nil, fmt.Errorf("source is not reflect.Value, name=%s", field.Name)
+					source, isSourceValue := p.Source.(reflect.Value)
+					if !isSourceValue {
+						source = reflect.ValueOf(p.Source)
 					}
-
-					// get current field value
-					currentFieldValue := reflect.Indirect(source).FieldByName(field.Name)
-
-					// if this field is scalar type (no more to be resolved)
-					// return the value itself
-					// otherwise return value
-					if _, isFieldTypeScalar := fieldType.(*graphql.Scalar); isFieldTypeScalar {
-						return currentFieldValue.Interface(), nil
-					} else if _, isFieldTypeList := fieldType.(*graphql.List); isFieldTypeList {
-						return currentFieldValue.Interface(), nil
-					} else {
-						return currentFieldValue, nil
-					}
+					return reflect.Indirect(source).FieldByName(field.Name).Interface(), nil
 				},
 			}
 		}
 
 		return graphql.NewObject(graphql.ObjectConfig{
-			Name:   fmt.Sprintf("%s%s", parentName, tName),
+			Name:   structName,
 			Fields: fields,
 		})
 
@@ -105,7 +107,7 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 	// in case of ptr, take Elem() of the type and go deeper
 	case reflect.Ptr:
 		t := t.Elem()
-		return buildResponseType(t, t.Name(), parentName)
+		return buildResponseType(t, tName, parentName)
 
 		// in case of slice,
 	case reflect.Slice, reflect.Array:

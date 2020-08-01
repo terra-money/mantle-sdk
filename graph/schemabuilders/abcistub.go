@@ -8,7 +8,7 @@ import (
 	terra "github.com/terra-project/core/app"
 	"github.com/terra-project/mantle/graph"
 	"github.com/terra-project/mantle/graph/schemabuilders/abcistub"
-	"github.com/terra-project/mantle/lcd/lcd"
+	lcd "github.com/terra-project/mantle/lcd/client"
 )
 
 func CreateABCIStubSchemaBuilder(app *terra.TerraApp) graph.SchemaBuilder {

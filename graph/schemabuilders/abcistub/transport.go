@@ -37,19 +37,6 @@ func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, errors.New(err.(string))
 	}
 
-	// some endpoints consolidate result into { "height", "result" }.
-	// in such case we need to only use "result", otherwise response build will fail
-	_, heightFieldExists := ret["height"]
-	resultField, resultFieldExists := ret["result"]
-
-	if heightFieldExists && resultFieldExists {
-		resultInBytes, err := json.Marshal(resultField)
-		if err != nil {
-			panic(err)
-		}
-		out.Write(resultInBytes)
-	}
-
 	return &http.Response{
 		StatusCode: 200,
 		Body:       out.Body(),
