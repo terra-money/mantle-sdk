@@ -36,7 +36,7 @@ func NewApp(
 	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
 	config.Seal()
-	
+
 	app := TerraApp.NewTerraApp(
 		log.NewTMLogger(ioutil.Discard),
 		db,
@@ -80,7 +80,6 @@ func NewApp(
 		l.Printf("== CommitResponse: %s", string(commitResponseJSON))
 	}
 
-
 	return &App{
 		terra: app,
 	}
@@ -95,8 +94,8 @@ func setPruningOptions() func(*baseapp.BaseApp) {
 	// prune nothing
 	pruningOptions := sdk.PruningOptions{
 		KeepRecent: 0,
-		KeepEvery: 0,
-		Interval: 10,
+		KeepEvery:  0,
+		Interval:   10,
 	}
 	return baseapp.SetPruning(pruningOptions)
 }
@@ -125,7 +124,7 @@ func (c *App) EndBlocker(block *types.Block) abci.ResponseEndBlock {
 		Height: block.Header.Height,
 	}
 	abciResponse := c.terra.EndBlock(abciRequest)
-	
+
 	return abciResponse
 }
 
