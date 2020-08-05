@@ -272,12 +272,16 @@ func collectTrackFaucet(query types.Query, commit types.Commit) {
 	}
 
 	// save!
-	commit(TrackFaucet{
+	commitError := commit(TrackFaucet{
 		Height:              req.BaseState.Height,
 		ProofThatThisIsReal: req.BaseState.Block.Header.AppHash,
 		BalanceUluna:        uluna,
 		BalanceUkrw:         ukrw,
 	})
+    
+    if commitError != nil {
+        return commitError
+    }   
 }
 
 ```
