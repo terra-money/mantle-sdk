@@ -85,8 +85,8 @@ func (server *GraphQLInstance) ResolveQuery(
 }
 
 // Commit persists indexer outputs in memory.
-func (server *GraphQLInstance) Commit(entity interface{}) {
-	server.depsResolver.Emit(entity)
+func (server *GraphQLInstance) Commit(entity interface{}) error {
+	return server.depsResolver.Emit(entity)
 }
 
 func (server *GraphQLInstance) ExportStates() []interface{} {
