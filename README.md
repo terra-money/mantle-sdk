@@ -1,0 +1,298 @@
+# Mantle
+
+Mantle is an `framework` for writing indexers on Terra network.
+
+ 
+
+## Getting Started
+
+
+
+## Writing your first indexer
+
+You can consider the term `indexer` a fancy way of saying an `ETL logic` (as in Extract-Transform-Load). Having said that, it is no different that your indexer follows the aforementioned sequence in your code; You need to `Extract` some data first.
+
+
+### Extract
+
+
+Here is how you would do extraction in mantle.
+
+```go
+type request struct {
+	BaseState struct {
+		Height uint64
+		Block  struct {
+			Header struct {
+				AppHash string
+			}
+		}
+	}
+	FaucetBalance struct {
+		Result sdk.Coins
+	} `mantle:"BankBalancesAddress(Address: $address)"`
+}
+
+func YourIndexer(query types.Query, commit types.Commit) {
+    // assign a memory space to hold request 
+    req := request{}
+
+    // make the request!
+    err := query(&request, map[string]interface{}{
+        "address": ""terra1h8ljdmae7lx05kjj79c9ekscwsyjd3yr8wyvdn"
+    })
+    
+    if err != nil {
+        // handle any error in extract
+    }
+
+    // ... your logic goes here
+}
+```
+
+Notice how the `request` type defines all data you are requesting for this specific indexer. Mantle uses graphql for data fetching, so there is no SQL or document names involved in the request. All you need to make sure is to supply the **desired entity** as the **type name**. Mantle handles the conversion to graphql query for you.
+
+> You may want to name your request type in small letters, so it is not exported within the same package. This way you can keep naming your requests `request`.
+
+
+In fact, the request we just wrote after graphql query conversion is:
+
+```graphql
+query(Address: string!) {
+    BaseState {
+        Height
+        Block {
+            Header {
+                AppHash
+            }
+        }
+    }
+    FaucetBalance: BankBalancesAddress(Address: $address) {
+        Result
+    }
+}
+```
+
+You may be wondering about the `mantle:"BankBalancesAddress(Address: $address)"` part. This is mantle way of specifying [graphql aliases](https://graphql.org/learn/queries/#aliases). Using this, you can query the same entity with different arguments under different names.
+
+Here are some of the examples:
+
+```go
+// let's assume the entity we are requesting is called `Entity`.
+type Entity struct {
+    Data string
+}
+
+// Demonstrated here also is how you can reuse already defined type definition; 
+// everything defined in `Entity` will get embedded in graphql query automatically.
+type request struct {
+    // omitting the Height parameter will resolve the entity of current block height.
+    Entity  Entity
+
+    // specifying Height will resolve the specific entity generated at that specific height.
+    Entity1 Entity `mantle:"Entity(Height: 1000)"`
+}
+```
+
+This results in graphl query:
+
+```graphql
+query {
+    Entity: Entity {
+        Data
+    }
+    Entity1: Entity(Height: 1000) {
+        Data
+    }
+}
+```
+
+#### Disallowed act: self-referencing
+
+Whilst the request scheme is simple and effective, you may run into race conditions if you are not careful.
+
+The inherent race condition is introduced by the way mantle handles cross-indexer dependencies. If you request an entity that is _expected_ to be resolved by another indexer in the same height round, the request call will **block** until that specific entity is finally resolved.
+
+For example, let's assume that you wrote the following indexer (more on the `commit` part later):
+
+```go
+type Entity {
+    Data string
+}
+
+type request struct {
+    Entity  Entity
+}
+
+func YourIndexer(query types.Query, commit types.Commit) {
+    req := request{}
+    err := query(request, nil)
+
+    // racey!
+    commit(Entity{
+        Data: "Hello World"
+    })
+}
+```
+
+With this code, you are basically requesting the current version of `Entity` that is to be resolved (committed) after your requeest call. This obviously will __NEVER__ resolve.
+
+Whilst mantle will yell at you with an error (with a lot of 😤's), this is nonetheless an undefined behaviour. Proceed with caution.
+
+
+### Transform
+
+It is 100% up to you to write the transform logic. (more to be added if any 😁)
+
+
+### Load (Commit)
+
+Much like requests, you first need to write type definition for your entity. Some rules:
+
+- All fields must be exported (start with a capital letter). 
+- The type name becomes entity name for later requests. For this reason, type must also be exported. 
+- Root type must be of `struct` type; no `interface` or primitive types allowed
+- Not all types of golang are supported.
+    - Try to use primitive golang types. For example, `BigInt`s can be safely converted to `string`.
+    - Some composite types (i.e. `time.Time`, `sdk.Coins`) are supported, but don't expect full coverage. If you deem a specific type nessary, [open an  issue](https://github.com/terra-project/mantle/issues).
+
+```go
+// declare your entity
+type TrackFaucet struct {
+	Height              uint64
+	BalanceUluna        string
+	BalanceUkrw         string
+}
+
+func YourIndexer(query types.Query, commit types.Commit) {
+    req := request{}
+    err := query(request, nil)
+
+    // commit!
+    commitError := commit(Entity{
+        Data: "Hello World"
+    })
+    
+    if commitError != nil {
+        return commitError // only handle this error if you really know what you're doing
+
+    }
+}
+```
+
+
+
+
+#### Disallowed act: Duplicate commits
+
+Mantle doesn't care if you call `commit` multiple times within your indexer (i.e. persisting different entities). However, **committing the same entity more than once is disallowed**. 
+
+With the `commit` call, mantle will automatically _index_ (as in database indexes) the entity with the current `Height`. Committing the same entity more than once will:
+
+- not only waste a db transaction for nothing,
+- but also forces the underlying cross-indexer dependency resolver to emit the entity many times.
+
+Since mantle can't tell which version of entity is the right one, this is an undefined behaviour.
+
+Duplicate commit will result in error, and in most cases you should return that error again from your indexer. This way, mantle gets signalled of the failure, which in turn safely discards all changes in that round and does a graceful shutdown. 
+
+> You may want to persist different types of entities processed by an indexer function. `Commits` being called multiple times this way is totally fine.  
+
+
+
+
+### Putting it all together 🚀
+
+```go
+package indexers
+
+import (
+	"reflect"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/terra-project/mantle/types"
+)
+
+type request struct {
+	BaseState struct {
+		Height uint64
+		Block  struct {
+			Header struct {
+				AppHash string
+			}
+		}
+	}
+	FaucetBalance struct {
+		Result sdk.Coins
+	} `mantle:"BankBalancesAddress(Address: $address)"`
+}
+
+type TrackFaucet struct {
+	Height              uint64
+	ProofThatThisIsReal string
+	BalanceUluna        string `mantle:"index=uluna"`
+	BalanceUkrw         string `mantle:"index=ukrw"`
+}
+
+func InitTrackFaucet(register types.Register) {
+	register(
+		collectTrackFaucet,
+		reflect.TypeOf(TrackFaucet{}),
+	)
+}
+
+func collectTrackFaucet(query types.Query, commit types.Commit) {
+
+	// make request
+	// the result output is exactly the same as the struct
+	// we have defined earlier (request)
+	req := request{}
+
+	// making request with $address parameter (faucet address in this case)
+	errorInQuery := query(&req, map[string]interface{}{
+		"address": "terra1h8ljdmae7lx05kjj79c9ekscwsyjd3yr8wyvdn",
+	})
+
+	// handle error
+	if errorInQuery != nil {
+		panic(errorInQuery)
+	}
+
+	// YOUR INDEXER LOGIC GOES HERE
+	// only save uluna and ukrw, in string form
+	var uluna string
+	var ukrw string
+
+	for _, balance := range req.FaucetBalance.Result {
+		if balance.Denom == "uluna" {
+			uluna = balance.Amount.String()
+		} else if balance.Denom == "ukrw" {
+			ukrw = balance.Amount.String()
+		}
+	}
+
+	// save!
+	commit(TrackFaucet{
+		Height:              req.BaseState.Height,
+		ProofThatThisIsReal: req.BaseState.Block.Header.AppHash,
+		BalanceUluna:        uluna,
+		BalanceUkrw:         ukrw,
+	})
+}
+
+```
+
+
+## Advanced Usage
+
+### Database Indexes
+
+#### By Height
+
+#### By specific index
+
+#### By range
+
+#### Aggregation
+
+### Heightless Commits
