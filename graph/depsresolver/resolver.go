@@ -1,6 +1,7 @@
 package depsresolver
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -29,9 +30,14 @@ func (resolver *DepsResolverInstance) SetPredefinedState(entity interface{}) {
 	resolver.rmux.Unlock()
 }
 
-func (resolver *DepsResolverInstance) Emit(entity interface{}) {
+func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 	resolver.rmux.Lock()
 	event := getEvent(entity)
+
+	if _, alreadyEmitted := resolver.published[event]; alreadyEmitted {
+		return fmt.Errorf("cannot commit same entity more than once.")
+	}
+
 	resolver.published[event] = entity
 	resolver.rmux.Unlock()
 

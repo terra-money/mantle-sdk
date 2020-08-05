@@ -92,7 +92,7 @@ func createIsolatedQuerier(
 }
 
 func createIsolatedCommitter(committer types.GraphQLCommitter) types.IndexerCommitter {
-	return func(entity interface{}) {
-		committer(entity)
+	return func(entity interface{}) error {
+		return committer(entity)
 	}
 }

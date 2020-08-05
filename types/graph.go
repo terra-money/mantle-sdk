@@ -19,4 +19,4 @@ type GraphQLQuerier func(
 	variables GraphQLParams,
 	dependencies []ModelType,
 ) *graphql.Result
-type GraphQLCommitter func(entity interface{})
+type GraphQLCommitter func(entity interface{}) error
