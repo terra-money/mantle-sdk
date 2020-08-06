@@ -241,43 +241,42 @@ func InitTrackFaucet(register types.Register) {
 	)
 }
 
-func collectTrackFaucet(query types.Query, commit types.Commit) {
-
-	// make request
-	// the result output is exactly the same as the struct
-	// we have defined earlier (request)
-	req := request{}
-
-	// making request with $address parameter (faucet address in this case)
-	errorInQuery := query(&req, map[string]interface{}{
-		"address": "terra1h8ljdmae7lx05kjj79c9ekscwsyjd3yr8wyvdn",
-	})
-
-	// handle error
-	if errorInQuery != nil {
-		panic(errorInQuery)
-	}
-
-	// YOUR INDEXER LOGIC GOES HERE
-	// only save uluna and ukrw, in string form
-	var uluna string
-	var ukrw string
-
-	for _, balance := range req.FaucetBalance.Result {
-		if balance.Denom == "uluna" {
-			uluna = balance.Amount.String()
-		} else if balance.Denom == "ukrw" {
-			ukrw = balance.Amount.String()
-		}
-	}
-
-	// save!
-	commitError := commit(TrackFaucet{
-		Height:              req.BaseState.Height,
-		ProofThatThisIsReal: req.BaseState.Block.Header.AppHash,
-		BalanceUluna:        uluna,
-		BalanceUkrw:         ukrw,
-	})
+func collectTrackFaucet(query types.Query, commit types.Commit) error {
+    // make request
+    // the result output is exactly the same as the struct
+    // we have defined earlier (request)
+    req := request{}
+    
+    // making request with $address parameter (faucet address in this case)
+    errorInQuery := query(&req, map[string]interface{}{
+        "address": "terra1h8ljdmae7lx05kjj79c9ekscwsyjd3yr8wyvdn",
+    })
+    
+    // handle error
+    if errorInQuery != nil {
+        panic(errorInQuery)
+    }
+    
+    // YOUR INDEXER LOGIC GOES HERE
+    // only save uluna and ukrw, in string form
+    var uluna string
+    var ukrw string
+    
+    for _, balance := range req.FaucetBalance.Result {
+        if balance.Denom == "uluna" {
+            uluna = balance.Amount.String()
+        } else if balance.Denom == "ukrw" {
+            ukrw = balance.Amount.String()
+        }
+    }
+    
+    // save!
+    commitError := commit(TrackFaucet{
+        Height:              req.BaseState.Height,
+        ProofThatThisIsReal: req.BaseState.Block.Header.AppHash,
+        BalanceUluna:        uluna,
+        BalanceUkrw:         ukrw,
+    })
     
     if commitError != nil {
         return commitError
@@ -291,12 +290,87 @@ func collectTrackFaucet(query types.Query, commit types.Commit) {
 
 ### Database Indexes
 
-#### By Height
+For efficient search request, you may use
 
-#### By specific index
 
-#### By range
+#### Defining index in entity
+```go
+// entity definition
+type TrackFaucet struct {
+    // Supplying `mantle:"index"` will use field name as index key.
+    BalanceUluna        string `mantle:"index"`
+   
+    // Supplying `mantle:"index={name}"` will use the supplied name as index key.
+    BalanceUkrw         string `mantle:"index=ukrw"`
+}
+```
+
+
+#### Searching by index
+
+##### By Height
+
+Mantle indexes every entity by `Height`. You can request any entity with height:
+
+```go
+// define your query with Height parameter
+type request struct {
+	faucetBalance TrackFaucet `mantle:"TrackFaucet(Height: $address)"`
+}
+
+// in your request call
+req := request{}
+reqErr := query(&req, map[string]interface{}{
+    "Height": 5555 // type must be uint variant
+})
+```
+
+##### By a specific index
+
+```go
+// define your query with the index name
+type request struct {
+	faucetBalance TrackFaucet `mantle:"TrackFaucet(Uluna: $lunaAmount)"`
+}
+
+// in your request call
+req := request{}
+reqErr := query(&req, map[string]interface{}{
+    "lunaAmount": "someLunaAmount" // type must be the same as index field type
+})
+```
+
+##### By range
+
+When you do a range search, it is safe to assume that you expect multiple entities as response. It means your expected type will be a **slice** of the underlying type. 
+
+To search by range you __MUST__:
+- use slice type
+- use pluralized entity name
+- use index parameter with the postfix `_range`. e.g.) index name `ukrw` becomes `ukrw_range`.
+- use argument type of `indexType[]`
+
+> `_range` parameters are ONLY available for pluralized queries. For singular entities, _range parameters are undefined.
+
+```go
+// notice how we are:
+// - using TrackFaucet[] instead of TrackFaucet.
+type request struct {
+	faucetBalance TrackFaucet[] `mantle:"TrackFaucets(Uluna_range: ["100", "10000"])"`
+}
+
+// in your request call
+req := request{}
+reqErr := query(&req, map[string]interface{}{
+    "lunaAmount": "someLunaAmount" // type must be the same as index field type
+})
+```
+
 
 #### Aggregation
 
+TBD
+
 ### Heightless Commits
+
+TBD
