@@ -1,14 +1,14 @@
 package querier
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/terra-project/mantle/querier/queryhandler"
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/db/badger"
 	"github.com/terra-project/mantle/db/kvindex"
-	"github.com/terra-project/mantle/utils"
 )
 
 type TestStruct struct {
@@ -17,58 +17,66 @@ type TestStruct struct {
 	}
 }
 
+
+// TestNewQuerier we only test upto whether queryhandlers are created.
+// detailed operation of queryhandlers are tested per handler (in queryhandler directory)
+// EVERYTHING in handlers must be tested
+var handlers = handlersList
+
 func TestNewQuerier(t *testing.T) {
 	db := createTestDB()
 	kvi := createTestKVIndex((*TestStruct)(nil))
+	kvIndexMap := kvindex.NewKVIndexMap(kvi)
 
-	// set some test data
-	for i := 0; i < 100; i++ {
-		// setting index by
-		cursor, err := kvi.BuildIndexKey("Bar", uint64(i), utils.LeToBe(uint64(i)))
-		assert.Equal(t, err, nil)
+	querier := NewQuerier(db, kvIndexMap)
 
-		// since we're just indexing, data can be null
-		db.Set(cursor, nil)
-	}
-
-	querier := NewQuerier(db, kvindex.NewKVIndexMap(kvi))
-
-	// range query
-	// range query returns actual document ids
+	// fails if entityName is not found in kvIndexMap
 	func() {
-		query := "@range(1, 2)"
-		queryhandler, err := querier.Build("TestStruct", "Bar", query)
-		assert.Equal(t, err, nil)
-
-		ret, err := queryhandler.Resolve()
-		assert.Equal(t, reflect.TypeOf(ret).Kind(), reflect.Slice)
-		assert.Equal(t, len(ret.([][]byte)), 2)
-
-		for i, docKey := range ret.([][]byte) {
-			idx := i + 1
-			assert.Equal(t, docKey, append([]byte("TestStruct"), utils.LeToBe(uint64(idx))...))
-		}
+		handler, err := querier.Build("NotFound", "index", "query")
+		assert.Nil(t, handler)
+		assert.NotNil(t, err)
 	}()
 
-	// seek query
+	// fails if no matching handler is found
+	// this is very hard to test because the rule for "no matching query handler" is a little arbitrary.
+	// seek resolver might pick this up
 	func() {
-		query := 50
-		queryhandler, err := querier.Build("TestStruct", "Bar", query)
-		assert.Equal(t, err, nil)
-
-		// ret is the document key
-		ret, err := queryhandler.Resolve()
-		assert.Equal(t, reflect.TypeOf(ret).Kind(), reflect.Slice, "buffer slice")
-		assert.Equal(t, ret, append([]byte("TestStruct"), utils.LeToBe(uint64(50))...))
-
-		// index 101 does not exist, should return error
-		query = 101
-		queryhandler, err = querier.Build("TestStruct", "Bar", query)
-		assert.Equal(t, err, nil)
-
-		ret, err = queryhandler.Resolve()
-		assert.Equal(t, ret, nil)
+		handler, err := querier.Build("TestStruct", "NonExistentIndex", "whateverQuery")
+		assert.Nil(t, handler)
 		assert.NotNil(t, err)
+	}()
+
+	// Range resolver (detailed test in queryhandler/range)
+	// - has _range suffix
+	// - indexOption is a slice and the length is exactly 2
+	// - otherwise error
+	func() {
+		handler, err := querier.Build("TestStruct", "Bar_range", []interface{}{1, 100})
+		assert.Nil(t, err)
+		assert.NotNil(t, handler)
+		assert.Implements(t, (*queryhandler.QueryHandler)(nil), handler)
+	}()
+
+	// Height resolver
+	// - indexName is Height
+	// - indexOption __can__ be converted to uint64
+	// - otherwise error
+	func() {
+		handler, err := querier.Build("TestStruct", "Height", 64)
+		assert.Nil(t, err)
+		assert.NotNil(t, handler)
+		assert.Implements(t, (*queryhandler.QueryHandler)(nil), handler)
+	}()
+
+	// Seek resolver
+	// - indexName is given
+	// - kvIndexEntry.ResolveKeyType succeeds
+	// - otherwise error
+	func() {
+		handler, err := querier.Build("TestStruct", "Bar", 64)
+		assert.Nil(t, err)
+		assert.NotNil(t, handler)
+		assert.Implements(t, (*queryhandler.QueryHandler)(nil), handler)
 	}()
 }
 
