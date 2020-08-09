@@ -10,10 +10,11 @@ import (
 
 type QuerierInstance struct {
 	db         db.DB
-	kvindexMap kvindex.KVIndexMap
+	kvindexMap *kvindex.KVIndexMap
 }
 
-func NewQuerier(db db.DB, kvindexMap kvindex.KVIndexMap) Querier {
+// NewQuerier creates new query builder depending on the input
+func NewQuerier(db db.DB, kvindexMap *kvindex.KVIndexMap) Querier {
 	return &QuerierInstance{
 		db:         db,
 		kvindexMap: kvindexMap,
@@ -22,9 +23,8 @@ func NewQuerier(db db.DB, kvindexMap kvindex.KVIndexMap) Querier {
 
 // query pattern matcher
 // note that precedence matters
-
 var handlersList = []queryhandler.QueryHandlerBuilder{
-	queryhandler.NewRangeResolver, // @range(1,2)
+	queryhandler.NewRangeResolver, // [1,2]
 	queryhandler.NewHeightResolver, // Height: 2222
 	queryhandler.NewSeekResolver, // someIndex: 2222
 	// queryhandler.NewAggregationResolver,
@@ -35,11 +35,20 @@ func (qi *QuerierInstance) Get(absoluteDocumentKey []byte) ([]byte, error) {
 	return qi.db.Get(absoluteDocumentKey)
 }
 
+// Build returns a QueryHandler depending on entityName, indexName, query.
+// if no appropriate QueryHandler is found, Build() returns an error.
 func (qi *QuerierInstance) Build(entityName, indexName string, query interface{}) (queryhandler.QueryHandler, error) {
-	kvindex := qi.kvindexMap[entityName]
+	kvIndex, ok := (*qi.kvindexMap)[entityName]
+
+	if !ok {
+		return nil, fmt.Errorf(
+			"entity not found during queryhandler build. entityName=%s",
+			entityName,
+		)
+	}
 
 	for _, handlerBuilder := range handlersList {
-		handler, err := handlerBuilder(qi.db, kvindex, entityName, indexName, query)
+		handler, err := handlerBuilder(qi.db, kvIndex, entityName, indexName, query)
 		if err != nil {
 			return nil, err
 		}
