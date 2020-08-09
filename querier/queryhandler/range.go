@@ -4,67 +4,49 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/terra-project/mantle/utils"
-	"regexp"
+	"strings"
 
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/db/kvindex"
 )
-
-var RangeResolverParser = regexp.MustCompile(`@range\(\s*(?P<start>[\w\W]+)\s*,\s*(?P<end>[\w\W]+)\s*\)`)
 
 type RangeResolver struct {
 	db           db.DB
 	kvindexEntry *kvindex.KVIndexEntry
 	entityName   string
 	indexName    string
-	startKey     string
-	endKey       string
+	startKey     interface{}
+	endKey       interface{}
 	reverse      bool
 }
 
 func NewRangeResolver(
 	db db.DB,
-	kvindexEntry *kvindex.KVIndexEntry,
+	kvIndex *kvindex.KVIndex,
 	entityName,
 	indexName string,
 	indexOption interface{},
-) QueryHandler {
-	indexOptionString, ok := indexOption.(string)
-	if !ok {
-		return nil
+) (QueryHandler, error) {
+	indexOptionSlice, isIndexOptionSlice := indexOption.([]interface{})
+	isIndexNameRange := strings.HasSuffix(indexName, "_range")
+
+	if !(isIndexOptionSlice && isIndexNameRange && len(indexOptionSlice) == 2) {
+		return nil, nil
 	}
 
-	match := RangeResolverParser.FindStringSubmatch(indexOptionString)
-
-	// not valid for this resolver, return nil
-	if len(match) == 0 {
-		return nil
-	}
-
-	var start string
-	var end string
-	for i := range RangeResolverParser.SubexpNames() {
-		if i == 1 {
-			start = match[1]
-		} else if i == 2 {
-			end = match[2]
-		}
-	}
-
-	var reverse = false
-	if bytes.Compare([]byte(start), []byte(end)) > 1 {
-		reverse = true
+	kvIndexEntry := kvIndex.GetIndexEntry(indexName[:len(indexName)-6])
+	if kvIndexEntry == nil {
+		return nil, fmt.Errorf("acquiring kvIndexEntry failed, entityName=%s, indexName=%s", entityName, indexName)
 	}
 
 	return RangeResolver{
 		db:           db,
-		kvindexEntry: kvindexEntry,
+		kvindexEntry: kvIndexEntry,
 		entityName:   entityName,
 		indexName:    indexName,
-		startKey:     start,
-		endKey:       end,
-		reverse:      reverse,
-	}
+		startKey:     indexOptionSlice[0],
+		endKey:       indexOptionSlice[1],
+	}, nil
 }
 
 func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
@@ -72,7 +54,7 @@ func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	startKey, err := kviEntry.ResolveKeyType(resolver.startKey)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"Range parameter `start` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s. %s",
+			"range parameter `start` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s. %s",
 			resolver.entityName,
 			resolver.indexName,
 			startKey,
@@ -83,7 +65,7 @@ func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	endKey, err := kviEntry.ResolveKeyType(resolver.endKey)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"Range parameter `end` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s",
+			"range parameter `end` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s",
 			resolver.entityName,
 			resolver.indexName,
 			endKey,
@@ -106,6 +88,7 @@ type RangeResolverIterator struct {
 	indexName	string
 	endKey []byte
 	it db.Iterator
+	prefix []byte
 }
 
 func NewRangeResolverIterator(
@@ -119,22 +102,27 @@ func NewRangeResolverIterator(
 		indexName: indexName,
 		endKey: endKey,
 		it: it,
+		prefix: utils.ConcatBytes([]byte(entityName), []byte(indexName)),
 	}
 }
 
 func (resolver *RangeResolverIterator) Valid() bool {
-	prefix := utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName))
+	isPrefixValid := resolver.it.Valid(resolver.prefix)
 
-	isPrefixValid := resolver.it.Valid(prefix)
+	if !isPrefixValid {
+		return false
+	}
 
 	// iteration is valid until
 	// the compare{slice(len(item.Key)), endKey} is equal or lower
+	key := resolver.it.Key()
+	comp := key[:len(key)-8][len(resolver.prefix):]
 	isKeyValid := bytes.Compare(
-		resolver.it.Key()[:len(resolver.endKey)],
+		comp,
 		resolver.endKey,
 	) <= 0
 
-	return isPrefixValid && isKeyValid
+	return isKeyValid
 }
 
 func (resolver *RangeResolverIterator) Next() {
