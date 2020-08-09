@@ -36,10 +36,14 @@ func (qi *QuerierInstance) Get(absoluteDocumentKey []byte) ([]byte, error) {
 }
 
 func (qi *QuerierInstance) Build(entityName, indexName string, query interface{}) (queryhandler.QueryHandler, error) {
-	kvindexMap := qi.kvindexMap[entityName].GetIndexMap(indexName)
+	kvindex := qi.kvindexMap[entityName]
 
 	for _, handlerBuilder := range handlersList {
-		handler := handlerBuilder(qi.db, &kvindexMap, entityName, indexName, query)
+		handler, err := handlerBuilder(qi.db, kvindex, entityName, indexName, query)
+		if err != nil {
+			return nil, err
+		}
+
 		if handler == nil {
 			continue
 		} else {

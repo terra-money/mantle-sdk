@@ -7,11 +7,11 @@ import (
 
 type QueryHandlerBuilder func(
 	db db.DB,
-	kvindexEntry *kvindex.KVIndexEntry,
+	kvIndex *kvindex.KVIndex,
 	entityName,
 	indexName string,
 	indexOption interface{},
-) QueryHandler
+) (QueryHandler, error)
 
 type QueryHandler interface {
 	Resolve() (QueryHandlerIterator, error)

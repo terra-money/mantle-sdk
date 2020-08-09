@@ -58,8 +58,9 @@ func (kvi *KVIndex) GetEntries() map[string]KVIndexEntry {
 	return kvi.indexMapEntries
 }
 
-func (kvi *KVIndex) GetIndexMap(indexName string) KVIndexEntry {
-	return kvi.indexMapEntries[indexName]
+func (kvi *KVIndex) GetIndexEntry(indexName string) *KVIndexEntry {
+	kvIndexEntry := kvi.indexMapEntries[indexName]
+	return &kvIndexEntry
 }
 
 func (kvi *KVIndex) GetPrefix(indexName string) []byte {
@@ -126,7 +127,11 @@ func createSecondaryIndexGetter(k reflect.Kind) KVIndexKeyTypeResolver {
 	// if string, use string as is for index (lexicographic order)
 	case reflect.String:
 		return func(val interface{}) ([]byte, error) {
-			return []byte(val.(string)), nil
+			valString, ok := val.(string)
+			if !ok {
+				return nil, fmt.Errorf("index type conversion failed. Expected String variants, got %s", reflect.TypeOf(val).Kind().String())
+			}
+			return []byte(valString), nil
 		}
 		// if number types, take big endian. flush them to uint64
 	case reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64:

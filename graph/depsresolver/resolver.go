@@ -44,6 +44,8 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 	for _, subscription := range resolver.channels[event] {
 		subscription <- entity
 	}
+
+	return nil
 }
 
 func (resolver *DepsResolverInstance) GetState() map[string]interface{} {
