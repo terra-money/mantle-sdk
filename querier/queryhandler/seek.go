@@ -28,7 +28,7 @@ func NewSeekResolver(
 ) (QueryHandler, error) {
 	kvIndexEntry := kvIndex.GetIndexEntry(indexName)
 	if kvIndexEntry == nil {
-		return nil, fmt.Errorf("acquiring kvIndexEntry failed, entityName=%s, indexName=%s", entityName, indexName)
+		return nil, fmt.Errorf("acquiring kvIndexEntry failed, queryHandler=seek, entityName=%s, indexName=%s", entityName, indexName)
 	}
 
 	seekKey, err := kvIndexEntry.ResolveKeyType(indexOption)
