@@ -5,13 +5,13 @@ go 1.13
 require (
 	github.com/cosmos/cosmos-sdk v0.39.0
 	github.com/dgraph-io/badger/v2 v2.0.3
-	github.com/dolmen/yaml2json v0.0.0-20200630203549-1b4e61c04ab3 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-openapi/errors v0.19.6
 	github.com/go-openapi/runtime v0.19.19
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-openapi/swag v0.19.9
+	github.com/go-openapi/validate v0.19.10
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/websocket v1.4.2
