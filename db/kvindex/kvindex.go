@@ -59,7 +59,11 @@ func (kvi *KVIndex) GetEntries() map[string]KVIndexEntry {
 }
 
 func (kvi *KVIndex) GetIndexEntry(indexName string) *KVIndexEntry {
-	kvIndexEntry := kvi.indexMapEntries[indexName]
+	kvIndexEntry, ok := kvi.indexMapEntries[indexName]
+	if !ok {
+		return nil
+	}
+
 	return &kvIndexEntry
 }
 
