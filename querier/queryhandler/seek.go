@@ -1,10 +1,8 @@
 package queryhandler
 
 import (
-	"fmt"
-	"log"
-
 	"bytes"
+	"fmt"
 	"reflect"
 
 	"github.com/terra-project/mantle/db"
@@ -23,31 +21,33 @@ type SeekResolver struct {
 // seek resolver
 func NewSeekResolver(
 	db db.DB,
-	kvindexEntry *kvindex.KVIndexEntry,
+	kvIndex *kvindex.KVIndex,
 	entityName,
 	indexName string,
 	indexOption interface{},
-) QueryHandler {
-	seekKey, err := kvindexEntry.ResolveKeyType(indexOption)
+) (QueryHandler, error) {
+	kvIndexEntry := kvIndex.GetIndexEntry(indexName)
+	if kvIndexEntry == nil {
+		return nil, fmt.Errorf("acquiring kvIndexEntry failed, entityName=%s, indexName=%s", entityName, indexName)
+	}
+
+	seekKey, err := kvIndexEntry.ResolveKeyType(indexOption)
 
 	// if ResolveKeyType fails, that means
 	if err != nil {
-		log.Fatalf(
-			"Hash index is given but the given option can't be used for index %s, entity=%s, indexOptionType=%s",
+		return nil, fmt.Errorf("Hash index is given but the given option can't be used for index %s, entity=%s, indexOptionType=%s",
 			indexName,
 			entityName,
-			reflect.TypeOf(indexOption).Kind().String(),
-		)
-		return nil
+			reflect.TypeOf(indexOption).Kind().String(),)
 	}
 
 	return &SeekResolver{
 		db:           db,
-		kvindexEntry: kvindexEntry,
+		kvindexEntry: kvIndexEntry,
 		entityName:   entityName,
 		indexName:    indexName,
 		seekKey:      seekKey,
-	}
+	}, nil
 }
 
 func (resolver SeekResolver) Resolve() (QueryHandlerIterator, error) {

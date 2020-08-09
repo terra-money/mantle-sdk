@@ -1,6 +1,7 @@
 package queryhandler
 
 import (
+	"fmt"
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/db/kvindex"
 	"github.com/terra-project/mantle/utils"
@@ -17,25 +18,30 @@ type HeightResolver struct {
 // seek resolver
 func NewHeightResolver(
 	db db.DB,
-	kvindexEntry *kvindex.KVIndexEntry,
+	kvIndex *kvindex.KVIndex,
 	entityName,
 	indexName string,
 	indexOption interface{},
-) QueryHandler {
+) (QueryHandler, error) {
 	if indexName != "Height" {
-		return nil
+		return nil, nil
 	}
 
 	heightInUint64, _ := utils.GetUint64FromWhatever(indexOption)
 	seekKey := utils.ConcatBytes([]byte(entityName), utils.LeToBe(heightInUint64))
 
+	kvIndexEntry := kvIndex.GetIndexEntry(indexName)
+	if kvIndexEntry == nil {
+		return nil, fmt.Errorf("acquiring kvIndexEntry failed, entityName=%s, indexName=%s", entityName, indexName)
+	}
+
 	return &HeightResolver{
 		db:           db,
-		kvindexEntry: kvindexEntry,
+		kvindexEntry: kvIndexEntry,
 		entityName:   entityName,
 		indexName:    indexName,
 		seekKey:      seekKey,
-	}
+	}, nil
 }
 
 func (resolver HeightResolver) Resolve() (QueryHandlerIterator, error) {
