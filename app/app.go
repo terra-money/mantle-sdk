@@ -136,7 +136,7 @@ func (mantle *Mantle) round(block *types.Block) {
 	exportedStates := mantle.gqlInstance.ExportStates()
 	err := mantle.committerInstance.Commit(uint64(height), exportedStates...)
 
-	_ := mantle.lifecycle.Commit()
+	mantle.lifecycle.Commit()
 
 	if err != nil {
 		panic(err)
