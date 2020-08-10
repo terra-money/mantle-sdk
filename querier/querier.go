@@ -10,11 +10,11 @@ import (
 
 type QuerierInstance struct {
 	db         db.DB
-	kvindexMap *kvindex.KVIndexMap
+	kvindexMap kvindex.KVIndexMap
 }
 
 // NewQuerier creates new query builder depending on the input
-func NewQuerier(db db.DB, kvindexMap *kvindex.KVIndexMap) Querier {
+func NewQuerier(db db.DB, kvindexMap kvindex.KVIndexMap) Querier {
 	return &QuerierInstance{
 		db:         db,
 		kvindexMap: kvindexMap,
@@ -38,7 +38,7 @@ func (qi *QuerierInstance) Get(absoluteDocumentKey []byte) ([]byte, error) {
 // Build returns a QueryHandler depending on entityName, indexName, query.
 // if no appropriate QueryHandler is found, Build() returns an error.
 func (qi *QuerierInstance) Build(entityName, indexName string, query interface{}) (queryhandler.QueryHandler, error) {
-	kvIndex, ok := (*qi.kvindexMap)[entityName]
+	kvIndex, ok := qi.kvindexMap[entityName]
 
 	if !ok {
 		return nil, fmt.Errorf(
