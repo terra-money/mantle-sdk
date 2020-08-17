@@ -81,6 +81,10 @@ func (bdb *BadgerDB) GetSequence(key []byte, bandwidth uint64) (db.Sequence, err
 	return bdb.db.GetSequence(key, bandwidth)
 }
 
+func (bdb *BadgerDB) Close() error {
+	return bdb.db.Close()
+}
+
 type BadgerIterator struct {
 	it             *bd.Iterator
 	txn            *bd.Txn

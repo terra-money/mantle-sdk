@@ -8,6 +8,7 @@ type DB interface {
 	Get(key []byte) ([]byte, error)
 	Set(key, data []byte) error
 	Delete(key []byte) error
+	Close() error
 	Iterator(start []byte, reverse bool) Iterator
 	IndexIterator(start []byte, reverse bool) Iterator
 	Batch() Batch
