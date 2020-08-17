@@ -12,6 +12,7 @@ type DB interface {
 	IndexIterator(start []byte, reverse bool) Iterator
 	Batch() Batch
 	GetCosmosAdapter() tmdb.DB
+	GetSequence(key []byte, bandwidth uint64) (Sequence, error)
 }
 
 type Iterator interface {
@@ -28,4 +29,9 @@ type Batch interface {
 	Delete(key []byte) error
 	Flush() error
 	Close()
+}
+
+type Sequence interface {
+	Release() error
+	Next() (uint64, error)
 }
