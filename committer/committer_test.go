@@ -1,83 +1,165 @@
 package committer
 
 import (
-	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/terra-project/mantle/utils"
+	"github.com/vmihailenco/msgpack/v5"
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/db/badger"
 	"github.com/terra-project/mantle/db/kvindex"
-	"github.com/terra-project/mantle/utils"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 func TestCommitter(t *testing.T) {
-	var height = uint64(20288336)
-	committer, db := createTestCommitter()
+	// test simple struct
+	func() {
+		type TestStruct struct {
+			Foo string
+			Bar string `mantle:"index"`
+		}
 
-	err := committer.Commit(
-		height,
-		TestStruct{
+		testdb := badger.NewBadgerDB("")
+		kvIndexMap := kvindex.NewKVIndexMap(
+			kvindex.NewKVIndex(reflect.TypeOf((*TestStruct)(nil))),
+		)
+		committer := NewCommitter(testdb, kvIndexMap)
+
+		// commit generates the following keys (key handles are converted to big endians):
+		// TestStruct#1
+		// TestStruct@Bar:ToBeIndexed#1
+		// TestStruct@h:100#1
+		// (pk is always 0 in this case)
+		entity := TestStruct{
 			Foo: "foo",
-			Bar: 1337,
-		},
-	)
-
-	assert.Nil(t, err)
-
-	// search by documentKey
-	key := append([]byte("TestStruct"), utils.LeToBe(height)...)
-	testStructBytes, err := db.Get(key)
-	assert.Nil(t, err)
-	testStructDocument := TestStruct{}
-	msgpack.Unmarshal(testStructBytes, &testStructDocument)
-	assert.Equal(t, testStructDocument.Foo, "foo")
-	assert.Equal(t, testStructDocument.Bar, uint64(1337))
-
-	// search by index (foo)
-	// note that we are not using querier here
-	// we're just checking if index exists and the document key matches
-	// with the original document key
-	func() {
-		indexKey := []byte("TestStructfoofoo")
-		it := db.Iterator(indexKey, indexKey, false)
-		if it.Valid() {
-			assert.Equal(t, utils.LeToBe(height), it.DocumentKey())
-		} else {
-			assert.FailNow(t, "index was never found")
+			Bar: "ToBeIndexed",
 		}
-		it.Close()
+		err := committer.Commit(uint64(100), entity)
+
+		assert.Nil(t, err)
+
+		// primary document exists
+		val, valErr := testdb.Get(utils.BuildDocumentKey(
+			[]byte("TestStruct"),
+			utils.LeToBe(0),
+		))
+		assert.Nil(t, valErr)
+
+		queryEntity := TestStruct{}
+		unpackErr := msgpack.Unmarshal(val, &queryEntity)
+		if unpackErr != nil {
+			t.Fail()
+		}
+		assert.Equal(t, entity, queryEntity)
+
+		// height index exists
+		val, valErr = testdb.Get(utils.BuildIndexedDocumentKey(
+			[]byte("TestStruct"),
+			utils.DocumentHeightIndex,
+			utils.LeToBe(100),
+			utils.LeToBe(0),
+		))
+
+		// testing the existence of key is enough,
+		// because key itself has the seq pointer. we can always point back to
+		// the original document.
+		assert.Nil(t, valErr)
+
+		// arbitrary index exists
+		val, valErr = testdb.Get(utils.BuildIndexedDocumentKey(
+			[]byte("TestStruct"),
+			[]byte("Bar"),
+			[]byte("ToBeIndexed"),
+			utils.LeToBe(0),
+		))
+
+		assert.Nil(t, valErr)
 	}()
 
-	// search by index (bar)
-	// same as before
+	// test slice struct
 	func() {
-		indexKey := append([]byte("TestStructBar"), utils.LeToBe(uint64(1337))...)
-		it := db.Iterator(indexKey, indexKey, false)
-		if it.Valid() {
-			fmt.Println(it.DocumentKey())
-			assert.Equal(t, utils.LeToBe(height), it.DocumentKey())
-		} else {
-			assert.FailNow(t, "index was never found")
+		type TestSliceStruct []struct {
+			Foo string
+			Bar string `mantle:"index"`
+		}
+
+		testdb := badger.NewBadgerDB("")
+		kvIndexMap := kvindex.NewKVIndexMap(
+			kvindex.NewKVIndex(reflect.TypeOf((*TestSliceStruct)(nil))),
+		)
+		committer := NewCommitter(testdb, kvIndexMap)
+
+		// commit generates the following keys (key handles are converted to big endians):
+		// TestStruct#1
+		// TestStruct@Bar:ToBeIndexed#1
+		// TestStruct@h:100#1
+		// (pk is always 0 in this case)
+		entity := TestSliceStruct{
+			{
+				Foo: "foo",
+				Bar: "Bar1",
+			},
+			// test overlap as well
+			{
+				Foo: "foo",
+				Bar: "Bar1",
+			},
+			{
+				Foo: "foo",
+				Bar: "Bar2",
+			},
+		}
+		err := committer.Commit(uint64(100), entity)
+
+		assert.Nil(t, err)
+
+		// primary documents exist
+		for i := 0; i < len(entity); i++ {
+			_, valErr := testdb.Get(utils.BuildDocumentKey(
+				[]byte("TestSliceStruct"),
+				utils.LeToBe(uint64(i)),
+			))
+			assert.Nil(t, valErr)
+		}
+
+		// indexed documents exist
+		// bar1
+		prefix := utils.BuildIteratorPrefix(
+			[]byte("TestSliceStruct"),
+			[]byte("Bar"),
+			[]byte("Bar1"),
+		)
+
+		it := testdb.Iterator(prefix, false)
+
+		keys := make([][]byte, 0)
+		for it.Valid(prefix) {
+			docKey := it.DocumentKey()
+
+			keys = append(keys, docKey)
+			it.Next()
+		}
+
+		it.Close()
+
+		// bar2
+		prefix = utils.BuildIteratorPrefix(
+			[]byte("TestSliceStruct"),
+			[]byte("Bar"),
+			[]byte("Bar2"),
+		)
+
+		for it.Valid(prefix) {
+			docKey := it.DocumentKey()
+
+			keys = append(keys, docKey)
+			it.Next()
 		}
 		it.Close()
+
+		for i, key := range keys {
+			assert.Equal(t, utils.LeToBe(uint64(i)), key)
+		}
+
 	}()
-}
-
-// TODO: do a failing test
-
-type TestStruct struct {
-	Foo string `mantle:"index=foo"`
-	Bar uint64 `mantle:"index"`
-}
-
-func createTestCommitter() (Committer, db.DB) {
-	db := badger.NewBadgerDB("")
-	kvIndexes := kvindex.NewKVIndexMap(
-		kvindex.NewKVIndex(reflect.TypeOf((*TestStruct)(nil))),
-	)
-
-	return NewCommitter(db, kvIndexes), db
 }
