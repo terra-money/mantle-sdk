@@ -1,7 +1,6 @@
 package kvindex
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"reflect"
@@ -117,15 +116,6 @@ func (kvi *KVIndex) GetCursor(indexName string, cursor interface{}) ([]byte, err
 	return append(prefix, canonicalCursor...), nil
 }
 
-func (kvi *KVIndex) BuildIndexKey(indexName string, cursor interface{}, documentCursor []byte) ([]byte, error) {
-	indexCursor, err := kvi.GetCursor(indexName, cursor)
-	if err != nil {
-		return nil, err
-	}
-
-	return append(indexCursor, documentCursor...), nil
-}
-
 func createSecondaryIndexGetter(k reflect.Kind) KVIndexKeyTypeResolver {
 	switch k {
 	// if string, use string as is for index (lexicographic order)
@@ -195,19 +185,8 @@ func (kvimap KVIndexEntry) ResolveKeyType(key interface{}) ([]byte, error) {
 	return kvimap.resolver(key)
 }
 
-// simpler BuildIndexKey if you know which kviMap to use
-func (kviMap KVIndexEntry) BuildIndexKey(indexKeyInBytes []byte, documentKeyInBytes []byte) []byte {
-	indexKey := bytes.NewBuffer(nil)
-	indexKey.Write([]byte(kviMap.entityName))
-	indexKey.Write([]byte(kviMap.entry.Name))
-	indexKey.Write(indexKeyInBytes)
-	indexKey.Write(documentKeyInBytes)
-
-	return indexKey.Bytes()
-}
-
 ////////////////////////////////////
-const KEY_INDEX = "index"
+const KeyIndex = "index"
 
 type IndexMapEntry struct {
 	Type reflect.Kind
@@ -238,7 +217,7 @@ func createIndexMapIter(t reflect.Type, indexMapSlice *[]IndexMapEntry, path []s
 
 			tags, _ := ft.Tag.Lookup(utils.MantleKeyTag)
 			tagsSplit := strings.Split(tags, ",")
-			indexTag, indexed := sliceContainsString(tagsSplit, KEY_INDEX)
+			indexTag, indexed := sliceContainsString(tagsSplit, KeyIndex)
 
 			// disallow if
 			// - another struct appears as a direct child of this struct, 뭉

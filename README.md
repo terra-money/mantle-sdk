@@ -151,7 +151,7 @@ Much like requests, you first need to write type definition for your entity. Som
 
 - All fields must be exported (start with a capital letter). 
 - The type name becomes entity name for later requests. For this reason, type must also be exported. 
-- Root type must be of `struct` type; no `interface` or primitive types allowed
+- Root type must be of `struct` or `[]struct` type; no `interface` or primitive types allowed
 - Not all types of golang are supported.
     - Try to use primitive golang types. For example, `BigInt`s can be safely converted to `string`.
     - Some composite types (i.e. `time.Time`, `sdk.Coins`) are supported, but don't expect full coverage. If you deem a specific type nessary, [open an  issue](https://github.com/terra-project/mantle/issues).
@@ -180,9 +180,6 @@ func YourIndexer(query types.Query, commit types.Commit) {
 }
 ```
 
-
-
-
 #### Disallowed act: Duplicate commits
 
 Mantle doesn't care if you call `commit` multiple times within your indexer (i.e. persisting different entities). However, **committing the same entity more than once is disallowed**. 
@@ -192,7 +189,7 @@ With the `commit` call, mantle will automatically _index_ (as in database indexe
 - not only waste a db transaction for nothing,
 - but also forces the underlying cross-indexer dependency resolver to emit the entity many times.
 
-Since mantle can't tell which version of entity is the right one, this is an undefined behaviour.
+Since mantle can't tell which version of entity is the right one, this is an undefined behaviour. If you need to commit multiple instances of the same entity, consider using slice type.
 
 Duplicate commit will result in error, and in most cases you should return that error again from your indexer. This way, mantle gets signalled of the failure, which in turn safely discards all changes in that round and does a graceful shutdown. 
 

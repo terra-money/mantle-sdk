@@ -10,7 +10,7 @@ type BadgerDB struct {
 	db *bd.DB
 }
 
-func NewBadgerDB(path string) *BadgerDB {
+func NewBadgerDB(path string) db.DB {
 	var inMemory bool
 	if path == "" {
 		inMemory = true
@@ -75,6 +75,10 @@ func (bdb *BadgerDB) Delete(key []byte) error {
 	}
 
 	return nil
+}
+
+func (bdb *BadgerDB) GetSequence(key []byte, bandwidth uint64) (db.Sequence, error) {
+	return bdb.db.GetSequence(key, bandwidth)
 }
 
 type BadgerIterator struct {
