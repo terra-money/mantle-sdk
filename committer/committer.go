@@ -90,6 +90,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 			// write document to db
 			writeBatch.Set(documentKey, documentValue)
+			// log.Printf("[committer] => %v", documentKey)
 
 			// generate height indexes
 			heightIndexKey := utils.BuildIndexedDocumentKey(
@@ -100,6 +101,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 			)
 
 			writeBatch.Set(heightIndexKey, nil)
+			// log.Printf("[committer] => %v", heightIndexKey)
 
 			// generate the rest of indexes
 			for _, kviEntry := range kvIndexEntries {
@@ -140,6 +142,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 					)
 
 					writeBatch.Set(indexKey, nil)
+					// log.Printf("[committer] => %v", indexKey)
 				}
 			}
 		}
