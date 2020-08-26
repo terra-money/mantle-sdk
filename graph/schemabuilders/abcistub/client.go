@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/bytes"
+	cmn "github.com/tendermint/tendermint/libs/common"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
@@ -30,7 +30,7 @@ func (c LocalClient) ABCIInfo() (*ctypes.ResultABCIInfo, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
-func (c LocalClient) ABCIQuery(path string, data bytes.HexBytes) (*ctypes.ResultABCIQuery, error) {
+func (c LocalClient) ABCIQuery(path string, data cmn.HexBytes) (*ctypes.ResultABCIQuery, error) {
 	return &ctypes.ResultABCIQuery{
 		Response: c.App.Query(abci.RequestQuery{
 			Data: data,
@@ -39,7 +39,7 @@ func (c LocalClient) ABCIQuery(path string, data bytes.HexBytes) (*ctypes.Result
 	}, nil
 }
 
-func (c LocalClient) ABCIQueryWithOptions(path string, data bytes.HexBytes, opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
+func (c LocalClient) ABCIQueryWithOptions(path string, data cmn.HexBytes, opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
 	return &ctypes.ResultABCIQuery{
 		Response: c.App.Query(abci.RequestQuery{
 			Data:   data,
@@ -80,7 +80,7 @@ func (c LocalClient) Commit(height *int64) (*ctypes.ResultCommit, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
-func (c LocalClient) Validators(height *int64, papge, perPage int) (*ctypes.ResultValidators, error) {
+func (c LocalClient) Validators(height *int64) (*ctypes.ResultValidators, error) {
 	invariant()
 	return nil, fmt.Errorf("Not implemented")
 }
@@ -90,7 +90,7 @@ func (c LocalClient) Tx(hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
-func (c LocalClient) TxSearch(query string, prove bool, page, perPage int, orderBy string) (*ctypes.ResultTxSearch, error) {
+func (c LocalClient) TxSearch(query string, prove bool, page, perPage int) (*ctypes.ResultTxSearch, error) {
 	invariant()
 	return nil, fmt.Errorf("Not implemented")
 }

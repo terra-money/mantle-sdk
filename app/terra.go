@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	l "log"
 
-	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/libs/log"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -16,7 +15,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 	TerraApp "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
-	wasmconfig "github.com/terra-project/core/x/wasm/config"
+	// wasmconfig "github.com/terra-project/core/x/wasm/config"
 	types "github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
 )
@@ -43,13 +42,13 @@ func NewApp(
 		nil,
 		true, // need this so KVStores are set
 		0,
-		make(map[int64]bool),
-		&wasmconfig.Config{BaseConfig: wasmconfig.BaseConfig{
-			ContractQueryGasLimit: viper.GetUint64(wasmconfig.FlagContractQueryGasLimit),
-			CacheSize:             viper.GetUint64(wasmconfig.FlagCacheSize),
-		}},
+		// make(map[int64]bool),
+		// &wasmconfig.Config{BaseConfig: wasmconfig.BaseConfig{
+		// 	ContractQueryGasLimit: viper.GetUint64(wasmconfig.FlagContractQueryGasLimit),
+		// 	CacheSize:             viper.GetUint64(wasmconfig.FlagCacheSize),
+		// }},
 		fauxMerkleModeOpt, // error
-		setPruningOptions(),
+		// setPruningOptions(),
 	)
 
 	// only init chain on genesis
@@ -90,15 +89,15 @@ func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 	bapp.SetFauxMerkleMode()
 }
 
-func setPruningOptions() func(*baseapp.BaseApp) {
-	// prune nothing
-	pruningOptions := sdk.PruningOptions{
-		KeepRecent: 0,
-		KeepEvery:  0,
-		Interval:   10,
-	}
-	return baseapp.SetPruning(pruningOptions)
-}
+// func setPruningOptions() func(*baseapp.BaseApp) {
+// 	// prune nothing
+// 	pruningOptions := sdk.PruningOptions{
+// 		KeepRecent: 0,
+// 		KeepEvery:  0,
+// 		Interval:   10,
+// 	}
+// 	return baseapp.SetPruning(pruningOptions)
+// }
 
 func (c *App) GetApp() *TerraApp.TerraApp {
 	return c.terra
