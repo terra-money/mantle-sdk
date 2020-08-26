@@ -55,7 +55,6 @@ func NewMantle(
 		schemabuilders.CreateABCIStubSchemaBuilder(app.GetApp()),
 		schemabuilders.CreateModelSchemaBuilder(reflect.TypeOf((*types.BaseState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.Models...),
-		schemabuilders.CreateListSchemaBuilder(),
 	)
 
 	// initialize committer
@@ -137,6 +136,10 @@ func (mantle *Mantle) round(block *types.Block) {
 	err := mantle.committerInstance.Commit(uint64(height), exportedStates...)
 
 	mantle.lifecycle.Commit()
+
+	defer func() {
+		mantle.gqlInstance.Flush()
+	}()
 
 	if err != nil {
 		panic(err)

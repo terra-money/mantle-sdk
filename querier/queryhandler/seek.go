@@ -50,24 +50,15 @@ func NewSeekResolver(
 }
 
 func (resolver SeekResolver) Resolve() (QueryHandlerIterator, error) {
-<<<<<<< Updated upstream
 	entityNameInBytes := []byte(resolver.entityName)
 	var seekKey = utils.BuildIndexIteratorPrefix(
 		entityNameInBytes,
-=======
-	var seekKey = utils.BuildIteratorPrefix(
-		[]byte(resolver.entityName),
->>>>>>> Stashed changes
 		[]byte(resolver.indexName),
 		resolver.seekKey,
 	)
 
 	return NewSeekResolverIterator(
-<<<<<<< Updated upstream
 		entityNameInBytes,
-=======
-		[]byte(resolver.entityName),
->>>>>>> Stashed changes
 		seekKey,
 		resolver.db.IndexIterator(
 			seekKey,
@@ -105,8 +96,4 @@ func (resolver *SeekResolverIterator) Key() []byte {
 }
 func (resolver *SeekResolverIterator) Close() {
 	resolver.it.Close()
-<<<<<<< Updated upstream
-=======
-	// noop
->>>>>>> Stashed changes
 }

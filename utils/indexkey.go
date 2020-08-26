@@ -6,7 +6,6 @@ package utils
 var DocumentSeqDelimiter = []byte(string('#'))
 var DocumentIndexKeyDelimiter = []byte(string('@'))
 var DocumentIndexValueDelimiter = []byte(string(':'))
-var DocumentHeightIndex = []byte(string('h'))
 
 func BuildDocumentKey(entityName, pk []byte) []byte {
 	return ConcatBytes(
@@ -16,7 +15,16 @@ func BuildDocumentKey(entityName, pk []byte) []byte {
 	)
 }
 
-func BuildIteratorPrefix(entityName, indexName, indexKey []byte) []byte {
+func BuildIndexGroupPrefix(entityName, indexName []byte) []byte {
+	return ConcatBytes(
+		entityName,
+		DocumentIndexKeyDelimiter,
+		indexName,
+		DocumentIndexValueDelimiter,
+	)
+}
+
+func BuildIndexIteratorPrefix(entityName, indexName, indexKey []byte) []byte {
 	return ConcatBytes(
 		entityName,
 		DocumentIndexKeyDelimiter,
@@ -29,7 +37,7 @@ func BuildIteratorPrefix(entityName, indexName, indexKey []byte) []byte {
 
 func BuildIndexedDocumentKey(entityName, indexName, indexKey, pk []byte) []byte {
 	return ConcatBytes(
-		BuildIteratorPrefix(entityName, indexName, indexKey),
+		BuildIndexIteratorPrefix(entityName, indexName, indexKey),
 		pk,
 	)
 }
