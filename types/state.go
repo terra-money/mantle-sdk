@@ -5,6 +5,10 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+type (
+	StdTx = auth.StdTx
+)
+
 // State houses all primitive data
 type BaseState struct {
 	Height             int64
@@ -12,5 +16,5 @@ type BaseState struct {
 	EndBlockResponse   abci.ResponseEndBlock
 	DeliverTxResponses []abci.ResponseDeliverTx
 	Block              Block
-	Txs                []auth.StdTx
+	Txs                []StdTx
 }

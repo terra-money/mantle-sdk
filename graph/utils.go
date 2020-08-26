@@ -2,12 +2,12 @@ package graph
 
 import (
 	"encoding/json"
-
 	"github.com/graphql-go/graphql"
 )
 
 // TODO: Make a better version of this or scrap
 func UnmarshalGraphQLResult(result *graphql.Result, target interface{}) error {
+	// leave BaseState alone
 	res, err := json.Marshal(result.Data)
 	if err != nil {
 		return err

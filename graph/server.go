@@ -3,7 +3,6 @@ package graph
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 
@@ -71,7 +70,7 @@ func (server *GraphQLInstance) ResolveQuery(
 	dependencies []types.ModelType,
 ) *graphql.Result {
 
-	log.Printf("[graphql] ResolveQuery\tq=%s,v=%v", gqlQuery, variables)
+	// log.Printf("[graphql] ResolveQuery\tq=%s,v=%v", gqlQuery, variables)
 
 	params := graphql.Params{
 		Schema:         server.schema,

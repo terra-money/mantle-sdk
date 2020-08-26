@@ -65,7 +65,9 @@ func runIndexer(
 
 	go func() {
 		defer wg.Done()
-		indexer(isolatedQuerier, isolatedCommitter)
+		if indexerErr := indexer(isolatedQuerier, isolatedCommitter); indexerErr != nil {
+			panic(indexerErr)
+		}
 	}()
 }
 
