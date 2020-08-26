@@ -3,7 +3,6 @@ module github.com/terra-project/mantle
 go 1.13
 
 require (
-	github.com/cosmos/cosmos-sdk v0.39.0
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gertd/go-pluralize v0.1.7
@@ -24,8 +23,6 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
-	github.com/tendermint/tendermint v0.33.6
-	github.com/tendermint/tm-db v0.5.1
 	github.com/terra-project/core v0.4.0-rc.2
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
