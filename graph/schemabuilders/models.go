@@ -27,6 +27,19 @@ func CreateModelSchemaBuilder(models ...types.ModelType) graph.SchemaBuilder {
 
 			fieldConfig.Args = generate.GenerateArgument(kvindex.NewKVIndex(model))
 			(*fields)[entityName] = fieldConfig
+
+			// list
+			entityNamePlural := utils.Pluralize(entityName)
+			listFieldConfig, err := generate.GenerateListGraphResolver(model, (*fields)[entityName])
+			if err != nil {
+				return err
+			}
+
+			if listFieldConfig == nil {
+				continue
+			}
+
+			(*fields)[entityNamePlural] = listFieldConfig
 		}
 
 		return nil
