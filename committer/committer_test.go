@@ -1,11 +1,12 @@
 package committer
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/terra-project/mantle/utils"
 	"github.com/vmihailenco/msgpack/v5"
-	"reflect"
-	"testing"
 
 	"github.com/terra-project/mantle/db/badger"
 	"github.com/terra-project/mantle/db/kvindex"
@@ -55,7 +56,7 @@ func TestCommitter(t *testing.T) {
 		// height index exists
 		val, valErr = testdb.Get(utils.BuildIndexedDocumentKey(
 			[]byte("TestStruct"),
-			utils.DocumentHeightIndex,
+			[]byte("Height"),
 			utils.LeToBe(100),
 			utils.LeToBe(0),
 		))
@@ -124,7 +125,7 @@ func TestCommitter(t *testing.T) {
 
 		// indexed documents exist
 		// bar1
-		prefix := utils.BuildIteratorPrefix(
+		prefix := utils.BuildIndexIteratorPrefix(
 			[]byte("TestSliceStruct"),
 			[]byte("Bar"),
 			[]byte("Bar1"),
@@ -143,7 +144,7 @@ func TestCommitter(t *testing.T) {
 		it.Close()
 
 		// bar2
-		prefix = utils.BuildIteratorPrefix(
+		prefix = utils.BuildIndexIteratorPrefix(
 			[]byte("TestSliceStruct"),
 			[]byte("Bar"),
 			[]byte("Bar2"),

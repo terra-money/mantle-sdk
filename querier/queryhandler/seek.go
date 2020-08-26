@@ -1,7 +1,6 @@
 package queryhandler
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 
@@ -38,7 +37,7 @@ func NewSeekResolver(
 		return nil, fmt.Errorf("Hash index is given but the given option can't be used for index %s, entity=%s, indexOptionType=%s",
 			indexName,
 			entityName,
-			reflect.TypeOf(indexOption).Kind().String(),)
+			reflect.TypeOf(indexOption).Kind().String())
 	}
 
 	return &SeekResolver{
@@ -51,62 +50,63 @@ func NewSeekResolver(
 }
 
 func (resolver SeekResolver) Resolve() (QueryHandlerIterator, error) {
-	var seekKeyPrefix = utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName))
-	var seekKeyActual = utils.ConcatBytes([]byte(resolver.entityName), []byte(resolver.indexName), resolver.seekKey)
-	it := resolver.db.IndexIterator(
-		seekKeyActual,
-		false,
+<<<<<<< Updated upstream
+	entityNameInBytes := []byte(resolver.entityName)
+	var seekKey = utils.BuildIndexIteratorPrefix(
+		entityNameInBytes,
+=======
+	var seekKey = utils.BuildIteratorPrefix(
+		[]byte(resolver.entityName),
+>>>>>>> Stashed changes
+		[]byte(resolver.indexName),
+		resolver.seekKey,
 	)
 
-	documentKey := new(bytes.Buffer)
-	_, err := documentKey.Write([]byte(resolver.entityName))
-	if err != nil {
-		return nil, err
-	}
-
-	if it.Valid(seekKeyPrefix) {
-		_, err := documentKey.Write([]byte(it.DocumentKey()))
-		if err != nil {
-			return nil, err
-		}
-		it.Close() // close immediately
-	} else {
-		return nil, fmt.Errorf(
-			"Index does not exist, entityName=%s, indexName=%s, indexKey=%v",
-			resolver.entityName,
-			resolver.indexName,
-			resolver.seekKey,
-		)
-	}
-
-	return NewSeekResolverIterator(documentKey.Bytes()), nil
+	return NewSeekResolverIterator(
+<<<<<<< Updated upstream
+		entityNameInBytes,
+=======
+		[]byte(resolver.entityName),
+>>>>>>> Stashed changes
+		seekKey,
+		resolver.db.IndexIterator(
+			seekKey,
+			true,
+		),
+	), nil
 }
 
-// SeekResolverIterator never really iterates.
-// Implemented this way because of interface acceptance.
-// All methods (Valid, Next, Key, Close) will work to resolve documentKey
-// only one time.
 type SeekResolverIterator struct {
-	documentKey []byte
-	isResolved  bool
+	entityName []byte
+	prefix     []byte
+	it         db.Iterator
+	isResolved bool
 }
 
-func NewSeekResolverIterator(documentKey []byte) QueryHandlerIterator {
+func NewSeekResolverIterator(entityName, prefix []byte, it db.Iterator) QueryHandlerIterator {
 	return &SeekResolverIterator{
-		documentKey: documentKey,
-		isResolved:  false,
+		entityName: entityName,
+		prefix:     prefix,
+		it:         it,
 	}
 }
 
 func (resolver *SeekResolverIterator) Valid() bool {
-	return !resolver.isResolved
+	return resolver.it.Valid(resolver.prefix)
 }
 func (resolver *SeekResolverIterator) Next() {
-	resolver.isResolved = true
+	resolver.it.Next()
 }
 func (resolver *SeekResolverIterator) Key() []byte {
-	return resolver.documentKey
+	return utils.BuildDocumentKey(
+		resolver.entityName,
+		resolver.it.DocumentKey(),
+	)
 }
 func (resolver *SeekResolverIterator) Close() {
+	resolver.it.Close()
+<<<<<<< Updated upstream
+=======
 	// noop
+>>>>>>> Stashed changes
 }

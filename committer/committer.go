@@ -95,7 +95,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 			// generate height indexes
 			heightIndexKey := utils.BuildIndexedDocumentKey(
 				entityNameInBytes,
-				utils.DocumentHeightIndex,
+				[]byte("Height"),
 				heightInBe,
 				pkInBE,
 			)
@@ -105,6 +105,10 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 			// generate the rest of indexes
 			for _, kviEntry := range kvIndexEntries {
+				if kviEntry.GetEntry().Name == "Height" {
+					continue
+				}
+
 				indexName := kviEntry.GetEntry().Name
 				indexNameInBytes := []byte(indexName)
 				valuePath := kviEntry.GetEntry().Path
