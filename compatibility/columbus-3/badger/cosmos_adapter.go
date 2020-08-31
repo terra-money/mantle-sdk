@@ -6,7 +6,7 @@ import (
 	"fmt"
 	tmdb "github.com/tendermint/tm-db"
 
-	badger "github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v2"
 )
 
 type BadgerCosmosAdapter struct {
