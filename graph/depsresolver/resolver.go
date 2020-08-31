@@ -95,13 +95,14 @@ func (resolver *DepsResolverInstance) Dispose() {
 func getEvent(entity interface{}) reflect.Type {
 	t := reflect.TypeOf(entity)
 
-	if t.Kind() == reflect.Ptr {
+	switch t.Kind() {
+	case reflect.Ptr:
 		return t.Elem()
-	}
-
-	if t.Kind() == reflect.Struct {
+	case reflect.Struct:
 		return t
+	case reflect.Slice:
+		return t
+	default:
+		panic("Invalid type entity provided")
 	}
-
-	panic("Invalid type entity provided")
 }
