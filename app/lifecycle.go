@@ -1,7 +1,6 @@
 package app
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
 )
@@ -72,6 +71,7 @@ func (c *LifecycleContext) Inject(block *types.Block) types.BaseState {
 	return primState
 }
 
-func (c *LifecycleContext) Commit() abci.ResponseCommit {
-	return c.app.Commit(c.transactionalAppState)
+func (c *LifecycleContext) Commit() []byte {
+	commitResult := c.app.Commit(c.transactionalAppState)
+	return commitResult.Data
 }

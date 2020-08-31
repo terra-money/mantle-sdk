@@ -29,6 +29,12 @@ type Mantle struct {
 	indexerInstance   *indexer.IndexerBaseInstance
 }
 
+type SyncConfiguration struct {
+	LCDLatestBlockEndpoint string
+	LCDBlockEndpoint       string
+	TendermintEndpoint     string
+}
+
 func NewMantle(
 	db db.DB,
 	transactionalAppState bool,
@@ -78,9 +84,9 @@ func NewMantle(
 	}
 }
 
-func (mantle *Mantle) Sync() {
+func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	currentBlockHeight := mantle.app.GetApp().LastBlockHeight()
-	remoteBlock, err := subscriber.GetBlockLCD("https://tequila-fcd.terra.dev/blocks/latest")
+	remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
 	if err != nil {
 		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
 	}
@@ -94,7 +100,7 @@ func (mantle *Mantle) Sync() {
 
 	syncingBlockHeight := currentBlockHeight + 1
 	for syncingBlockHeight < remoteHeight {
-		remoteBlock, err := subscriber.GetBlockLCD(fmt.Sprintf("https://tequila-fcd.terra.dev/blocks/%d", syncingBlockHeight))
+		remoteBlock, err := subscriber.GetBlockLCD(fmt.Sprintf(configuration.LCDBlockEndpoint, syncingBlockHeight))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
 		}
