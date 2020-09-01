@@ -2,6 +2,7 @@ package queryhandler
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/db/kvindex"
 	"strings"
 
 	"github.com/terra-project/mantle/db"
@@ -19,7 +20,7 @@ type HeightResolver struct {
 // seek resolver
 func NewHeightResolver(
 	db db.DB,
-	_,
+	_ *kvindex.KVIndex,
 	entityName,
 	indexName string,
 	indexOption interface{},
@@ -28,27 +29,28 @@ func NewHeightResolver(
 		return nil, nil
 	}
 
-	if heightRange, isHeightRange := indexOption.([]uint64); isHeightRange {
+	switch indexOption.(type) {
+	case []interface{}:
+		heightRange, _ := indexOption.([]interface{})
 		return &HeightResolver{
 			db:          db,
 			entityName:  entityName,
-			indexName:   indexName,
-			prefixStart: utils.LeToBe(heightRange[0]),
-			prefixEnd:   utils.LeToBe(heightRange[1]),
+			indexName:   "Height",
+			prefixStart: utils.LeToBe(uint64(heightRange[0].(int))),
+			prefixEnd:   utils.LeToBe(uint64(heightRange[1].(int))),
 		}, nil
-	}
-
-	if heightSingle, isHeightSingle := indexOption.(uint64); isHeightSingle {
+	case int:
+		height, _ := indexOption.(int)
 		return &HeightResolver{
 			db:          db,
 			entityName:  entityName,
-			indexName:   indexName,
-			prefixStart: utils.LeToBe(heightSingle),
+			indexName:   "Height",
+			prefixStart: utils.LeToBe(uint64(height)),
 			prefixEnd:   nil,
 		}, nil
+	default:
+		return nil, fmt.Errorf("invalid height parameters, entityName=%s, indexOption=%v", entityName, indexOption)
 	}
-
-	return nil, fmt.Errorf("invalid height parameters, entityName=%s, indexOption=%v", entityName, indexOption)
 }
 
 func (resolver HeightResolver) Resolve() (QueryHandlerIterator, error) {
@@ -81,7 +83,7 @@ func (resolver HeightResolver) Resolve() (QueryHandlerIterator, error) {
 		prefixStart,
 		prefixEnd,
 		resolver.db.IndexIterator(
-			prefixStart,
+			prefixEnd,
 			true,
 		),
 	), nil
@@ -93,7 +95,6 @@ type HeightResolverIterator struct {
 	prefixStart []byte
 	prefixEnd   []byte
 	it          db.Iterator
-	isResolved  bool
 }
 
 func NewHeightResolverIterator(entityName, prefixGroup, prefixStart, prefixEnd []byte, it db.Iterator) QueryHandlerIterator {
@@ -107,8 +108,8 @@ func NewHeightResolverIterator(entityName, prefixGroup, prefixStart, prefixEnd [
 }
 
 func (resolver *HeightResolverIterator) Valid() bool {
-	// isPrefixValid := resolver.it.Valid(resolver.prefixGroup)
-	return resolver.it.Valid(resolver.prefixGroup)
+	return resolver.it.Valid(resolver.prefixStart) ||
+		resolver.it.Valid(resolver.prefixEnd)
 }
 func (resolver *HeightResolverIterator) Next() {
 	resolver.it.Next()
