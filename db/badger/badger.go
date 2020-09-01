@@ -4,11 +4,14 @@ import (
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	"github.com/terra-project/mantle/db"
+	"github.com/terra-project/mantle/utils"
 )
 
 type BadgerDB struct {
 	db *bd.DB
 }
+
+var maxPKRange = []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 func NewBadgerDB(path string) db.DB {
 	var inMemory bool
@@ -103,7 +106,13 @@ func (bdb *BadgerDB) Iterator(
 	itOpts.Reverse = reverse
 	it := txn.NewIterator(itOpts)
 
-	it.Seek(start)
+	// if iterator goes backwards, so start needs to be the biggest of that index start range
+
+	if reverse {
+		it.Seek(utils.ConcatBytes(start, maxPKRange))
+	} else {
+		it.Seek(start)
+	}
 
 	return &BadgerIterator{
 		txn:            txn,
@@ -124,7 +133,12 @@ func (bdb *BadgerDB) IndexIterator(
 	itOpts.Reverse = reverse
 	it := txn.NewIterator(itOpts)
 
-	it.Seek(start)
+	// if iterator goes backwards, so start needs to be the biggest of that index start range
+	if reverse {
+		it.Seek(utils.ConcatBytes(start, maxPKRange))
+	} else {
+		it.Seek(start)
+	}
 
 	return &BadgerIterator{
 		txn:            txn,
