@@ -136,7 +136,94 @@ func TestCommitter(t *testing.T) {
 		keys := make([][]byte, 0)
 		for it.Valid(prefix) {
 			docKey := it.DocumentKey()
+			keys = append(keys, docKey)
+			it.Next()
+		}
 
+		it.Close()
+
+		// bar2
+		prefix = utils.BuildIndexIteratorPrefix(
+			[]byte("TestSliceStruct"),
+			[]byte("Bar"),
+			[]byte("Bar2"),
+		)
+
+		for it.Valid(prefix) {
+			docKey := it.DocumentKey()
+
+			keys = append(keys, docKey)
+			it.Next()
+		}
+		it.Close()
+
+		for i, key := range keys {
+			assert.Equal(t, utils.LeToBe(uint64(i)), key)
+		}
+
+	}()
+
+	// test map struct
+	func() {
+		type Entity struct {
+			Foo string
+			Bar string `mantle:"index"`
+		}
+		type TestMapStruct map[string]Entity
+
+		testdb := badger.NewBadgerDB("")
+		kvIndexMap := kvindex.NewKVIndexMap(
+			kvindex.NewKVIndex(reflect.TypeOf((TestMapStruct)(nil))),
+		)
+		committer := NewCommitter(testdb, kvIndexMap)
+		docKeys := []string{"doc1", "doc2", "doc3"}
+
+		// commit generates the following keys (key handles are converted to big endians):
+		// TestStruct#1
+		// TestStruct@Bar:ToBeIndexed#1
+		// TestStruct@h:100#1
+		// (pk is always 0 in this case)
+		entity := TestMapStruct{
+			docKeys[0]: {
+				Foo: "foo",
+				Bar: "Bar1",
+			},
+			// test overlap as well
+			docKeys[1]: {
+				Foo: "foo",
+				Bar: "Bar1",
+			},
+			docKeys[2]: {
+				Foo: "foo",
+				Bar: "Bar2",
+			},
+		}
+		err := committer.Commit(uint64(100), entity)
+
+		assert.Nil(t, err)
+
+		// primary documents exist
+		for i := 0; i < len(entity); i++ {
+			_, valErr := testdb.Get(utils.BuildDocumentKey(
+				[]byte("TestMapStruct"),
+				[]byte(docKeys[i]),
+			))
+			assert.Nil(t, valErr)
+		}
+
+		// indexed documents exist
+		// bar1
+		prefix := utils.BuildIndexIteratorPrefix(
+			[]byte("TestSliceStruct"),
+			[]byte("Bar"),
+			[]byte("Bar1"),
+		)
+
+		it := testdb.Iterator(prefix, false)
+
+		keys := make([][]byte, 0)
+		for it.Valid(prefix) {
+			docKey := it.DocumentKey()
 			keys = append(keys, docKey)
 			it.Next()
 		}

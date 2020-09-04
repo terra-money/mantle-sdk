@@ -25,6 +25,17 @@ func NewCommitter(
 	}
 }
 
+const (
+	EntityTypeSingular = 0
+	EntityTypeSlice    = 1
+	EntityTypeMap      = 2
+)
+
+type (
+	GetSequenceFunc func(length uint64) (db.Sequence, error)
+	CommitFunc      func(key, data []byte) error
+)
+
 func (committer *CommitterInstance) Commit(height uint64, entities ...interface{}) error {
 	// create a write batch
 	var transaction = false
@@ -41,92 +52,57 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 		entityName := t.Name()
 		kvIndexEntries := kvIndex.GetEntries()
 
-		// creating indexes
-		// the entity might be of slice type - convert it to slice anyway for easier handling
-		entitiesInSlice := make([]interface{}, 0)
+		// convert some properties to byte beforehand
+		heightInBe := utils.LeToBe(height)
+		var commit CommitFunc = func(key, value []byte) error {
+			fmt.Println(string(utils.ConcatBytes([]byte(entityName), key)))
+			return writeBatch.Set(utils.ConcatBytes([]byte(entityName), key), value)
+		}
+		var getSequence GetSequenceFunc = func(length uint64) (db.Sequence, error) {
+			return committer.db.GetSequence([]byte(t.Name()), length)
+		}
 
 		// in case of slice entity, the leading index path must be adjusted (* has to go)
 		// -- flag for that
-		isSliceEntity := false
-		if t.Kind() == reflect.Slice {
-			isSliceEntity = true
-			for i := 0; i < v.Len(); i++ {
-				entitiesInSlice = append(entitiesInSlice, v.Index(i).Interface())
-			}
-		} else {
-			entitiesInSlice = append(entitiesInSlice, rawEntity)
+		commitTargets, flattenErr := flattenCommitTargets(getSequence, v, t)
+		if flattenErr != nil {
+			return flattenErr
 		}
-
-		seq, errSeq := committer.db.GetSequence([]byte(t.Name()), uint64(len(entitiesInSlice)))
-		if errSeq != nil {
-			return fmt.Errorf("sequence generation failed")
-		}
-
-		// convert some properties to byte beforehand
-		entityNameInBytes := []byte(entityName)
-		heightInBe := utils.LeToBe(height)
 
 		// commit document(s) to db
-		for _, entity := range entitiesInSlice {
-			pk, errSeq := seq.Next()
-			pkInBE := utils.LeToBe(pk)
-
-			if errSeq != nil {
-				return errSeq
+		for _, commitTarget := range commitTargets {
+			// commit primary documents
+			if commitErr := commitTarget.commit(commit); commitErr != nil {
+				return commitErr
 			}
 
-			// underlying document key, entityName
-			documentKey := utils.BuildDocumentKey(
-				entityNameInBytes,
-				pkInBE,
-			)
-			documentValue, err := msgpack.Marshal(entity)
-			if err != nil {
-				return fmt.Errorf(
-					"Failed to serialize entity, entityName=%s",
-					t.Name(),
-				)
+			// commit height index
+			if commitErr := commitTarget.commitIndex(commit, "Height", heightInBe); commitErr != nil {
+				return commitErr
 			}
 
-			// write document to db
-			writeBatch.Set(documentKey, documentValue)
-			// log.Printf("[committer] => %v", documentKey)
-
-			// generate height indexes
-			heightIndexKey := utils.BuildIndexedDocumentKey(
-				entityNameInBytes,
-				[]byte("Height"),
-				heightInBe,
-				pkInBE,
-			)
-
-			writeBatch.Set(heightIndexKey, nil)
-			// log.Printf("[committer] => %v", heightIndexKey)
-
-			// generate the rest of indexes
+			// commit all indexes
 			for _, kviEntry := range kvIndexEntries {
+				// skip Height
 				if kviEntry.GetEntry().Name == "Height" {
 					continue
 				}
 
 				indexName := kviEntry.GetEntry().Name
-				indexNameInBytes := []byte(indexName)
 				valuePath := kviEntry.GetEntry().Path
 
-				// if isSliceEntity is true, then this entity is a slice entity
-				// the leading '*' must go away
-				if isSliceEntity {
+				// if entity is either slice or map, the leading '*' must go away
+				if commitTarget.entityType == EntityTypeSlice || commitTarget.entityType == EntityTypeMap {
 					valuePath = valuePath[1:]
 				}
 
-				leafValues, leafValuesErr := getLeafValues(reflect.ValueOf(entity), valuePath)
-
+				leafValues, leafValuesErr := getLeafValues(reflect.ValueOf(commitTarget.data), valuePath)
 				if leafValuesErr != nil {
 					return leafValuesErr
 				}
 
 				for _, leafValue := range leafValues {
-					index, indexErr := kviEntry.ResolveKeyType(leafValue.Interface())
+					indexValue, indexErr := kviEntry.ResolveKeyType(leafValue.Interface())
 
 					if indexErr != nil {
 						return fmt.Errorf(
@@ -138,22 +114,12 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 						)
 					}
 
-					indexKey := utils.BuildIndexedDocumentKey(
-						entityNameInBytes,
-						indexNameInBytes,
-						index,
-						pkInBE,
-					)
-
-					writeBatch.Set(indexKey, nil)
-					// log.Printf("[committer] => %v", indexKey)
+					// commit index
+					if commitErr := commitTarget.commitIndex(commit, indexName, indexValue); commitErr != nil {
+						return commitErr
+					}
 				}
 			}
-		}
-
-		seqReleaseErr := seq.Release()
-		if seqReleaseErr != nil {
-			return fmt.Errorf("sequence release failed")
 		}
 	}
 
@@ -169,6 +135,92 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 	// all good
 	return nil
+}
+
+type commitTarget struct {
+	entityType int
+	pk         []byte
+	data       interface{}
+}
+
+// TODO: don't use reflect somehow
+func flattenCommitTargets(getSequence GetSequenceFunc, v reflect.Value, t reflect.Type) (commitTargets []commitTarget, err error) {
+	switch t.Kind() {
+	case reflect.Slice:
+		length := v.Len()
+		seq, errSeq := getSequence(uint64(length))
+		if errSeq != nil {
+			return nil, errSeq
+		}
+		defer seq.Release()
+
+		commitTargets = make([]commitTarget, length)
+
+		for i := 0; i < v.Len(); i++ {
+			pk, pkErr := seq.Next()
+			if pkErr != nil {
+				return nil, pkErr
+			}
+
+			commitTargets[i] = commitTarget{
+				entityType: EntityTypeSlice,
+				pk:         utils.LeToBe(pk),
+				data:       v.Index(i).Interface(),
+			}
+		}
+	case reflect.Map:
+		length := v.Len()
+		commitTargets = make([]commitTarget, length)
+
+		for i, mapKey := range v.MapKeys() {
+			commitTargets[i] = commitTarget{
+				entityType: EntityTypeMap,
+				pk:         []byte(mapKey.String()),
+				data:       v.MapIndex(mapKey).Interface(),
+			}
+		}
+	default:
+		seq, errSeq := getSequence(uint64(1))
+		if errSeq != nil {
+			return nil, errSeq
+		}
+		defer seq.Release()
+
+		pk, pkErr := seq.Next()
+		if pkErr != nil {
+			return nil, pkErr
+		}
+
+		commitTargets = []commitTarget{
+			{
+				entityType: EntityTypeSingular,
+				pk:         utils.LeToBe(pk),
+				data:       v.Interface(),
+			},
+		}
+	}
+
+	return commitTargets, nil
+}
+
+func (ct commitTarget) commit(commit CommitFunc) error {
+	documentKey := utils.BuildDocumentKey(nil, ct.pk)
+	documentValue, err := msgpack.Marshal(ct.data)
+	if err != nil {
+		return fmt.Errorf("failed to serialize entity")
+	}
+
+	// write document to db
+	return commit(documentKey, documentValue)
+}
+
+func (ct commitTarget) commitIndex(commit CommitFunc, indexName string, indexValue []byte) error {
+	return commit(utils.BuildIndexedDocumentKey(
+		nil,
+		[]byte(indexName),
+		indexValue,
+		ct.pk,
+	), nil)
 }
 
 func getLeafValues(entity reflect.Value, valuePath []string) ([]reflect.Value, error) {
@@ -189,6 +241,12 @@ func _getLeafValues(entity reflect.Value, valuePath []string, values *[]reflect.
 				len := entity.Len()
 				for i := 0; i < len; i++ {
 					if err := _getLeafValues(entity.Index(i), valuePath[1:], values); err != nil {
+						return err
+					}
+				}
+			case reflect.Map:
+				for _, key := range entity.MapKeys() {
+					if err := _getLeafValues(entity.MapIndex(key), valuePath[1:], values); err != nil {
 						return err
 					}
 				}
