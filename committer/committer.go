@@ -55,7 +55,6 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 		// convert some properties to byte beforehand
 		heightInBe := utils.LeToBe(height)
 		var commit CommitFunc = func(key, value []byte) error {
-			fmt.Println(string(utils.ConcatBytes([]byte(entityName), key)))
 			return writeBatch.Set(utils.ConcatBytes([]byte(entityName), key), value)
 		}
 		var getSequence GetSequenceFunc = func(length uint64) (db.Sequence, error) {

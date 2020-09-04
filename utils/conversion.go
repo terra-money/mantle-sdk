@@ -66,14 +66,6 @@ func GetUint64FromWhatever(v interface{}) (uint64, error) {
 	return 0, fmt.Errorf("Value is not convertible to uint64")
 }
 
-func GetInt64FromWhatever(v interface{}) int64 {
-	return v.(int64)
-}
-
-func GetStringFromWhatever(v interface{}) string {
-	return v.(string)
-}
-
 func LeToBe(v uint64) []byte {
 	be := make([]byte, 8)
 	binary.BigEndian.PutUint64(be, v)
