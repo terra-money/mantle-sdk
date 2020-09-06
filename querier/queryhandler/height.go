@@ -75,6 +75,8 @@ func (resolver HeightResolver) Resolve() (QueryHandlerIterator, error) {
 			indexNameInBytes,
 			resolver.prefixEnd,
 		)
+	} else {
+		prefixEnd = prefixStart
 	}
 
 	return NewHeightResolverIterator(
@@ -108,8 +110,13 @@ func NewHeightResolverIterator(entityName, prefixGroup, prefixStart, prefixEnd [
 }
 
 func (resolver *HeightResolverIterator) Valid() bool {
-	return resolver.it.Valid(resolver.prefixStart) ||
-		resolver.it.Valid(resolver.prefixEnd)
+	if len(resolver.prefixEnd) > 0 {
+		return resolver.it.Valid(resolver.prefixStart) ||
+			resolver.it.Valid(resolver.prefixEnd)
+	} else {
+		return resolver.it.Valid(resolver.prefixStart)
+	}
+
 }
 func (resolver *HeightResolverIterator) Next() {
 	resolver.it.Next()
