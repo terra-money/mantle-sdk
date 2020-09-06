@@ -59,10 +59,10 @@ func GenerateGraphResolver(modelType reflect.Type) (*graphql.Field, error) {
 
 			// in this schema resolver, only single object is to be handled.
 			// for list type resolvers, see CreateListSchemaBuilder
-			if args != nil {
+			if args != nil && len(args) != 0 {
 				q, ok := p.Context.Value(utils.QuerierKey).(querier.Querier)
 				if !ok {
-					panic(fmt.Sprintf("Querier is either cleared or not set, in ResolverFunc for %s", entityName))
+					panic(fmt.Errorf("querier is either cleared or not set, in ResolverFunc for %s", entityName))
 				}
 
 				for indexKey, indexParam := range args {

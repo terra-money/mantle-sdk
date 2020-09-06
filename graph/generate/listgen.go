@@ -48,7 +48,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			args := p.Args
 
-			if args != nil {
+			if args != nil && len(args) > 0 {
 				// query
 				q := p.Context.Value(utils.QuerierKey).(querier.Querier)
 
@@ -69,6 +69,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 
 					// for every key found, mark them found
 					keysHashMap := make(map[string]bool)
+
 					for it.Valid() {
 						keysHashMap[string(it.Key())] = true
 						it.Next()

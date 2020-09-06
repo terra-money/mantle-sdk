@@ -239,7 +239,6 @@ func TestCommitter(t *testing.T) {
 
 		for it.Valid(prefix) {
 			docKey := it.DocumentKey()
-
 			keys = append(keys, docKey)
 			it.Next()
 		}
