@@ -5,73 +5,114 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/terra-project/mantle/db/kvindex"
 	"github.com/terra-project/mantle/types"
 )
 
-type TestModel1 struct {
-	Test int
-}
-
-type TestModel2 struct {
-	Test int
-}
-
-type TestModel3 struct {
-	Test struct {
-		Whatever string `mantle:"index=whatever"`
-	}
-}
-
 func TestNewRegistry(t *testing.T) {
-	indexer1 := func(q types.Query, c types.Commit) {}
-	indexer2 := func(q types.Query, c types.Commit) {}
+	// single entity
+	func() {
+		type Entity struct {
+			Foo string
+			Bar struct {
+				Hello  uint64 `mantle:"index"`
+				Mantle string `mantle:"index=custom"`
+			}
+		}
+		indexer := func(q types.Query, c types.Commit) error {
+			return nil
+		}
 
-	models := []interface{}{
-		(*TestModel1)(nil),
-		(*TestModel2)(nil),
-		(*TestModel3)(nil),
-	}
+		registry := NewRegistry([]types.IndexerRegisterer{
+			func(register types.Register) {
+				register(
+					indexer,
+					reflect.TypeOf((*Entity)(nil)),
+				)
+			},
+		})
 
-	testIndexers := []types.IndexerRegisterer{
-		func(register types.Register) {
-			register(
-				indexer1,
-				reflect.TypeOf(models[0]),
-			)
-		},
-		func(register types.Register) {
-			register(
-				indexer2,
-				reflect.TypeOf(models[1]),
-				reflect.TypeOf(models[2]),
-			)
-		},
-	}
+		assert.Equal(t, 1, len(registry.Indexers))
+		assert.Equal(t, 1, len(registry.IndexerOutputs))
+		assert.Equal(t, 1, len(registry.Models))
+		assert.Equal(t, 2, len(registry.KVIndexMap)) // always includes BaseState
 
-	registry := NewRegistry(testIndexers)
+		kvi, ok := registry.KVIndexMap["Entity"]
+		assert.True(t, ok)
 
-	assert.Equal(t, len(registry.Indexers), 2)
-	assert.Equal(t, len(registry.Models), 3)
-	assert.Equal(t, len(registry.KVIndexMap), 3)
+		assert.NotNil(t, kvi.GetIndexEntry("Hello"))
+		assert.NotNil(t, kvi.GetIndexEntry("custom"))
+	}()
 
-	// check models
-	for i, modelType := range registry.Models {
-		assert.Equal(t, modelType, reflect.TypeOf(models[i]))
-	}
+	// slice entity
+	func() {
+		type Entity struct {
+			Foo string
+			Bar struct {
+				Hello  uint64 `mantle:"index"`
+				Mantle string `mantle:"index=custom"`
+			}
+		}
+		type Entities []Entity
 
-	// check kvindexMap
-	// testmodel1,2 don't have any indexes so internals are empty
-	assert.Equal(t, registry.KVIndexMap["TestModel1"], kvindex.NewKVIndex(reflect.TypeOf(models[0])))
-	assert.False(t, registry.KVIndexMap["TestModel1"].HasIndex())
-	assert.Equal(t, registry.KVIndexMap["TestModel2"], kvindex.NewKVIndex(reflect.TypeOf(models[1])))
-	assert.False(t, registry.KVIndexMap["TestModel2"].HasIndex())
+		indexer := func(q types.Query, c types.Commit) error {
+			return nil
+		}
 
-	tm3r, err := registry.KVIndexMap["TestModel3"].BuildIndexKey("whatever", "William", []byte("terra"))
-	assert.Nil(t, err)
-	tm3a, err := kvindex.NewKVIndex(reflect.TypeOf(models[2])).BuildIndexKey("whatever", "William", []byte("terra"))
-	assert.Nil(t, err)
-	// testmodel3 has index and
-	assert.Equal(t, tm3r, tm3a)
+		registry := NewRegistry([]types.IndexerRegisterer{
+			func(register types.Register) {
+				register(
+					indexer,
+					reflect.TypeOf((*Entities)(nil)),
+				)
+			},
+		})
+
+		assert.Equal(t, 1, len(registry.Indexers))
+		assert.Equal(t, 1, len(registry.IndexerOutputs))
+		assert.Equal(t, 1, len(registry.Models))
+		assert.Equal(t, 2, len(registry.KVIndexMap)) // always includes BaseState
+
+		kvi, ok := registry.KVIndexMap["Entities"]
+		assert.True(t, ok)
+
+		assert.NotNil(t, kvi.GetIndexEntry("Hello"))
+		assert.NotNil(t, kvi.GetIndexEntry("custom"))
+	}()
+
+	// map entity
+	func() {
+		type Entity struct {
+			Foo string
+			Bar struct {
+				Hello  uint64 `mantle:"index"`
+				Mantle string `mantle:"index=custom"`
+			}
+		}
+		type Entities map[string]Entity
+
+		indexer := func(q types.Query, c types.Commit) error {
+			return nil
+		}
+
+		registry := NewRegistry([]types.IndexerRegisterer{
+			func(register types.Register) {
+				register(
+					indexer,
+					reflect.TypeOf((*Entities)(nil)),
+				)
+			},
+		})
+
+		assert.Equal(t, 1, len(registry.Indexers))
+		assert.Equal(t, 1, len(registry.IndexerOutputs))
+		assert.Equal(t, 1, len(registry.Models))
+		assert.Equal(t, 2, len(registry.KVIndexMap)) // always includes BaseState
+
+		kvi, ok := registry.KVIndexMap["Entities"]
+		assert.True(t, ok)
+
+		assert.NotNil(t, kvi.GetIndexEntry("Hello"))
+		assert.NotNil(t, kvi.GetIndexEntry("custom"))
+	}()
 
 }

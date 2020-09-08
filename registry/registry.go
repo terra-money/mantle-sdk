@@ -8,18 +8,17 @@ import (
 )
 
 type Registry struct {
-	Indexers   []types.Indexer
+	Indexers       []types.Indexer
 	IndexerOutputs [][]types.ModelType
-	Models     []types.ModelType
-	KVIndexMap kvindex.KVIndexMap
+	Models         []types.ModelType
+	KVIndexMap     kvindex.KVIndexMap
 }
-
 
 func NewRegistry(indexRegisterers []types.IndexerRegisterer) Registry {
 	registry := Registry{
-		Indexers: []types.Indexer{},
+		Indexers:       []types.Indexer{},
 		IndexerOutputs: [][]types.ModelType{},
-		Models:   []types.ModelType{},
+		Models:         []types.ModelType{},
 	}
 
 	// add BaseState to kvindexes
@@ -28,7 +27,7 @@ func NewRegistry(indexRegisterers []types.IndexerRegisterer) Registry {
 	}
 
 	r := func(indexer types.Indexer, models ...types.ModelType) {
-		actualModels := []types.ModelType{}
+		var actualModels []types.ModelType
 		for _, model := range models {
 			actualModels = append(actualModels, utils.GetType(model))
 		}

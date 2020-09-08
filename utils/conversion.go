@@ -34,9 +34,10 @@ func GetGraphQLType(k reflect.Kind) graphql.Type {
 }
 
 func GetType(t reflect.Type) reflect.Type {
-	if t.Kind() == reflect.Ptr {
+	switch t.Kind() {
+	case reflect.Ptr:
 		return GetType(t.Elem())
-	} else {
+	default:
 		return t
 	}
 }
