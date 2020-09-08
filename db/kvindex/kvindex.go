@@ -209,7 +209,7 @@ func createIndexMapIter(t reflect.Type, indexMapSlice *[]IndexMapEntry, path []s
 		for i := 0; i < t.NumField(); i++ {
 			ft := t.Field(i)
 
-			indexName, indexed := ft.Tag.Lookup(utils.MantleKeyTag)
+			indexName, indexed := ft.Tag.Lookup(utils.MantleIndexTag)
 
 			// disallow if
 			// - another struct appears as a direct child of this struct, 뭉

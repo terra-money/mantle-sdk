@@ -14,8 +14,8 @@ func TestNewRegistry(t *testing.T) {
 		type Entity struct {
 			Foo string
 			Bar struct {
-				Hello  uint64 `mantle:"index"`
-				Mantle string `mantle:"index=custom"`
+				Hello  uint64 `index:"hello"`
+				Mantle string `index:"custom"`
 			}
 		}
 		indexer := func(q types.Query, c types.Commit) error {
@@ -39,7 +39,7 @@ func TestNewRegistry(t *testing.T) {
 		kvi, ok := registry.KVIndexMap["Entity"]
 		assert.True(t, ok)
 
-		assert.NotNil(t, kvi.GetIndexEntry("Hello"))
+		assert.NotNil(t, kvi.GetIndexEntry("hello"))
 		assert.NotNil(t, kvi.GetIndexEntry("custom"))
 	}()
 
@@ -48,8 +48,8 @@ func TestNewRegistry(t *testing.T) {
 		type Entity struct {
 			Foo string
 			Bar struct {
-				Hello  uint64 `mantle:"index"`
-				Mantle string `mantle:"index=custom"`
+				Hello  uint64 `index:"hello"`
+				Mantle string `index:"custom"`
 			}
 		}
 		type Entities []Entity
@@ -75,7 +75,7 @@ func TestNewRegistry(t *testing.T) {
 		kvi, ok := registry.KVIndexMap["Entities"]
 		assert.True(t, ok)
 
-		assert.NotNil(t, kvi.GetIndexEntry("Hello"))
+		assert.NotNil(t, kvi.GetIndexEntry("hello"))
 		assert.NotNil(t, kvi.GetIndexEntry("custom"))
 	}()
 
@@ -84,8 +84,8 @@ func TestNewRegistry(t *testing.T) {
 		type Entity struct {
 			Foo string
 			Bar struct {
-				Hello  uint64 `mantle:"index"`
-				Mantle string `mantle:"index=custom"`
+				Hello  uint64 `index:"hello"`
+				Mantle string `index:"custom""`
 			}
 		}
 		type Entities map[string]Entity
@@ -111,7 +111,7 @@ func TestNewRegistry(t *testing.T) {
 		kvi, ok := registry.KVIndexMap["Entities"]
 		assert.True(t, ok)
 
-		assert.NotNil(t, kvi.GetIndexEntry("Hello"))
+		assert.NotNil(t, kvi.GetIndexEntry("hello"))
 		assert.NotNil(t, kvi.GetIndexEntry("custom"))
 	}()
 
