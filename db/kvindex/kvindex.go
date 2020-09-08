@@ -3,12 +3,10 @@ package kvindex
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/terra-project/mantle/utils"
 	"reflect"
 	"regexp"
 	"strconv"
-	"strings"
-
-	"github.com/terra-project/mantle/utils"
 )
 
 const is64Bit = uint64(^uintptr(0)) == ^uint64(0)
@@ -72,10 +70,10 @@ func (kvi *KVIndex) GetPrefix(indexName string) []byte {
 	}
 
 	entityName := kvi.entityName
-
-	newPrefix := []byte{}
-	newPrefix = append(newPrefix, []byte(entityName)...)
-	newPrefix = append(newPrefix, []byte(indexName)...)
+	newPrefix := utils.ConcatBytes(
+		[]byte(entityName),
+		[]byte(indexName),
+	)
 
 	return newPrefix
 }
@@ -145,7 +143,7 @@ func createSecondaryIndexGetter(k reflect.Kind) KVIndexKeyTypeResolver {
 			key := make([]byte, 8)
 			n, err := strconv.ParseInt(fmt.Sprintf("%s", val), 10, 64)
 			if err != nil {
-				return nil, fmt.Errorf("Index type conversion failed. Expected Int variants, got %s", reflect.TypeOf(val).Kind().String())
+				return nil, fmt.Errorf("index type conversion failed. Expected Int variants, got %s", reflect.TypeOf(val).Kind().String())
 			}
 			binary.BigEndian.PutUint64(key, uint64(n))
 			return key, nil
@@ -186,8 +184,6 @@ func (kvimap KVIndexEntry) ResolveKeyType(key interface{}) ([]byte, error) {
 }
 
 ////////////////////////////////////
-const KeyIndex = "index"
-
 type IndexMapEntry struct {
 	Type reflect.Kind
 	Name string
@@ -196,7 +192,7 @@ type IndexMapEntry struct {
 
 func createIndexMap(t reflect.Type) []IndexMapEntry {
 	t = utils.GetType(t)
-	indexMapSlice := []IndexMapEntry{}
+	var indexMapSlice []IndexMapEntry
 
 	createIndexMapIter(t, &indexMapSlice, []string{}, false, "")
 
@@ -207,17 +203,13 @@ func createIndexMapIter(t reflect.Type, indexMapSlice *[]IndexMapEntry, path []s
 	k := t.Kind()
 
 	switch k {
-	case reflect.Array, reflect.Slice:
+	case reflect.Array, reflect.Slice, reflect.Map:
 		createIndexMapIter(t.Elem(), indexMapSlice, append(path, "*"), isIndexed, "")
-	case reflect.Ptr:
-		createIndexMapIter(t.Elem(), indexMapSlice, path, isIndexed, "")
 	case reflect.Struct:
 		for i := 0; i < t.NumField(); i++ {
 			ft := t.Field(i)
 
-			tags, _ := ft.Tag.Lookup(utils.MantleKeyTag)
-			tagsSplit := strings.Split(tags, ",")
-			indexTag, indexed := sliceContainsString(tagsSplit, KeyIndex)
+			indexName, indexed := ft.Tag.Lookup(utils.MantleKeyTag)
 
 			// disallow if
 			// - another struct appears as a direct child of this struct, 뭉
@@ -226,8 +218,11 @@ func createIndexMapIter(t reflect.Type, indexMapSlice *[]IndexMapEntry, path []s
 				panic(fmt.Errorf("Structs are disallowed for kvindex: %s", path))
 			}
 
-			indexName := ft.Name
-			fmt.Sscanf(indexTag, "index=%s", &indexName)
+			if indexName == "index" {
+				indexName = ft.Name
+			} else {
+				fmt.Sscanf(indexName, "index=%s", &indexName)
+			}
 
 			createIndexMapIter(ft.Type, indexMapSlice, append(path, ft.Name), indexed, indexName)
 		}
@@ -254,14 +249,4 @@ func createIndexMapIter(t reflect.Type, indexMapSlice *[]IndexMapEntry, path []s
 		*indexMapSlice = append(*indexMapSlice, entry)
 	}
 
-}
-
-func sliceContainsString(haystack []string, needle string) (string, bool) {
-	for i := 0; i < len(haystack); i++ {
-		if strings.Contains(haystack[i], needle) {
-			return haystack[i], true
-		}
-	}
-
-	return "", false
 }

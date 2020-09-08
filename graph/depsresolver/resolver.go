@@ -98,9 +98,7 @@ func getEvent(entity interface{}) reflect.Type {
 	switch t.Kind() {
 	case reflect.Ptr:
 		return t.Elem()
-	case reflect.Struct:
-		return t
-	case reflect.Slice:
+	case reflect.Struct, reflect.Slice, reflect.Map:
 		return t
 	default:
 		panic("Invalid type entity provided")
