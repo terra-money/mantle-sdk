@@ -125,7 +125,7 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 				io.WriteString(w, ",")
 			}
 
-			value, ok := f.Tag.Lookup("mantle")
+			value, ok := f.Tag.Lookup(utils.MantleQueryTag)
 			inlineField := f.Anonymous && !ok
 			if !inlineField {
 				if ok {
