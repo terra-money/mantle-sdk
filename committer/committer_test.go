@@ -13,7 +13,7 @@ import (
 )
 
 func TestCommitter(t *testing.T) {
-	// test simple struct
+	// sim simple struct
 	func() {
 		type TestStruct struct {
 			Foo string
@@ -77,7 +77,7 @@ func TestCommitter(t *testing.T) {
 		assert.Nil(t, valErr)
 	}()
 
-	// test slice struct
+	// sim slice struct
 	func() {
 		type TestSliceStruct []struct {
 			Foo string
@@ -100,7 +100,7 @@ func TestCommitter(t *testing.T) {
 				Foo: "foo",
 				Bar: "Bar1",
 			},
-			// test overlap as well
+			// sim overlap as well
 			{
 				Foo: "foo",
 				Bar: "Bar1",
@@ -163,7 +163,7 @@ func TestCommitter(t *testing.T) {
 
 	}()
 
-	// test map struct
+	// sim map struct
 	func() {
 		type Entity struct {
 			Foo string
@@ -188,7 +188,7 @@ func TestCommitter(t *testing.T) {
 				Foo: "foo",
 				Bar: "Bar1",
 			},
-			// test overlap as well
+			// sim overlap as well
 			docKeys[1]: {
 				Foo: "foo",
 				Bar: "Bar1",

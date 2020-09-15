@@ -25,12 +25,6 @@ func NewCommitter(
 	}
 }
 
-const (
-	EntityTypeSingular = 0
-	EntityTypeSlice    = 1
-	EntityTypeMap      = 2
-)
-
 type (
 	GetSequenceFunc func(length uint64) (db.Sequence, error)
 	CommitFunc      func(key, data []byte) error
@@ -45,25 +39,24 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 	for _, rawEntity := range entities {
 		v := reflect.ValueOf(rawEntity)
 		t := utils.GetType(v.Type())
-		kvIndex, ok := committer.kvIndexMap[t.Name()]
+		entityName := t.Name()
+
+		kvIndex, ok := committer.kvIndexMap[entityName]
 		if !ok {
 			return fmt.Errorf("Unknown Entity committed, entityName=%s", t.Name())
 		}
-		entityName := t.Name()
-		kvIndexEntries := kvIndex.GetEntries()
+		kvIndexEntries := kvIndex.Entries()
 
 		// convert some properties to byte beforehand
 		heightInBe := utils.LeToBe(height)
 		var commit CommitFunc = func(key, value []byte) error {
 			return writeBatch.Set(utils.ConcatBytes([]byte(entityName), key), value)
 		}
-		var getSequence GetSequenceFunc = func(length uint64) (db.Sequence, error) {
-			return committer.db.GetSequence([]byte(t.Name()), length)
-		}
+		var getSequence = NewSequenceGenerator(entityName, kvIndex, committer.db)
 
 		// in case of slice entity, the leading index path must be adjusted (* has to go)
 		// -- flag for that
-		commitTargets, flattenErr := flattenCommitTargets(getSequence, v, t)
+		commitTargets, flattenErr := flattenCommitTargets(getSequence, v)
 		if flattenErr != nil {
 			return flattenErr
 		}
@@ -83,37 +76,36 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 			// commit all indexes
 			for _, kviEntry := range kvIndexEntries {
 				// skip Height
-				if kviEntry.GetEntry().Name == "Height" {
+				if kviEntry.Name() == "Height" {
 					continue
 				}
 
-				indexName := kviEntry.GetEntry().Name
-				valuePath := kviEntry.GetEntry().Path
+				indexName := kviEntry.Name()
 
-				// if entity is either slice or map, the leading '*' must go away
-				if commitTarget.entityType == EntityTypeSlice || commitTarget.entityType == EntityTypeMap {
-					valuePath = valuePath[1:]
-				}
+				//// if entity is either slice or map, the leading '*' must go away
+				//if commitTarget.entityType == EntityTypeSlice {
+				//	valuePath = valuePath[1:]
+				//}
 
-				leafValues, leafValuesErr := getLeafValues(reflect.ValueOf(commitTarget.data), valuePath)
+				leafValues, leafValuesErr := kviEntry.ResolveIndexKeySingle(commitTarget.data)
 				if leafValuesErr != nil {
 					return leafValuesErr
 				}
 
 				for _, leafValue := range leafValues {
-					indexValue, indexErr := kviEntry.ResolveKeyType(leafValue.Interface())
+					// commit index
+					indexValue, indexValueErr := utils.ConvertToLexicographicBytes(leafValue)
 
-					if indexErr != nil {
+					if indexValueErr != nil {
 						return fmt.Errorf(
 							"index creation failed due to unmatching index key type, entityName=%s, indexName=%s, expectedIndexKeyType=%s, actual=%s",
-							kviEntry.GetEntityName(),
-							kviEntry.GetEntry().Name,
-							kviEntry.GetEntry().Type.String(),
-							leafValue.Kind().String(),
+							entityName,
+							kviEntry.Name(),
+							kviEntry.Type().Name(),
+							reflect.TypeOf(indexValue).String(),
 						)
 					}
 
-					// commit index
 					if commitErr := commitTarget.commitIndex(commit, indexName, indexValue); commitErr != nil {
 						return commitErr
 					}
@@ -137,65 +129,48 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 }
 
 type commitTarget struct {
-	entityType int
-	pk         []byte
-	data       interface{}
+	pk   []byte
+	data interface{}
 }
 
 // TODO: don't use reflect somehow
-func flattenCommitTargets(getSequence GetSequenceFunc, v reflect.Value, t reflect.Type) (commitTargets []commitTarget, err error) {
-	switch t.Kind() {
+func flattenCommitTargets(
+	getSequence sequenceGetter,
+	v reflect.Value,
+) (commitTargets []commitTarget, err error) {
+	// create sequencer
+	nextSeq, errSeq := getSequence(v.Interface())
+	if errSeq != nil {
+		return nil, errSeq
+	}
+
+	// flatten entities
+	var entitiesInterface []interface{}
+	switch v.Type().Kind() {
 	case reflect.Slice:
-		length := v.Len()
-		seq, errSeq := getSequence(uint64(length))
-		if errSeq != nil {
-			return nil, errSeq
-		}
-		defer seq.Release()
-
-		commitTargets = make([]commitTarget, length)
-
-		for i := 0; i < v.Len(); i++ {
-			pk, pkErr := seq.Next()
-			if pkErr != nil {
-				return nil, pkErr
-			}
-
-			commitTargets[i] = commitTarget{
-				entityType: EntityTypeSlice,
-				pk:         utils.LeToBe(pk),
-				data:       v.Index(i).Interface(),
-			}
-		}
-	case reflect.Map:
-		length := v.Len()
-		commitTargets = make([]commitTarget, length)
-
-		for i, mapKey := range v.MapKeys() {
-			commitTargets[i] = commitTarget{
-				entityType: EntityTypeMap,
-				pk:         []byte(mapKey.String()),
-				data:       v.MapIndex(mapKey).Interface(),
-			}
+		len := v.Len()
+		entitiesInterface = make([]interface{}, len)
+		for i := 0; i < len; i++ {
+			entitiesInterface[i] = v.Index(i).Interface()
 		}
 	default:
-		seq, errSeq := getSequence(uint64(1))
-		if errSeq != nil {
-			return nil, errSeq
-		}
-		defer seq.Release()
+		entitiesInterface = make([]interface{}, 1)
+		entitiesInterface[0] = v.Interface()
+	}
 
-		pk, pkErr := seq.Next()
+	// make commit targets
+	length := len(entitiesInterface)
+	commitTargets = make([]commitTarget, length)
+
+	for i := 0; i < length; i++ {
+		pk, pkErr := nextSeq()
 		if pkErr != nil {
 			return nil, pkErr
 		}
 
-		commitTargets = []commitTarget{
-			{
-				entityType: EntityTypeSingular,
-				pk:         utils.LeToBe(pk),
-				data:       v.Interface(),
-			},
+		commitTargets[i] = commitTarget{
+			pk:   pk,
+			data: entitiesInterface[i],
 		}
 	}
 
@@ -222,42 +197,56 @@ func (ct commitTarget) commitIndex(commit CommitFunc, indexName string, indexVal
 	), nil)
 }
 
-func getLeafValues(entity reflect.Value, valuePath []string) ([]reflect.Value, error) {
-	values := make([]reflect.Value, 0)
-	if err := _getLeafValues(entity, valuePath, &values); err != nil {
-		return nil, err
-	}
+//
+type sequenceGetter func(entity interface{}) (sequenceNext, error)
+type sequenceNext func() ([]byte, error)
 
-	return values, nil
-}
-
-func _getLeafValues(entity reflect.Value, valuePath []string, values *[]reflect.Value) error {
-	if len(valuePath) > 0 {
-		currentPath := valuePath[0]
-		if currentPath == "*" {
-			switch entity.Type().Kind() {
-			case reflect.Slice, reflect.Array:
-				len := entity.Len()
-				for i := 0; i < len; i++ {
-					if err := _getLeafValues(entity.Index(i), valuePath[1:], values); err != nil {
-						return err
-					}
-				}
-			case reflect.Map:
-				for _, key := range entity.MapKeys() {
-					if err := _getLeafValues(entity.MapIndex(key), valuePath[1:], values); err != nil {
-						return err
-					}
-				}
-			default:
-				return fmt.Errorf("entity is not slice yet path * is given")
+func NewSequenceGenerator(modelName string, kvindex *kvindex.KVIndex, persistence db.DB) sequenceGetter {
+	// if primary tag is set
+	if kvindex.IsPrimaryKeyedModel() {
+		return func(entity interface{}) (sequenceNext, error) {
+			hashKeys, hashKeysErr := kvindex.ResolvePrimaryKey(entity)
+			if hashKeysErr != nil {
+				return nil, hashKeysErr
 			}
-		} else {
-			return _getLeafValues(entity.FieldByName(currentPath), valuePath[1:], values)
+			hashIdx := 0
+
+			return func() ([]byte, error) {
+				key, err := utils.ConvertToLexicographicBytes(hashKeys[hashIdx])
+				if err != nil {
+					return nil, err
+				}
+
+				hashIdx++
+
+				return key, nil
+			}, nil
 		}
 	}
 
-	*values = append(*values, entity)
+	//
+	return func(entity interface{}) (sequenceNext, error) {
+		v := reflect.ValueOf(entity)
+		t := v.Type()
 
-	return nil
+		var len uint64 = 1
+
+		//
+		if t.Kind() == reflect.Slice {
+			len = uint64(v.Len())
+		}
+
+		sequencer, sequencerErr := persistence.GetSequence([]byte(t.Name()), len)
+		if sequencerErr != nil {
+			return nil, sequencerErr
+		}
+
+		return func() ([]byte, error) {
+			seq, err := sequencer.Next()
+			if err != nil {
+				return nil, err
+			}
+			return utils.LeToBe(seq), nil
+		}, nil
+	}
 }
