@@ -16,7 +16,7 @@ import (
 	TerraApp "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
 	// wasmconfig "github.com/terra-project/core/x/wasm/config"
-	types "github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
 )
 

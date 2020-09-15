@@ -14,7 +14,7 @@ import (
 	"github.com/terra-project/mantle/graph/schemabuilders"
 	"github.com/terra-project/mantle/indexer"
 	"github.com/terra-project/mantle/querier"
-	"github.com/terra-project/mantle/registry"
+	reg "github.com/terra-project/mantle/registry"
 	"github.com/terra-project/mantle/subscriber"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
@@ -37,30 +37,29 @@ type SyncConfiguration struct {
 
 func NewMantle(
 	db db.DB,
-	transactionalAppState bool,
-	genesisPath string,
-	indexers []types.IndexerRegisterer,
+	genesis *utils.GenesisDoc,
+	indexers ...types.IndexerRegisterer,
 ) *Mantle {
-	genesis := utils.GenesisDocFromFile(genesisPath)
-
 	// create new terra app with postgres-patched KVStore
 	app := NewApp(db.GetCosmosAdapter(), genesis)
 
 	// create an auxiliary terra app lifecycle
-	lc := NewLifecycle(app, transactionalAppState)
+	lc := NewLifecycle(app, false)
 
 	// gather outputs of indexer registry
-	registry := registry.NewRegistry(indexers)
+	registry := reg.NewRegistry(indexers)
 
 	// initialize gql
 	depsResolverInstance := depsresolver.NewDepsResolver()
 	querierInstance := querier.NewQuerier(db, registry.KVIndexMap)
+
+	// instantiate gql
 	gqlInstance := graph.NewGraphQLInstance(
 		depsResolverInstance,
 		querierInstance,
 		schemabuilders.CreateABCIStubSchemaBuilder(app.GetApp()),
-		schemabuilders.CreateModelSchemaBuilder(reflect.TypeOf((*types.BaseState)(nil))),
-		schemabuilders.CreateModelSchemaBuilder(registry.Models...),
+		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BaseState)(nil))),
+		schemabuilders.CreateModelSchemaBuilder(registry.KVIndexMap, registry.Models...),
 	)
 
 	// initialize committer
@@ -70,7 +69,7 @@ func NewMantle(
 	indexerInstance := indexer.NewIndexerBaseInstance(
 		registry.Indexers,
 		registry.IndexerOutputs,
-		gqlInstance.ResolveQuery,
+		gqlInstance.Query,
 		gqlInstance.Commit,
 	)
 
@@ -86,12 +85,12 @@ func NewMantle(
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	currentBlockHeight := mantle.app.GetApp().LastBlockHeight()
-	remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
-	if err != nil {
-		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
-	}
+	// remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
+	// if err != nil {
+	// 	panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
+	// }
 
-	remoteHeight := remoteBlock.Header.Height
+	remoteHeight := int64(23)
 
 	if remoteHeight <= currentBlockHeight {
 		log.Printf("[mantle] Sync unnecessary, remoteHeight=%d, currentBlockHeight=%d", remoteHeight, currentBlockHeight)
@@ -108,7 +107,7 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 		log.Printf("[mantle] Syncing block(%d)", remoteBlock.Header.Height)
 
 		// run round
-		mantle.round(remoteBlock)
+		mantle.Inject(remoteBlock)
 
 		syncingBlockHeight++
 	}
@@ -126,7 +125,7 @@ func (mantle *Mantle) Start() {
 
 }
 
-func (mantle *Mantle) round(block *types.Block) {
+func (mantle *Mantle) Inject(block *types.Block) {
 	height := block.Header.Height
 
 	tStart := time.Now()
