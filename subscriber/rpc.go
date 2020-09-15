@@ -16,9 +16,9 @@ type (
 		initialized bool
 	}
 	Request struct {
-		JSONRPC string `json:"jsonrpc"`
-		Method  string `json:"method"`
-		ID      int    `json:"id"`
+		JSONRPC string                    `json:"jsonrpc"`
+		Method  string                    `json:"method"`
+		ID      int                       `json:"id"`
 		Params  SubscriptionJsonRpcParams `json:"params"`
 	}
 	SubscriptionJsonRpcParams struct {
@@ -110,7 +110,6 @@ func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
 		if err != nil {
 			panic(err)
 		}
-
 
 		// unmarshaling to BlockEvent failed, handle me
 		blockEvent := types.Block{}
