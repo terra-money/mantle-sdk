@@ -34,7 +34,7 @@ func TestRangeResolver(t *testing.T) {
 		rr, err = NewRangeResolver(db, kvIndex, entityName, "Foo_range", "hello")
 		assert.Nil(t, err)
 
-		rr, err = NewRangeResolver(db, kvIndex, entityName, "Foo_range", []string{"1","2","3"})
+		rr, err = NewRangeResolver(db, kvIndex, entityName, "Foo_range", []string{"1", "2", "3"})
 		assert.Nil(t, err)
 	}()
 
@@ -50,7 +50,7 @@ func TestRangeResolver(t *testing.T) {
 		)
 		assert.Nil(t, err)
 
-		_ , err = rr.Resolve()
+		_, err = rr.Resolve()
 		assert.NotNil(t, err)
 	}()
 
@@ -58,9 +58,9 @@ func TestRangeResolver(t *testing.T) {
 	func() {
 		committer := committer.NewCommitter(db, kvindex.NewKVIndexMap(kvIndex))
 		// generate some testdata
-		for i:=0; i<26; i++ {
+		for i := 0; i < 26; i++ {
 			testEntity := TestEntity{
-				Foo: string(rune('a'+i)),
+				Foo: string(rune('a' + i)),
 				Bar: uint64(i),
 			}
 

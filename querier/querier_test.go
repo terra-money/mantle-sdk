@@ -17,8 +17,7 @@ type TestStruct struct {
 	}
 }
 
-
-// TestNewQuerier we only test upto whether queryhandlers are created.
+// TestNewQuerier we only sim upto whether queryhandlers are created.
 // detailed operation of queryhandlers are tested per handler (in queryhandler directory)
 // EVERYTHING in handlers must be tested
 var handlers = handlersList
@@ -38,7 +37,7 @@ func TestNewQuerier(t *testing.T) {
 	}()
 
 	// fails if no matching handler is found
-	// this is very hard to test because the rule for "no matching query handler" is a little arbitrary.
+	// this is very hard to sim because the rule for "no matching query handler" is a little arbitrary.
 	// seek resolver might pick this up
 	func() {
 		handler, err := querier.Build("TestStruct", "NonExistentIndex", "whateverQuery")
@@ -46,7 +45,7 @@ func TestNewQuerier(t *testing.T) {
 		assert.NotNil(t, err)
 	}()
 
-	// Range resolver (detailed test in queryhandler/range)
+	// Range resolver (detailed sim in queryhandler/range)
 	// - has _range suffix
 	// - indexOption is a slice and the length is exactly 2
 	// - otherwise error

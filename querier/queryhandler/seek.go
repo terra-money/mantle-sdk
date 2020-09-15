@@ -11,7 +11,7 @@ import (
 
 type SeekResolver struct {
 	db           db.DB
-	kvindexEntry *kvindex.KVIndexEntry
+	kvindexEntry *kvindex.IndexEntry
 	entityName   string
 	indexName    string
 	seekKey      []byte
@@ -25,15 +25,15 @@ func NewSeekResolver(
 	indexName string,
 	indexOption interface{},
 ) (QueryHandler, error) {
-	kvIndexEntry := kvIndex.GetIndexEntry(indexName)
-	if kvIndexEntry == nil {
+	kvIndexEntry, kvIndexEntryExists := kvIndex.Entry(indexName)
+	if !kvIndexEntryExists {
 		return nil, fmt.Errorf("acquiring kvIndexEntry failed, queryHandler=seek, entityName=%s, indexName=%s", entityName, indexName)
 	}
 
-	seekKey, err := kvIndexEntry.ResolveKeyType(indexOption)
+	seekKey, seekKeyErr := utils.ConvertToLexicographicBytes(indexOption)
 
 	// if ResolveKeyType fails, that means
-	if err != nil {
+	if seekKeyErr != nil {
 		return nil, fmt.Errorf("Hash index is given but the given option can't be used for index %s, entity=%s, indexOptionType=%s",
 			indexName,
 			entityName,
@@ -42,7 +42,7 @@ func NewSeekResolver(
 
 	return &SeekResolver{
 		db:           db,
-		kvindexEntry: kvIndexEntry,
+		kvindexEntry: &kvIndexEntry,
 		entityName:   entityName,
 		indexName:    indexName,
 		seekKey:      seekKey,

@@ -12,7 +12,7 @@ import (
 
 type RangeResolver struct {
 	db           db.DB
-	kvindexEntry *kvindex.KVIndexEntry
+	kvindexEntry *kvindex.IndexEntry
 	entityName   string
 	indexName    string
 	startKey     interface{}
@@ -34,14 +34,14 @@ func NewRangeResolver(
 		return nil, nil
 	}
 
-	kvIndexEntry := kvIndex.GetIndexEntry(indexName[:len(indexName)-6])
-	if kvIndexEntry == nil {
+	kvIndexEntry, kvIndexEntryExists := kvIndex.Entry(indexName[:len(indexName)-6])
+	if !kvIndexEntryExists {
 		return nil, fmt.Errorf("acquiring kvIndexEntry failed, entityName=%s, indexName=%s", entityName, indexName)
 	}
 
 	return RangeResolver{
 		db:           db,
-		kvindexEntry: kvIndexEntry,
+		kvindexEntry: &kvIndexEntry,
 		entityName:   entityName,
 		indexName:    indexName,
 		startKey:     indexOptionSlice[0],
@@ -51,7 +51,7 @@ func NewRangeResolver(
 
 func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	kviEntry := resolver.kvindexEntry
-	startKey, err := kviEntry.ResolveKeyType(resolver.startKey)
+	startKey, err := utils.ConvertToLexicographicBytes(resolver.startKey)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"range parameter `start` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s. %s",
@@ -62,7 +62,7 @@ func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 		)
 	}
 
-	endKey, err := kviEntry.ResolveKeyType(resolver.endKey)
+	endKey, err := utils.ConvertToLexicographicBytes(resolver.endKey)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"range parameter `end` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s",
@@ -73,10 +73,14 @@ func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	}
 
 	db := resolver.db
-	indexName := kviEntry.GetEntry().Name
-	entityName := kviEntry.GetEntityName()
+	indexName := kviEntry.Name()
+	entityName := resolver.entityName
 	it := db.IndexIterator(
-		append([]byte(entityName), append([]byte(indexName), startKey...)...),
+		utils.BuildIndexIteratorPrefix(
+			[]byte(entityName),
+			[]byte(indexName),
+			startKey,
+		),
 		resolver.reverse,
 	)
 
@@ -85,10 +89,10 @@ func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 
 type RangeResolverIterator struct {
 	entityName string
-	indexName	string
-	endKey []byte
-	it db.Iterator
-	prefix []byte
+	indexName  string
+	endKey     []byte
+	it         db.Iterator
+	prefix     []byte
 }
 
 func NewRangeResolverIterator(
@@ -99,10 +103,10 @@ func NewRangeResolverIterator(
 ) *RangeResolverIterator {
 	return &RangeResolverIterator{
 		entityName: entityName,
-		indexName: indexName,
-		endKey: endKey,
-		it: it,
-		prefix: utils.ConcatBytes([]byte(entityName), []byte(indexName)),
+		indexName:  indexName,
+		endKey:     endKey,
+		it:         it,
+		prefix:     utils.ConcatBytes([]byte(entityName), []byte(indexName)),
 	}
 }
 
