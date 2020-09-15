@@ -3,10 +3,9 @@ package utils
 import (
 	"encoding/binary"
 	"fmt"
-	"reflect"
-	"strconv"
-
 	"github.com/graphql-go/graphql"
+	"math"
+	"reflect"
 )
 
 var goTypeToGraphqlType = map[string]graphql.Type{
@@ -49,22 +48,12 @@ func GetValue(v reflect.Value) reflect.Value {
 	return v
 }
 
-func GetUint64FromWhatever(v interface{}) (uint64, error) {
-	k := reflect.TypeOf(v).Kind()
-
-	switch k {
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		ret, _ := strconv.ParseUint(fmt.Sprintf("%d", v), 10, 64)
-		return ret, nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		ret, _ := strconv.ParseUint(fmt.Sprintf("%d", v), 10, 64)
-		return ret, nil
-	case reflect.String:
-		ret, _ := strconv.ParseUint(v.(string), 10, 64)
-		return ret, nil
+func IntToUintLexicographic(data int64) uint64 {
+	if data >= 0 {
+		return uint64(data) + uint64(math.MaxInt64)
+	} else {
+		return uint64(data + math.MaxInt64)
 	}
-
-	return 0, fmt.Errorf("Value is not convertible to uint64")
 }
 
 func LeToBe(v uint64) []byte {
@@ -77,4 +66,33 @@ func BeToLe(v uint64) []byte {
 	le := make([]byte, 8)
 	binary.LittleEndian.PutUint64(le, v)
 	return le
+}
+
+func ConvertToLexicographicBytes(data interface{}) ([]byte, error) {
+	switch data.(type) {
+	case string:
+		return []byte(data.(string)), nil
+	case uint:
+		return LeToBe(uint64(data.(uint))), nil
+	case uint8:
+		return LeToBe(uint64(data.(uint8))), nil
+	case uint16:
+		return LeToBe(uint64(data.(uint16))), nil
+	case uint32:
+		return LeToBe(uint64(data.(uint32))), nil
+	case uint64:
+		return LeToBe(data.(uint64)), nil
+	case int:
+		return LeToBe(IntToUintLexicographic(int64(data.(int)))), nil
+	case int8:
+		return LeToBe(IntToUintLexicographic(int64(data.(int8)))), nil
+	case int16:
+		return LeToBe(IntToUintLexicographic(int64(data.(int16)))), nil
+	case int32:
+		return LeToBe(IntToUintLexicographic(int64(data.(int32)))), nil
+	case int64:
+		return LeToBe(IntToUintLexicographic(data.(int64))), nil
+	default:
+		return nil, fmt.Errorf("this type of data is disallowed for indexing: %s", reflect.TypeOf(data).Name())
+	}
 }

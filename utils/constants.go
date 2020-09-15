@@ -1,7 +1,7 @@
 package utils
 
 const MantleKeyTag = "mantle"
-const MantleIndexTag = "index"
+const MantleModelTag = "model"
 const MantleQueryTag = "query"
 const GraphQLAllowedCharactersRegex = "^[_A-Za-z][_0-9A-Za-z]*$"
 

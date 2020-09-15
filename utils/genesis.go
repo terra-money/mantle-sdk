@@ -4,6 +4,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+type GenesisDoc = tmtypes.GenesisDoc
+
 func GenesisDocFromFile(path string) *tmtypes.GenesisDoc {
 	genesis, err := tmtypes.GenesisDocFromFile(path)
 	if err != nil {
