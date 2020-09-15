@@ -3,41 +3,42 @@ package registry
 import (
 	"github.com/terra-project/mantle/db/kvindex"
 	"github.com/terra-project/mantle/types"
-	"github.com/terra-project/mantle/utils"
 	"reflect"
 )
 
 type Registry struct {
 	Indexers       []types.Indexer
-	IndexerOutputs [][]types.ModelType
-	Models         []types.ModelType
+	IndexerOutputs [][]types.Model
+	Models         []types.Model
 	KVIndexMap     kvindex.KVIndexMap
 }
 
 func NewRegistry(indexRegisterers []types.IndexerRegisterer) Registry {
 	registry := Registry{
-		Indexers:       []types.Indexer{},
-		IndexerOutputs: [][]types.ModelType{},
-		Models:         []types.ModelType{},
+		Indexers: []types.Indexer{},
+		Models:   []types.Model{},
 	}
 
 	// add BaseState to kvindexes
+	baseStateKVIndex, baseStateKVIndexErr := kvindex.NewKVIndex(reflect.TypeOf(types.BaseState{}))
+	if baseStateKVIndexErr != nil {
+		panic(baseStateKVIndexErr)
+	}
 	kvindexes := []*kvindex.KVIndex{
-		kvindex.NewKVIndex(reflect.TypeOf(types.BaseState{})),
+		baseStateKVIndex,
 	}
 
-	r := func(indexer types.Indexer, models ...types.ModelType) {
-		var actualModels []types.ModelType
-		for _, model := range models {
-			actualModels = append(actualModels, utils.GetType(model))
-		}
-
+	r := func(indexer types.Indexer, models ...types.Model) {
 		registry.Indexers = append(registry.Indexers, indexer)
-		registry.IndexerOutputs = append(registry.IndexerOutputs, actualModels)
+		registry.IndexerOutputs = append(registry.IndexerOutputs, models)
 
-		for _, modelType := range actualModels {
-			registry.Models = append(registry.Models, modelType)
-			kvindexes = append(kvindexes, kvindex.NewKVIndex(modelType))
+		for _, model := range models {
+			registry.Models = append(registry.Models, model)
+			kvIndex, kvIndexErr := kvindex.NewKVIndex(model)
+			if kvIndexErr != nil {
+				panic(kvIndexErr)
+			}
+			kvindexes = append(kvindexes, kvIndex)
 		}
 	}
 
