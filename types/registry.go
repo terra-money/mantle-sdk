@@ -1,11 +1,11 @@
 package types
 
-import "reflect"
+import (
+	"reflect"
+)
 
-type Model interface{}
-type ModelType reflect.Type
-
+type Model reflect.Type
 type Register func(
 	Indexer,
-	...ModelType,
+	...Model,
 )

@@ -2,10 +2,12 @@ package types
 
 import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 type (
-	Tx = auth.StdTx
+	Tx         = auth.StdTx
+	GenesisDoc = tmtypes.GenesisDoc
 )
 
 type Block struct {
