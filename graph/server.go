@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 
@@ -64,13 +65,13 @@ func (server *GraphQLInstance) UpdateState(data interface{}) {
 	server.depsResolver.SetPredefinedState(data)
 }
 
-func (server *GraphQLInstance) ResolveQuery(
+func (server *GraphQLInstance) Query(
 	gqlQuery string,
 	variables types.GraphQLParams,
-	dependencies []types.ModelType,
+	dependencies []types.Model,
 ) *graphql.Result {
 
-	// log.Printf("[graphql] ResolveQuery\tq=%s,v=%v", gqlQuery, variables)
+	log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
 
 	params := graphql.Params{
 		Schema:         server.schema,
@@ -100,7 +101,7 @@ func (server *GraphQLInstance) ExportStates() []interface{} {
 	return entities
 }
 
-func (server *GraphQLInstance) prepareResolverContext(dependencies []types.ModelType) context.Context {
+func (server *GraphQLInstance) prepareResolverContext(dependencies []types.Model) context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.DepsResolverKey, server.depsResolver)
 	ctx = context.WithValue(ctx, utils.QuerierKey, server.querier)
@@ -131,6 +132,8 @@ func buildSchema(schemabuilders ...SchemaBuilder) graphql.Schema {
 			panic(err)
 		}
 	}
+
+	log.Println("[graphql] schemas", *rootFields)
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{

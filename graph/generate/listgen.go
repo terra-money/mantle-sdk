@@ -2,6 +2,7 @@ package generate
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/graph/depsresolver"
 	"reflect"
 
 	"github.com/graphql-go/graphql"
@@ -14,10 +15,6 @@ import (
 func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Field) (*graphql.Field, error) {
 	t := utils.GetType(modelType)
 	entityName := t.Name()
-
-	if fieldConfig.Args == nil {
-		return nil, fmt.Errorf("GraphQL resolver arguments are never set. Creating list field is disallowed: %s", entityName)
-	}
 
 	// list objects have set of _range parameters defined
 	rangeArgs := graphql.FieldConfigArgument{}
@@ -113,9 +110,20 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 			}
 
 			// resolve current round
+			var dependencies, ok = p.Context.Value(utils.DependenciesKey).(utils.DependenciesKeyType)
+			var isAwaitedDependency = p.Args["Height"] == nil
+			var isSelfReferencing = dependencies[entityName] == true
 
-			return nil, nil
+			if isAwaitedDependency && isSelfReferencing {
+				return nil, fmt.Errorf("Self reference is disallowed. entityName=%s", entityName)
+			}
 
+			depsResolver, ok := p.Context.Value(utils.DepsResolverKey).(depsresolver.DepsResolver)
+			if !ok {
+				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
+			}
+
+			return depsResolver.Resolve(t), nil
 		},
 	}, nil
 

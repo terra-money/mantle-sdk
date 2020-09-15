@@ -33,11 +33,11 @@ func TestCreateModelSchemaBuilder(t *testing.T) {
 	fields := graphql.Fields{}
 	builder(&fields)
 
-	// can't really test beyond this
-	// actual acceptance shall be test in server_test
+	// can't really sim beyond this
+	// actual acceptance shall be sim in server_test
 	assert.Equal(t, len(fields), 2)
 
-	// test whether indexes are registered as graphql args
+	// sim whether indexes are registered as graphql args
 	index1, index1Exists := fields["TestModel1"].Args["hello"]
 	assert.Equal(t, index1Exists, true)
 	assert.Equal(t, index1.Type, graphql.String)
