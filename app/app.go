@@ -85,12 +85,12 @@ func NewMantle(
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	currentBlockHeight := mantle.app.GetApp().LastBlockHeight()
-	// remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
-	// if err != nil {
-	// 	panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
-	// }
+	remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
+	if err != nil {
+		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
+	}
 
-	remoteHeight := int64(23)
+	remoteHeight := remoteBlock.Header.Height
 
 	if remoteHeight <= currentBlockHeight {
 		log.Printf("[mantle] Sync unnecessary, remoteHeight=%d, currentBlockHeight=%d", remoteHeight, currentBlockHeight)
