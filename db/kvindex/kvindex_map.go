@@ -2,10 +2,10 @@ package kvindex
 
 type KVIndexMap map[string]*KVIndex
 
-func NewKVIndexMap(kvindexes ...*KVIndex) KVIndexMap {
+func NewKVIndexMap(kvIndexes ...*KVIndex) KVIndexMap {
 	kvindexMap := KVIndexMap{}
-	for _, kvi := range kvindexes {
-		kvindexMap[kvi.entityType.Name()] = kvi
+	for _, kvi := range kvIndexes {
+		kvindexMap[kvi.ModelName()] = kvi
 	}
 
 	return kvindexMap
