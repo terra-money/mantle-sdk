@@ -7,6 +7,7 @@ require (
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gertd/go-pluralize v0.1.7
+	github.com/go-errors/errors v1.1.1 // indirect
 	github.com/go-openapi/errors v0.19.6
 	github.com/go-openapi/runtime v0.19.19
 	github.com/go-openapi/strfmt v0.19.5
