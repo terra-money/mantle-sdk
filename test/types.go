@@ -1,18 +1,23 @@
 package test
 
-import sdk "github.com/cosmos/cosmos-sdk/types"
+import (
+	compat "github.com/terra-project/mantle-compatibility/types"
+)
 
 type (
-	Coin       = sdk.Coin
-	Coins      = sdk.Coins
-	Int        = sdk.Int
-	Dec        = sdk.Dec
-	DecCoin    = sdk.DecCoin
-	AccAddress = sdk.AccAddress
-	ValAddress = sdk.ValAddress
-	Msg        = sdk.Msg
+	Coin           = compat.Coin
+	Coins          = compat.Coins
+	Int            = compat.Int
+	Dec            = compat.Dec
+	DecCoin        = compat.DecCoin
+	AccAddress     = compat.AccAddress
+	ValAddress     = compat.ValAddress
+	Msg            = compat.Msg
+	GenesisDoc     = compat.GenesisDoc
+	GenesisAccount = compat.GenesisAccount
+	HexBytes       = compat.HexBytes
 )
 
 var (
-	NewInt = sdk.NewInt
+	NewInt = compat.NewInt
 )

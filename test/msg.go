@@ -9,6 +9,7 @@ import (
 	"github.com/terra-project/core/x/oracle"
 	"github.com/terra-project/core/x/slashing"
 	"github.com/terra-project/core/x/staking"
+	"github.com/terra-project/core/x/wasm"
 )
 
 // bank modules are set as internal,
@@ -128,3 +129,18 @@ var (
 // return MsgMigrateContract.fromData(data);
 // case 'wasm/MsgUpdateContractOwner':
 // return MsgUpdateContractOwner.fromData(data);
+type (
+	MsgStoreCode           = wasm.MsgStoreCode
+	MsgInstantiateContract = wasm.MsgInstantiateContract
+	MsgExecuteContract     = wasm.MsgExecuteContract
+	MsgMigrateContract     = wasm.MsgMigrateContract
+	MsgUpdateContractOwner = wasm.MsgUpdateContractOwner
+)
+
+var (
+	NewMsgStoreCode           = wasm.NewMsgStoreCode
+	NewMsgInstantiateContract = wasm.NewMsgInstantiateContract
+	NewMsgExecuteContract     = wasm.NewMsgExecuteContract
+	NewMigrateContract        = wasm.NewMsgMigrateContract
+	NewMsgUpdateContractOwner = wasm.NewMsgUpdateContractOwner
+)

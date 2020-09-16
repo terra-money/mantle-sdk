@@ -6,11 +6,11 @@ import (
 	"runtime"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	cmn "github.com/tendermint/tendermint/libs/common"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
 	terra "github.com/terra-project/core/app"
+	compattypes "github.com/terra-project/mantle-compatibility/types"
 )
 
 // MUST implement rpcclient.Client
@@ -30,7 +30,7 @@ func (c LocalClient) ABCIInfo() (*ctypes.ResultABCIInfo, error) {
 	return nil, fmt.Errorf("Not implemented")
 }
 
-func (c LocalClient) ABCIQuery(path string, data cmn.HexBytes) (*ctypes.ResultABCIQuery, error) {
+func (c LocalClient) ABCIQuery(path string, data compattypes.HexBytes) (*ctypes.ResultABCIQuery, error) {
 	return &ctypes.ResultABCIQuery{
 		Response: c.App.Query(abci.RequestQuery{
 			Data: data,
@@ -39,7 +39,7 @@ func (c LocalClient) ABCIQuery(path string, data cmn.HexBytes) (*ctypes.ResultAB
 	}, nil
 }
 
-func (c LocalClient) ABCIQueryWithOptions(path string, data cmn.HexBytes, opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
+func (c LocalClient) ABCIQueryWithOptions(path string, data compattypes.HexBytes, opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
 	return &ctypes.ResultABCIQuery{
 		Response: c.App.Query(abci.RequestQuery{
 			Data:   data,

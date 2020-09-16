@@ -9,7 +9,7 @@ import (
 // super simple acc creation
 // since mantle doesn't care about signatures,
 // accounts just have to match in its length (AddrLen = 20bytes)
-func NewAccount() sdk.AccAddress {
+func NewAccount() AccAddress {
 	config := sdk.GetConfig()
 	config.SetCoinType(core.CoinType)
 	config.SetFullFundraiserPath(core.FullFundraiserPath)
@@ -23,4 +23,17 @@ func NewAccount() sdk.AccAddress {
 	}
 
 	return acc
+}
+
+func AccountFromBech32(addr string) AccAddress {
+	config := sdk.GetConfig()
+	config.SetCoinType(core.CoinType)
+	config.SetFullFundraiserPath(core.FullFundraiserPath)
+	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
+	account, err := sdk.AccAddressFromBech32(addr)
+	if err != nil {
+		panic(err)
+	}
+	return account
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
 	terra "github.com/terra-project/core/app"
+	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
 )
 
 type RoundTripper struct {
@@ -43,7 +44,7 @@ func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-func NewABCIStubTransport(localClient LocalClient) (*httptransport.Runtime, error) {
+func NewABCIStubTransport(localClient compatlocalclient.LocalClient) (*httptransport.Runtime, error) {
 	router := mux.NewRouter().SkipClean(true)
 
 	viper.Set(flags.FlagTrustNode, true)

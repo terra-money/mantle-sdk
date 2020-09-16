@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/graphql-go/graphql"
 	terra "github.com/terra-project/core/app"
+	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
 	"github.com/terra-project/mantle/graph"
 	"github.com/terra-project/mantle/graph/schemabuilders/abcistub"
 	lcd "github.com/terra-project/mantle/lcd/client"
@@ -13,7 +14,7 @@ import (
 
 func CreateABCIStubSchemaBuilder(app *terra.TerraApp) graph.SchemaBuilder {
 	return func(fields *graphql.Fields) error {
-		localClient := abcistub.NewLocalClient(app)
+		localClient := compatlocalclient.NewLocalClient(app)
 		stubTransport, err := abcistub.NewABCIStubTransport(localClient)
 		if err != nil {
 			return err

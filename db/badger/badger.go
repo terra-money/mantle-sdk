@@ -3,6 +3,7 @@ package badger
 import (
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
+	compatbadger "github.com/terra-project/mantle-compatibility/badger"
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/utils"
 )
@@ -34,7 +35,7 @@ func NewBadgerDB(path string) db.DB {
 }
 
 func (bdb *BadgerDB) GetCosmosAdapter() tmdb.DB {
-	return NewBadgerCosmosAdapter(bdb.db)
+	return compatbadger.NewBadgerCosmosAdapter(bdb.db)
 }
 
 func (bdb *BadgerDB) GetDB() *bd.DB {

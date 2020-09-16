@@ -3,21 +3,16 @@ package app
 import (
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
-	l "log"
-
-	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	TerraApp "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
-	// wasmconfig "github.com/terra-project/core/x/wasm/config"
+	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
+	l "log"
 )
 
 type App struct {
@@ -36,20 +31,7 @@ func NewApp(
 	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
 	config.Seal()
 
-	app := TerraApp.NewTerraApp(
-		log.NewTMLogger(ioutil.Discard),
-		db,
-		nil,
-		true, // need this so KVStores are set
-		0,
-		// make(map[int64]bool),
-		// &wasmconfig.Config{BaseConfig: wasmconfig.BaseConfig{
-		// 	ContractQueryGasLimit: viper.GetUint64(wasmconfig.FlagContractQueryGasLimit),
-		// 	CacheSize:             viper.GetUint64(wasmconfig.FlagCacheSize),
-		// }},
-		fauxMerkleModeOpt, // error
-		// setPruningOptions(),
-	)
+	app := compatapp.NewTerraApp(db)
 
 	// only init chain on genesis
 	if app.LastBlockHeight() == 0 {
@@ -83,21 +65,6 @@ func NewApp(
 		terra: app,
 	}
 }
-
-// Pass this in as an option to use a dbStoreAdapter instead of an IAVLStore for simulation speed.
-func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
-	bapp.SetFauxMerkleMode()
-}
-
-// func setPruningOptions() func(*baseapp.BaseApp) {
-// 	// prune nothing
-// 	pruningOptions := sdk.PruningOptions{
-// 		KeepRecent: 0,
-// 		KeepEvery:  0,
-// 		Interval:   10,
-// 	}
-// 	return baseapp.SetPruning(pruningOptions)
-// }
 
 func (c *App) GetApp() *TerraApp.TerraApp {
 	return c.terra
@@ -137,6 +104,7 @@ func (c *App) DeliverTxs(txs []string) []abci.ResponseDeliverTx {
 		abciRequest := abci.RequestDeliverTx{
 			Tx: decoded,
 		}
+
 		response := c.terra.DeliverTx(abciRequest)
 		responses = append(responses, response)
 	}
