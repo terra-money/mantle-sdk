@@ -30,17 +30,20 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 	fields := p.Schema.QueryType().Fields()
 	resultMap := make(map[string][]byte)
 
-	for _, definition := range AST.Definitions {
-		switch definition := definition.(type) {
-		case *ast.OperationDefinition:
-			fieldName := definition.GetName()
+	//
+	querySelections := AST.Definitions[0].(*ast.OperationDefinition).SelectionSet.Selections
+
+	for _, selection := range querySelections {
+		switch selection := selection.(type) {
+		case *ast.Field:
+			fieldName := selection.Name
 			fieldConfig := fields[fieldName.Value]
 
 			rp := graphql.ResolveParams{
 				Source:  source,
 				Args:    p.VariableValues,
 				Info:    graphql.ResolveInfo{},
-				Context: nil,
+				Context: p.Context,
 			}
 
 			result, err := fieldConfig.Resolve(rp)

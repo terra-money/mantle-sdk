@@ -69,10 +69,8 @@ func (server *GraphQLInstance) Query(
 	gqlQuery string,
 	variables types.GraphQLParams,
 	dependencies []types.Model,
-) *graphql.Result {
-
-	log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
-
+) types.GraphQLResult {
+	//log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
 	params := graphql.Params{
 		Schema:         server.schema,
 		RequestString:  gqlQuery,
@@ -82,6 +80,23 @@ func (server *GraphQLInstance) Query(
 
 	// unresolved dependency are to be handled in resolver functions
 	return graphql.Do(params)
+}
+
+func (server *GraphQLInstance) QueryInternal(
+	gqlQuery string,
+	variables types.GraphQLParams,
+	dependencies []types.Model,
+) types.GraphQLResult {
+	//log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
+	params := graphql.Params{
+		Schema:         server.schema,
+		RequestString:  gqlQuery,
+		VariableValues: variables,
+		Context:        server.prepareResolverContext(dependencies),
+	}
+
+	// unresolved dependency are to be handled in resolver functions
+	return InternalGQLRun(params)
 }
 
 // Commit persists indexer outputs in memory.

@@ -1,8 +1,6 @@
 package indexer
 
 import (
-	"fmt"
-	"log"
 	"sync"
 
 	"github.com/terra-project/mantle/graph"
@@ -79,17 +77,9 @@ func createIsolatedQuerier(
 		qs := generate.GenerateQuery(query, variables)
 		result := querier(qs, variables, indexerSelfOutput)
 
-		if result.HasErrors() {
-			log.Print("IsolatedQuerier Failed. --")
+		resultInternal := result.(*types.GraphQLInternalResult)
 
-			for _, err := range result.Errors {
-				fmt.Println(err, err.Locations, err.Path)
-			}
-
-			return fmt.Errorf("Isolated Querier error")
-		}
-
-		return graph.UnmarshalGraphQLResult(result, query)
+		return graph.UnmarshalInternalQueryResult(resultInternal, query)
 	}
 }
 
