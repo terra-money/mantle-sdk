@@ -2,13 +2,12 @@ package app
 
 import (
 	"github.com/terra-project/mantle/types"
-	"github.com/terra-project/mantle/utils"
 )
 
 type LifecycleContext struct {
 	app                   *App
 	transactionalAppState bool
-	txDecoder             utils.TxDecoder
+	txDecoder             types.TxDecoder
 }
 
 func NewLifecycle(
@@ -18,7 +17,7 @@ func NewLifecycle(
 	return &LifecycleContext{
 		app:                   app,
 		transactionalAppState: transactionalAppState,
-		txDecoder:             utils.NewDecoder(),
+		txDecoder:             types.NewDecoder(),
 	}
 }
 
@@ -48,15 +47,12 @@ func (c *LifecycleContext) Inject(block *types.Block) types.BaseState {
 	endBlockerResponse := c.app.EndBlocker(block)
 
 	// put together a primitive state
-	txs := make([]types.Tx, 0)
-	for _, tx := range block.Data.Txs {
-		txdoc, err := c.txDecoder(tx)
-
-		// TODO: handle me
-		if err != nil {
-			panic(err)
-		}
-		txs = append(txs, *txdoc)
+	txs := make([]types.TxResult, 0)
+	for i, txstring := range block.Data.Txs {
+		txs = append(txs, types.TxResult{
+			Result: deliverTxResponses[i],
+			Tx:     types.NewLazyTx(txstring),
+		})
 	}
 
 	primState := types.BaseState{

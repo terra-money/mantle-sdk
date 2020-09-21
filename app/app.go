@@ -69,7 +69,7 @@ func NewMantle(
 	indexerInstance := indexer.NewIndexerBaseInstance(
 		registry.Indexers,
 		registry.IndexerOutputs,
-		gqlInstance.Query,
+		gqlInstance.QueryInternal,
 		gqlInstance.Commit,
 	)
 
@@ -125,7 +125,7 @@ func (mantle *Mantle) Start() {
 
 }
 
-func (mantle *Mantle) Inject(block *types.Block) {
+func (mantle *Mantle) Inject(block *types.Block) types.BaseState {
 	height := block.Header.Height
 
 	tStart := time.Now()
@@ -157,6 +157,8 @@ func (mantle *Mantle) Inject(block *types.Block) {
 		len(exportedStates),
 		tEnd.Sub(tStart).Milliseconds(),
 	)
+
+	return baseState
 }
 
 func start(

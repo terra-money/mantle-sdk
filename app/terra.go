@@ -3,12 +3,14 @@ package app
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	TerraApp "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
+	"github.com/terra-project/core/x/auth"
 	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
@@ -18,6 +20,10 @@ import (
 type App struct {
 	terra *TerraApp.TerraApp
 }
+
+var (
+	GlobalTerraApp *TerraApp.TerraApp
+)
 
 func NewApp(
 	db dbm.DB,
@@ -61,6 +67,8 @@ func NewApp(
 		l.Printf("== CommitResponse: %s", string(commitResponseJSON))
 	}
 
+	GlobalTerraApp = app
+
 	return &App{
 		terra: app,
 	}
@@ -94,19 +102,36 @@ func (c *App) EndBlocker(block *types.Block) abci.ResponseEndBlock {
 	return abciResponse
 }
 
+func (c *App) decodeTx(txbytes []byte) (sdk.Tx, error) {
+	var tx = auth.StdTx{}
+
+	if len(txbytes) == 0 {
+		return nil, fmt.Errorf("Tx bytes are empty")
+	}
+
+	// StdTx.Msg is an interface. The concrete types
+	// are registered by MakeTxCodec
+	err := c.terra.Codec().UnmarshalBinaryLengthPrefixed(txbytes, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return tx, nil
+}
+
 func (c *App) DeliverTxs(txs []string) []abci.ResponseDeliverTx {
 	responses := make([]abci.ResponseDeliverTx, len(txs))
-	for _, tx := range txs {
-		decoded, err := base64.StdEncoding.DecodeString(tx)
+	for i, txstring := range txs {
+		txbytes, err := base64.StdEncoding.DecodeString(txstring)
 		if err != nil {
 			panic(err)
 		}
-		abciRequest := abci.RequestDeliverTx{
-			Tx: decoded,
-		}
 
-		response := c.terra.DeliverTx(abciRequest)
-		responses = append(responses, response)
+		response := c.terra.DeliverTx(abci.RequestDeliverTx{
+			Tx: txbytes,
+		})
+
+		responses[i] = response
 	}
 
 	return responses
