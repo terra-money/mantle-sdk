@@ -50,6 +50,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 		// convert some properties to byte beforehand
 		heightInBe := utils.LeToBe(height)
 		var commit CommitFunc = func(key, value []byte) error {
+			fmt.Println(string(utils.ConcatBytes([]byte(entityName), key)))
 			return writeBatch.Set(utils.ConcatBytes([]byte(entityName), key), value)
 		}
 		var getSequence = NewSequenceGenerator(entityName, kvIndex, committer.db)
@@ -68,9 +69,11 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 				return commitErr
 			}
 
-			// commit height index
-			if commitErr := commitTarget.commitIndex(commit, "Height", heightInBe); commitErr != nil {
-				return commitErr
+			// commit height index. skip when pk model
+			if !kvIndex.IsPrimaryKeyedModel() {
+				if commitErr := commitTarget.commitIndex(commit, "Height", heightInBe); commitErr != nil {
+					return commitErr
+				}
 			}
 
 			// commit all indexes
