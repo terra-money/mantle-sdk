@@ -1,36 +1,52 @@
 package test
 
 import (
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	core "github.com/terra-project/core/types"
-	"math/rand"
 )
 
-// super simple acc creation
-// since mantle doesn't care about signatures,
-// accounts just have to match in its length (AddrLen = 20bytes)
-func NewAccount() AccAddress {
-	config := sdk.GetConfig()
-	config.SetCoinType(core.CoinType)
-	config.SetFullFundraiserPath(core.FullFundraiserPath)
-	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
-	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
-
-	acc := make(AccAddress, 20)
-	_, err := rand.Read(acc)
-	if err != nil {
-		panic(err)
-	}
-
-	return acc
+type TestAccount struct {
+	name string
+	info keys.Info
 }
 
-func AccountFromBech32(addr string) AccAddress {
-	config := sdk.GetConfig()
-	config.SetCoinType(core.CoinType)
-	config.SetFullFundraiserPath(core.FullFundraiserPath)
-	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
-	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
+func (ta TestAccount) GetAddress() AccAddress {
+	return AccAddressFromBech32(ta.info.GetAddress().String())
+}
+
+func NewAccount(name string) TestAccount {
+	i, _, e := Keybase.CreateMnemonic(name, keys.English, "default", keys.Secp256k1)
+	if e != nil {
+		panic(e)
+	}
+
+	return TestAccount{
+		info: i,
+		name: name,
+	}
+}
+
+func ImportAccount(name, mnemonic string) TestAccount {
+	i, createAccErr := Keybase.CreateAccount(
+		name,
+		mnemonic,
+		keys.DefaultBIP39Passphrase,
+		"default",
+		keys.CreateHDPath(0, 0).String(),
+		keys.Secp256k1,
+	)
+
+	if createAccErr != nil {
+		panic(createAccErr)
+	}
+
+	return TestAccount{
+		info: i,
+		name: name,
+	}
+}
+
+func AccAddressFromBech32(addr string) AccAddress {
 	account, err := sdk.AccAddressFromBech32(addr)
 	if err != nil {
 		panic(err)

@@ -40,6 +40,7 @@ func (block *TestkitBlock) WithTime(t time.Time) *TestkitBlock {
 }
 
 func (block *TestkitBlock) ToBlock() *Block {
+	block.block.Header.ChainID = "tequila-0004"
 	if block.block.Header.Time == "" {
 		block.block.Header.Time = time.Now().Format(time.RFC3339)
 	}
