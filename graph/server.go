@@ -9,7 +9,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
-	"github.com/terra-project/mantle/graph/depsresolver"
+	"github.com/terra-project/mantle/depsresolver"
 	"github.com/terra-project/mantle/querier"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
@@ -48,7 +48,7 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
-			server.prepareResolverContext(nil),
+			server.prepareResolverContext(nil, true),
 			w,
 			r,
 		)
@@ -65,22 +65,22 @@ func (server *GraphQLInstance) UpdateState(data interface{}) {
 	server.depsResolver.SetPredefinedState(data)
 }
 
-func (server *GraphQLInstance) Query(
-	gqlQuery string,
-	variables types.GraphQLParams,
-	dependencies []types.Model,
-) types.GraphQLResult {
-	//log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
-	params := graphql.Params{
-		Schema:         server.schema,
-		RequestString:  gqlQuery,
-		VariableValues: variables,
-		Context:        server.prepareResolverContext(dependencies),
-	}
-
-	// unresolved dependency are to be handled in resolver functions
-	return graphql.Do(params)
-}
+//func (server *GraphQLInstance) Query(
+//	gqlQuery string,
+//	variables types.GraphQLParams,
+//	dependencies []types.Model,
+//) types.GraphQLResult {
+//	//log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
+//	params := graphql.Params{
+//		Schema:         server.schema,
+//		RequestString:  gqlQuery,
+//		VariableValues: variables,
+//		Context:        server.prepareResolverContext(dependencies, true),
+//	}
+//
+//	// unresolved dependency are to be handled in resolver functions
+//	return graphql.Do(params)
+//}
 
 func (server *GraphQLInstance) QueryInternal(
 	gqlQuery string,
@@ -92,7 +92,7 @@ func (server *GraphQLInstance) QueryInternal(
 		Schema:         server.schema,
 		RequestString:  gqlQuery,
 		VariableValues: variables,
-		Context:        server.prepareResolverContext(dependencies),
+		Context:        server.prepareResolverContext(dependencies, false),
 	}
 
 	// unresolved dependency are to be handled in resolver functions
@@ -116,10 +116,14 @@ func (server *GraphQLInstance) ExportStates() []interface{} {
 	return entities
 }
 
-func (server *GraphQLInstance) prepareResolverContext(dependencies []types.Model) context.Context {
+func (server *GraphQLInstance) prepareResolverContext(
+	dependencies []types.Model,
+	resolveImmediately bool,
+) context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.DepsResolverKey, server.depsResolver)
 	ctx = context.WithValue(ctx, utils.QuerierKey, server.querier)
+	ctx = context.WithValue(ctx, utils.ImmediateResolveFlagKey, resolveImmediately)
 
 	// dependencies are only taken care of when running indexers
 	if dependencies != nil {

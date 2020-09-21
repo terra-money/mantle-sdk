@@ -11,6 +11,7 @@ type DepsResolverInstance struct {
 	rmux      sync.RWMutex
 	channels  map[reflect.Type]([]chan interface{})
 	published map[reflect.Type]interface{}
+	latest    map[reflect.Type]interface{}
 }
 
 func NewDepsResolver() DepsResolver {
@@ -19,6 +20,7 @@ func NewDepsResolver() DepsResolver {
 		rmux:      sync.RWMutex{},
 		channels:  make(map[reflect.Type][]chan interface{}),
 		published: make(map[reflect.Type]interface{}),
+		latest:    make(map[reflect.Type]interface{}),
 	}
 }
 
@@ -38,6 +40,7 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 		return fmt.Errorf("cannot commit same entity more than once.")
 	}
 
+	resolver.latest[event] = entity // latest is never cleared
 	resolver.published[event] = entity
 	resolver.rmux.Unlock()
 
@@ -81,6 +84,10 @@ func (resolver *DepsResolverInstance) Resolve(event reflect.Type) interface{} {
 	}
 }
 
+func (resolver *DepsResolverInstance) ResolveLatest(event reflect.Type) interface{} {
+	return resolver.latest[event]
+}
+
 func (resolver *DepsResolverInstance) Dispose() {
 	for _, entity := range resolver.channels {
 		for _, channel := range entity {
@@ -88,7 +95,7 @@ func (resolver *DepsResolverInstance) Dispose() {
 		}
 	}
 
-	// dispose the previous published data
+	// and dispose the previous published data
 	resolver.published = make(map[reflect.Type]interface{})
 }
 

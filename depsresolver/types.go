@@ -8,5 +8,6 @@ type DepsResolver interface {
 
 	GetState() map[string]interface{}
 	Resolve(reflect.Type) interface{}
+	ResolveLatest(reflect.Type) interface{}
 	Dispose()
 }

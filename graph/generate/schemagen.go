@@ -11,7 +11,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle/graph/depsresolver"
+	"github.com/terra-project/mantle/depsresolver"
 	"github.com/terra-project/mantle/utils"
 )
 
@@ -98,20 +98,26 @@ func GenerateGraphResolver(modelType reflect.Type) (*graphql.Field, error) {
 				}
 			}
 
+			depsResolver, depsResolverNotCleared := p.Context.Value(utils.DepsResolverKey).(depsresolver.DepsResolver)
+			if !depsResolverNotCleared {
+				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
+			}
+
+			// if resolve immediately flag is set, don't await for dependency.
+			// load up straight from disk and respond.
+			if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) {
+				return depsResolver.ResolveLatest(t), nil
+			}
+
 			// if current round of graphql resolve is a self-referencing (i.e. awaiting on itself to be resolved)
 			// we can't process it here.
 			// Must error.
-			var dependencies, ok = p.Context.Value(utils.DependenciesKey).(utils.DependenciesKeyType)
+			var dependencies = p.Context.Value(utils.DependenciesKey).(utils.DependenciesKeyType)
 			var isAwaitedDependency = p.Args["Height"] == nil
 			var isSelfReferencing = dependencies[entityName] == true
 
 			if isAwaitedDependency && isSelfReferencing {
 				return nil, fmt.Errorf("Self reference is disallowed. entityName=%s", entityName)
-			}
-
-			depsResolver, ok := p.Context.Value(utils.DepsResolverKey).(depsresolver.DepsResolver)
-			if !ok {
-				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
 			}
 
 			return depsResolver.Resolve(t), nil

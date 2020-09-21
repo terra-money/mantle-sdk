@@ -9,8 +9,8 @@ import (
 	"github.com/terra-project/mantle/committer"
 
 	"github.com/terra-project/mantle/db"
+	"github.com/terra-project/mantle/depsresolver"
 	"github.com/terra-project/mantle/graph"
-	"github.com/terra-project/mantle/graph/depsresolver"
 	"github.com/terra-project/mantle/graph/schemabuilders"
 	"github.com/terra-project/mantle/indexer"
 	"github.com/terra-project/mantle/querier"
