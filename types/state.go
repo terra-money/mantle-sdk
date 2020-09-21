@@ -6,7 +6,12 @@ import (
 )
 
 type (
-	StdTx = auth.StdTx
+	StdTx             = auth.StdTx
+	ResponseDeliverTx = abci.ResponseDeliverTx
+	TxResult          struct {
+		Result abci.ResponseDeliverTx
+		Tx     LazyTx
+	}
 )
 
 // State houses all primitive data
@@ -16,5 +21,5 @@ type BaseState struct {
 	EndBlockResponse   abci.ResponseEndBlock
 	DeliverTxResponses []abci.ResponseDeliverTx
 	Block              Block
-	Txs                []StdTx
+	Txs                []TxResult
 }

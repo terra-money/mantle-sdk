@@ -7,7 +7,7 @@ import (
 	"time"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	types "github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle/types"
 )
 
 func UnmarshalBlockResponseFromLCD(blockResponse []byte, target *types.Block) {
@@ -46,4 +46,25 @@ func strToInt32(str string) int32 {
 	}
 
 	return int32(data)
+}
+
+type LazyTx struct {
+	txstring string
+}
+
+func NewLazyTx(txstring string) LazyTx {
+	return LazyTx{
+		txstring,
+	}
+}
+
+var decoder = types.NewDecoder()
+
+func (lazyTx *LazyTx) Decode() *types.StdTx {
+	tx, decodeErr := decoder(lazyTx.txstring)
+	if decodeErr != nil {
+		panic(decodeErr)
+	}
+
+	return tx
 }
