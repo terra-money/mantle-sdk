@@ -180,8 +180,7 @@ func (it *BadgerIterator) Value() []byte {
 }
 
 func (it *BadgerIterator) DocumentKey() []byte {
-	k := it.Key()
-	return k[it.indexKeyLength:]
+	return it.Key()[it.indexKeyLength:]
 }
 
 type BadgerBatch struct {

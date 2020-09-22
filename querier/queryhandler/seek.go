@@ -25,6 +25,11 @@ func NewSeekResolver(
 	indexName string,
 	indexOption interface{},
 ) (QueryHandler, error) {
+	// not seek op if indexName is not given
+	if indexName == "" {
+		return nil, nil
+	}
+
 	kvIndexEntry, kvIndexEntryExists := kvIndex.Entry(indexName)
 	if !kvIndexEntryExists {
 		return nil, fmt.Errorf("acquiring kvIndexEntry failed, queryHandler=seek, entityName=%s, indexName=%s", entityName, indexName)

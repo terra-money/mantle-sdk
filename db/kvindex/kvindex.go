@@ -10,6 +10,7 @@ import (
 
 type KVIndex struct {
 	primaryKeyEntry IndexEntry
+	isSliceModel    bool
 	modelType       reflect.Type
 	modelName       string
 	indexEntryMap   map[string]IndexEntry
@@ -21,6 +22,12 @@ func NewKVIndex(model types.Model) (*KVIndex, error) {
 	indexEntryMap, indexEntryMapErr := createIndexMap(modelType)
 	if indexEntryMapErr != nil {
 		return nil, indexEntryMapErr
+	}
+
+	// check if model is of slice/array type
+	var isSliceModel = false
+	if modelType.Kind() == reflect.Slice {
+		isSliceModel = true
 	}
 
 	// make this KVIndex hashentity if struct has key tag defined
@@ -37,6 +44,7 @@ func NewKVIndex(model types.Model) (*KVIndex, error) {
 
 	return &KVIndex{
 		primaryKeyEntry: primaryKeyEntry,
+		isSliceModel:    isSliceModel,
 		modelType:       modelType,
 		modelName:       modelName,
 		indexEntryMap:   indexEntryMap,
@@ -45,6 +53,10 @@ func NewKVIndex(model types.Model) (*KVIndex, error) {
 
 func (kvi *KVIndex) IsPrimaryKeyedModel() bool {
 	return kvi.primaryKeyEntry.indexName != ""
+}
+
+func (kvi *KVIndex) IsSliceModel() bool {
+	return kvi.isSliceModel
 }
 
 func (kvi *KVIndex) Entries() map[string]IndexEntry {

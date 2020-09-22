@@ -27,6 +27,7 @@ var handlersList = []queryhandler.QueryHandlerBuilder{
 	queryhandler.NewHeightResolver, // Height, Height_range
 	queryhandler.NewRangeResolver,  // [1,2]
 	queryhandler.NewSeekResolver,   // someIndex: 2222
+	queryhandler.NewSequentialResolver,
 }
 
 // direct db getter

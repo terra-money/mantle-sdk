@@ -15,6 +15,13 @@ func BuildDocumentKey(entityName, pk []byte) []byte {
 	)
 }
 
+func BuildDocumentGroupPrefix(entityName []byte) []byte {
+	return ConcatBytes(
+		entityName,
+		DocumentSeqDelimiter,
+	)
+}
+
 func BuildIndexGroupPrefix(entityName, indexName []byte) []byte {
 	return ConcatBytes(
 		entityName,
