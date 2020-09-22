@@ -56,8 +56,10 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 
 	resolver.rmux.Unlock()
 
-	for _, subscription := range resolver.channels[event] {
-		subscription <- emitSource
+	if len(resolver.channels[event]) != 0 {
+		for _, subscription := range resolver.channels[event] {
+			subscription <- emitSource
+		}
 	}
 
 	return nil
@@ -106,6 +108,7 @@ func (resolver *DepsResolverInstance) Dispose() {
 			close(channel)
 		}
 	}
+	resolver.channels = make(map[reflect.Type][]chan interface{})
 
 	// and dispose the previous published data
 	resolver.published = make(map[reflect.Type]interface{})
