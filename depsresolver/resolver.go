@@ -40,12 +40,24 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 		return fmt.Errorf("cannot commit same entity more than once.")
 	}
 
-	resolver.latest[event] = entity // latest is never cleared
-	resolver.published[event] = entity
+	var emitSource interface{}
+
+	// if commit result is zero value (i.e. empty)
+	// use the latest result as source
+	if reflect.Indirect(reflect.ValueOf(entity)).IsZero() {
+		// copy over from latest
+		resolver.published[event] = resolver.latest[event]
+		emitSource = resolver.published[event]
+	} else {
+		resolver.latest[event] = entity
+		resolver.published[event] = entity
+		emitSource = resolver.published[event]
+	}
+
 	resolver.rmux.Unlock()
 
 	for _, subscription := range resolver.channels[event] {
-		subscription <- entity
+		subscription <- emitSource
 	}
 
 	return nil
