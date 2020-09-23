@@ -3,14 +3,15 @@ package subscriber
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/terra-project/mantle/types"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/terra-project/mantle/types"
 )
 
 type BlockGetter func(height interface{}) (*types.Block, error)
 
-func GetBlockLCD(endpoint string) (*types.Block, error) {
+func GetBlock(endpoint string) (*types.Block, error) {
 	res, err := http.Get(endpoint)
 	if err != nil {
 		return nil, err
@@ -21,14 +22,20 @@ func GetBlockLCD(endpoint string) (*types.Block, error) {
 		return nil, err
 	}
 
-	temp := map[string]json.RawMessage{}
-	if err := json.Unmarshal(resbytes, &temp); err != nil {
-		return nil, err
+	data := new(struct {
+		Result struct {
+			Block json.RawMessage
+		} `json:"result"`
+	})
+
+	if unmarshalErr := json.Unmarshal(resbytes, data); unmarshalErr != nil {
+		panic(unmarshalErr)
 	}
 
 	block := types.Block{}
-	if err := json.Unmarshal(temp["block"], &block); err != nil {
-		return nil, err
+
+	if err := json.Unmarshal(data.Result.Block, &block); err != nil {
+		panic(err)
 	}
 
 	return &block, nil

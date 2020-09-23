@@ -30,9 +30,7 @@ type Mantle struct {
 }
 
 type SyncConfiguration struct {
-	LCDLatestBlockEndpoint string
-	LCDBlockEndpoint       string
-	TendermintEndpoint     string
+	TendermintEndpoint string
 }
 
 func NewMantle(
@@ -84,7 +82,7 @@ func NewMantle(
 }
 
 func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
-	remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
+	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block", configuration.TendermintEndpoint))
 
 	if err != nil {
 		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
@@ -92,25 +90,30 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 
 	remoteHeight := remoteBlock.Header.Height
 	syncingBlockHeight := currentBlockHeight
+	tStart := time.Now()
 
 	for syncingBlockHeight < remoteHeight {
-		remoteBlock, err := subscriber.GetBlockLCD(fmt.Sprintf(configuration.LCDBlockEndpoint, syncingBlockHeight+1))
+		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block?height=%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
 		}
-
-		log.Printf("[mantle] Syncing block(%d)", remoteBlock.Header.Height)
 
 		// run round
 		mantle.Inject(remoteBlock)
 
 		syncingBlockHeight++
 	}
+
+	dur := time.Now().Sub(tStart)
+
+	if dur > time.Second {
+		log.Printf("[mantle] QuerySync: %d to %d, Elapsed: %dms", currentBlockHeight, remoteHeight, dur.Milliseconds())
+	}
 }
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	// subscribe to NewBlock event
-	rpcSubscription := subscriber.NewRpcSubscription(configuration.TendermintEndpoint)
+	rpcSubscription := subscriber.NewRpcSubscription(fmt.Sprintf("ws://%s/websocket", configuration.TendermintEndpoint))
 	blockChannel := rpcSubscription.Subscribe()
 
 	for {
@@ -119,7 +122,6 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 			lastBlockHeight := mantle.app.GetApp().LastBlockHeight()
 
 			if block.Header.Height-lastBlockHeight != 1 {
-				log.Printf("[mantle] SyncByRPC mine: %d, chain: %d", lastBlockHeight, block.Header.Height)
 				mantle.QuerySync(configuration, lastBlockHeight)
 			} else {
 				mantle.Inject(&block)
