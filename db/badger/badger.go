@@ -1,7 +1,6 @@
 package badger
 
 import (
-	"fmt"
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
@@ -33,6 +32,10 @@ func NewBadgerDB(path string) db.DB {
 	return &BadgerDB{
 		db: db,
 	}
+}
+
+func (bdb *BadgerDB) Compact() error {
+	return bdb.db.Flatten(8)
 }
 
 func (bdb *BadgerDB) GetCosmosAdapter() tmdb.DB {

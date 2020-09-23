@@ -27,6 +27,7 @@ type Mantle struct {
 	gqlInstance       *graph.GraphQLInstance
 	committerInstance committer.Committer
 	indexerInstance   *indexer.IndexerBaseInstance
+	db                db.DB
 }
 
 type SyncConfiguration struct {
@@ -78,6 +79,7 @@ func NewMantle(
 		committerInstance: committerInstance,
 		gqlInstance:       gqlInstance,
 		indexerInstance:   indexerInstance,
+		db:                db,
 	}
 }
 
@@ -144,6 +146,13 @@ func (mantle *Mantle) Start() {
 
 func (mantle *Mantle) Inject(block *types.Block) types.BaseState {
 	height := block.Header.Height
+
+	// force compact every 100th block
+	if height%100 == 0 {
+		if compactErr := mantle.db.Compact(); compactErr != nil {
+			panic(compactErr)
+		}
+	}
 
 	tStart := time.Now()
 	baseState := mantle.lifecycle.Inject(block)

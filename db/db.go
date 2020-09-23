@@ -14,6 +14,7 @@ type DB interface {
 	Batch() Batch
 	GetCosmosAdapter() tmdb.DB
 	GetSequence(key []byte, bandwidth uint64) (Sequence, error)
+	Compact() error
 }
 
 type Iterator interface {
