@@ -9,7 +9,6 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
-	"github.com/go-openapi/validate"
 )
 
 // SwapReq swap req
@@ -18,28 +17,18 @@ import (
 type SwapReq struct {
 
 	// ask denom
-	// Required: true
-	AskDenom *string `json:"ask_denom"`
+	AskDenom string `json:"ask_denom,omitempty"`
 
 	// base req
-	// Required: true
-	BaseReq *BaseReq `json:"base_req"`
+	BaseReq *BaseReq `json:"base_req,omitempty"`
 
 	// offer coin
-	// Required: true
-	OfferCoin *Coin `json:"offer_coin"`
-
-	// the `receiver` field can be skipped when the receiver is trader
-	Receiver string `json:"receiver,omitempty"`
+	OfferCoin *Coin `json:"offer_coin,omitempty"`
 }
 
 // Validate validates this swap req
 func (m *SwapReq) Validate(formats strfmt.Registry) error {
 	var res []error
-
-	if err := m.validateAskDenom(formats); err != nil {
-		res = append(res, err)
-	}
 
 	if err := m.validateBaseReq(formats); err != nil {
 		res = append(res, err)
@@ -55,19 +44,10 @@ func (m *SwapReq) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *SwapReq) validateAskDenom(formats strfmt.Registry) error {
-
-	if err := validate.Required("ask_denom", "body", m.AskDenom); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *SwapReq) validateBaseReq(formats strfmt.Registry) error {
 
-	if err := validate.Required("base_req", "body", m.BaseReq); err != nil {
-		return err
+	if swag.IsZero(m.BaseReq) { // not required
+		return nil
 	}
 
 	if m.BaseReq != nil {
@@ -84,8 +64,8 @@ func (m *SwapReq) validateBaseReq(formats strfmt.Registry) error {
 
 func (m *SwapReq) validateOfferCoin(formats strfmt.Registry) error {
 
-	if err := validate.Required("offer_coin", "body", m.OfferCoin); err != nil {
-		return err
+	if swag.IsZero(m.OfferCoin) { // not required
+		return nil
 	}
 
 	if m.OfferCoin != nil {

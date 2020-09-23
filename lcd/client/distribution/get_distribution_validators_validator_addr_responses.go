@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,20 +59,20 @@ func NewGetDistributionValidatorsValidatorAddrOK() *GetDistributionValidatorsVal
 OK
 */
 type GetDistributionValidatorsValidatorAddrOK struct {
-	Payload *models.ValidatorDistInfo
+	Payload *GetDistributionValidatorsValidatorAddrOKBody
 }
 
 func (o *GetDistributionValidatorsValidatorAddrOK) Error() string {
 	return fmt.Sprintf("[GET /distribution/validators/{validatorAddr}][%d] getDistributionValidatorsValidatorAddrOK  %+v", 200, o.Payload)
 }
 
-func (o *GetDistributionValidatorsValidatorAddrOK) GetPayload() *models.ValidatorDistInfo {
+func (o *GetDistributionValidatorsValidatorAddrOK) GetPayload() *GetDistributionValidatorsValidatorAddrOKBody {
 	return o.Payload
 }
 
 func (o *GetDistributionValidatorsValidatorAddrOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.ValidatorDistInfo)
+	o.Payload = new(GetDistributionValidatorsValidatorAddrOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -119,5 +121,67 @@ func (o *GetDistributionValidatorsValidatorAddrInternalServerError) Error() stri
 
 func (o *GetDistributionValidatorsValidatorAddrInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetDistributionValidatorsValidatorAddrOKBody get distribution validators validator addr o k body
+swagger:model GetDistributionValidatorsValidatorAddrOKBody
+*/
+type GetDistributionValidatorsValidatorAddrOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.ValidatorDistInfo `json:"result,omitempty"`
+}
+
+// Validate validates this get distribution validators validator addr o k body
+func (o *GetDistributionValidatorsValidatorAddrOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetDistributionValidatorsValidatorAddrOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getDistributionValidatorsValidatorAddrOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetDistributionValidatorsValidatorAddrOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetDistributionValidatorsValidatorAddrOKBody) UnmarshalBinary(b []byte) error {
+	var res GetDistributionValidatorsValidatorAddrOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

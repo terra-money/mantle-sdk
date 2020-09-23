@@ -32,7 +32,7 @@ type BlockHeader struct {
 	EvidenceHash Hash `json:"evidence_hash,omitempty"`
 
 	// height
-	Height float64 `json:"height,omitempty"`
+	Height string `json:"height,omitempty"`
 
 	// last block id
 	LastBlockID *BlockID `json:"last_block_id,omitempty"`
@@ -47,7 +47,7 @@ type BlockHeader struct {
 	NextValidatorsHash Hash `json:"next_validators_hash,omitempty"`
 
 	// num txs
-	NumTxs float64 `json:"num_txs,omitempty"`
+	NumTxs string `json:"num_txs,omitempty"`
 
 	// proposer address
 	ProposerAddress Address `json:"proposer_address,omitempty"`
@@ -56,7 +56,7 @@ type BlockHeader struct {
 	Time string `json:"time,omitempty"`
 
 	// total txs
-	TotalTxs float64 `json:"total_txs,omitempty"`
+	TotalTxs string `json:"total_txs,omitempty"`
 
 	// validators hash
 	ValidatorsHash Hash `json:"validators_hash,omitempty"`

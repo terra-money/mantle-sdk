@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -99,21 +100,42 @@ swagger:model GetStakingParametersOKBody
 */
 type GetStakingParametersOKBody struct {
 
-	// bond denom
-	BondDenom string `json:"bond_denom,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
 
-	// max entries
-	MaxEntries int64 `json:"max_entries,omitempty"`
-
-	// max validators
-	MaxValidators int64 `json:"max_validators,omitempty"`
-
-	// unbonding time
-	UnbondingTime string `json:"unbonding_time,omitempty"`
+	// result
+	Result *GetStakingParametersOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get staking parameters o k body
 func (o *GetStakingParametersOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetStakingParametersOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getStakingParametersOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -128,6 +150,47 @@ func (o *GetStakingParametersOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetStakingParametersOKBody) UnmarshalBinary(b []byte) error {
 	var res GetStakingParametersOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetStakingParametersOKBodyResult get staking parameters o k body result
+swagger:model GetStakingParametersOKBodyResult
+*/
+type GetStakingParametersOKBodyResult struct {
+
+	// bond denom
+	BondDenom string `json:"bond_denom,omitempty"`
+
+	// max entries
+	MaxEntries int64 `json:"max_entries,omitempty"`
+
+	// max validators
+	MaxValidators int64 `json:"max_validators,omitempty"`
+
+	// unbonding time
+	UnbondingTime string `json:"unbonding_time,omitempty"`
+}
+
+// Validate validates this get staking parameters o k body result
+func (o *GetStakingParametersOKBodyResult) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetStakingParametersOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetStakingParametersOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetStakingParametersOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

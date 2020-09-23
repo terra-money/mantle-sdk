@@ -6,6 +6,9 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"strconv"
+
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
@@ -15,21 +18,67 @@ import (
 // swagger:model OracleParams
 type OracleParams struct {
 
-	// drop threshold
-	DropThreshold float64 `json:"drop_threshold,omitempty"`
+	// min valid per window
+	MinValidPerWindow string `json:"min_valid_per_window,omitempty"`
 
-	// oracle reward band
-	OracleRewardBand float64 `json:"oracle_reward_band,omitempty"`
+	// reward band
+	RewardBand string `json:"reward_band,omitempty"`
+
+	// reward distribution window
+	RewardDistributionWindow string `json:"reward_distribution_window,omitempty"`
+
+	// slash fraction
+	SlashFraction string `json:"slash_fraction,omitempty"`
+
+	// slash window
+	SlashWindow string `json:"slash_window,omitempty"`
 
 	// vote period
-	VotePeriod float64 `json:"vote_period,omitempty"`
+	VotePeriod string `json:"vote_period,omitempty"`
 
 	// vote threshold
-	VoteThreshold float64 `json:"vote_threshold,omitempty"`
+	VoteThreshold string `json:"vote_threshold,omitempty"`
+
+	// whitelist
+	Whitelist []*OracleParamsWhitelistItems0 `json:"whitelist"`
 }
 
 // Validate validates this oracle params
 func (m *OracleParams) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateWhitelist(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *OracleParams) validateWhitelist(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Whitelist) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.Whitelist); i++ {
+		if swag.IsZero(m.Whitelist[i]) { // not required
+			continue
+		}
+
+		if m.Whitelist[i] != nil {
+			if err := m.Whitelist[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("whitelist" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 
@@ -44,6 +93,41 @@ func (m *OracleParams) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *OracleParams) UnmarshalBinary(b []byte) error {
 	var res OracleParams
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
+	return nil
+}
+
+// OracleParamsWhitelistItems0 oracle params whitelist items0
+//
+// swagger:model OracleParamsWhitelistItems0
+type OracleParamsWhitelistItems0 struct {
+
+	// name
+	Name string `json:"name,omitempty"`
+
+	// tobin tax
+	TobinTax string `json:"tobin_tax,omitempty"`
+}
+
+// Validate validates this oracle params whitelist items0
+func (m *OracleParamsWhitelistItems0) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *OracleParamsWhitelistItems0) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *OracleParamsWhitelistItems0) UnmarshalBinary(b []byte) error {
+	var res OracleParamsWhitelistItems0
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

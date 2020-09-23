@@ -149,7 +149,7 @@ func (a *Client) GetNodeInfo(params *GetNodeInfoParams) (*GetNodeInfoOK, error) 
 /*
   GetSyncing syncings state of node
 
-  Get if the node is currently syning with other nodes
+  Get if the node is currently syncing with other nodes
 */
 func (a *Client) GetSyncing(params *GetSyncingParams) (*GetSyncingOK, error) {
 	// TODO: Validate the params before sending

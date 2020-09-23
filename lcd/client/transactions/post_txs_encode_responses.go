@@ -89,7 +89,7 @@ func NewPostTxsEncodeBadRequest() *PostTxsEncodeBadRequest {
 
 /*PostTxsEncodeBadRequest handles this case with default header values.
 
-The tx was malformated
+The tx was malformed
 */
 type PostTxsEncodeBadRequest struct {
 }

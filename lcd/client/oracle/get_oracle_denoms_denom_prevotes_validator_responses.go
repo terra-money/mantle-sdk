@@ -8,9 +8,12 @@ package oracle
 import (
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,21 +60,23 @@ func NewGetOracleDenomsDenomPrevotesValidatorOK() *GetOracleDenomsDenomPrevotesV
 OK
 */
 type GetOracleDenomsDenomPrevotesValidatorOK struct {
-	Payload []*models.ExchangeRatePrevote
+	Payload *GetOracleDenomsDenomPrevotesValidatorOKBody
 }
 
 func (o *GetOracleDenomsDenomPrevotesValidatorOK) Error() string {
 	return fmt.Sprintf("[GET /oracle/denoms/{denom}/prevotes/{validator}][%d] getOracleDenomsDenomPrevotesValidatorOK  %+v", 200, o.Payload)
 }
 
-func (o *GetOracleDenomsDenomPrevotesValidatorOK) GetPayload() []*models.ExchangeRatePrevote {
+func (o *GetOracleDenomsDenomPrevotesValidatorOK) GetPayload() *GetOracleDenomsDenomPrevotesValidatorOKBody {
 	return o.Payload
 }
 
 func (o *GetOracleDenomsDenomPrevotesValidatorOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetOracleDenomsDenomPrevotesValidatorOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -117,5 +122,74 @@ func (o *GetOracleDenomsDenomPrevotesValidatorInternalServerError) Error() strin
 
 func (o *GetOracleDenomsDenomPrevotesValidatorInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetOracleDenomsDenomPrevotesValidatorOKBody get oracle denoms denom prevotes validator o k body
+swagger:model GetOracleDenomsDenomPrevotesValidatorOKBody
+*/
+type GetOracleDenomsDenomPrevotesValidatorOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result []*models.ExchangeRatePrevote `json:"result"`
+}
+
+// Validate validates this get oracle denoms denom prevotes validator o k body
+func (o *GetOracleDenomsDenomPrevotesValidatorOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetOracleDenomsDenomPrevotesValidatorOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Result); i++ {
+		if swag.IsZero(o.Result[i]) { // not required
+			continue
+		}
+
+		if o.Result[i] != nil {
+			if err := o.Result[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getOracleDenomsDenomPrevotesValidatorOK" + "." + "result" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetOracleDenomsDenomPrevotesValidatorOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetOracleDenomsDenomPrevotesValidatorOKBody) UnmarshalBinary(b []byte) error {
+	var res GetOracleDenomsDenomPrevotesValidatorOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

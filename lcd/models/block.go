@@ -18,22 +18,26 @@ import (
 // swagger:model Block
 type Block struct {
 
+	// data
+	Data *BlockData `json:"data,omitempty"`
+
 	// evidence
-	Evidence []string `json:"evidence"`
+	Evidence interface{} `json:"evidence,omitempty"`
 
 	// header
 	Header *BlockHeader `json:"header,omitempty"`
 
 	// last commit
 	LastCommit *BlockLastCommit `json:"last_commit,omitempty"`
-
-	// txs
-	Txs []string `json:"txs"`
 }
 
 // Validate validates this block
 func (m *Block) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateData(formats); err != nil {
+		res = append(res, err)
+	}
 
 	if err := m.validateHeader(formats); err != nil {
 		res = append(res, err)
@@ -46,6 +50,24 @@ func (m *Block) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *Block) validateData(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Data) { // not required
+		return nil
+	}
+
+	if m.Data != nil {
+		if err := m.Data.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("data")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -96,6 +118,38 @@ func (m *Block) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *Block) UnmarshalBinary(b []byte) error {
 	var res Block
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
+	return nil
+}
+
+// BlockData block data
+//
+// swagger:model BlockData
+type BlockData struct {
+
+	// txs
+	Txs []string `json:"txs"`
+}
+
+// Validate validates this block data
+func (m *BlockData) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *BlockData) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *BlockData) UnmarshalBinary(b []byte) error {
+	var res BlockData
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

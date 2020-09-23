@@ -21,11 +21,14 @@ type ContractInfo struct {
 	// code id
 	CodeID string `json:"code_id,omitempty"`
 
-	// creator
-	Creator string `json:"creator,omitempty"`
-
 	// init msg
 	InitMsg string `json:"init_msg,omitempty"`
+
+	// migratable
+	Migratable bool `json:"migratable,omitempty"`
+
+	// owner
+	Owner string `json:"owner,omitempty"`
 }
 
 // Validate validates this contract info

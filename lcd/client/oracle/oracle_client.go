@@ -545,7 +545,7 @@ func (a *Client) GetOracleVotersValidatorVotes(params *GetOracleVotersValidatorV
 }
 
 /*
-  PostOracleDenomsDenomPrevotes generates oracle exchange rate prevote message containing a hash of a vote
+  PostOracleDenomsDenomPrevotes generates oracle exchange rate prevote message containing hash of an vote
 */
 func (a *Client) PostOracleDenomsDenomPrevotes(params *PostOracleDenomsDenomPrevotesParams) (*PostOracleDenomsDenomPrevotesOK, error) {
 	// TODO: Validate the params before sending

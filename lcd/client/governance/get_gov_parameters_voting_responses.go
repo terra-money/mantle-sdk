@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -153,12 +154,42 @@ swagger:model GetGovParametersVotingOKBody
 */
 type GetGovParametersVotingOKBody struct {
 
-	// voting period
-	VotingPeriod string `json:"voting_period,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *GetGovParametersVotingOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get gov parameters voting o k body
 func (o *GetGovParametersVotingOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetGovParametersVotingOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getGovParametersVotingOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -173,6 +204,38 @@ func (o *GetGovParametersVotingOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetGovParametersVotingOKBody) UnmarshalBinary(b []byte) error {
 	var res GetGovParametersVotingOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetGovParametersVotingOKBodyResult get gov parameters voting o k body result
+swagger:model GetGovParametersVotingOKBodyResult
+*/
+type GetGovParametersVotingOKBodyResult struct {
+
+	// voting period
+	VotingPeriod string `json:"voting_period,omitempty"`
+}
+
+// Validate validates this get gov parameters voting o k body result
+func (o *GetGovParametersVotingOKBodyResult) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetGovParametersVotingOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetGovParametersVotingOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetGovParametersVotingOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

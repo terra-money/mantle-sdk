@@ -8,9 +8,12 @@ package distribution
 import (
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -51,21 +54,23 @@ func NewGetDistributionCommunityPoolOK() *GetDistributionCommunityPoolOK {
 OK
 */
 type GetDistributionCommunityPoolOK struct {
-	Payload []*models.Coin
+	Payload *GetDistributionCommunityPoolOKBody
 }
 
 func (o *GetDistributionCommunityPoolOK) Error() string {
 	return fmt.Sprintf("[GET /distribution/community_pool][%d] getDistributionCommunityPoolOK  %+v", 200, o.Payload)
 }
 
-func (o *GetDistributionCommunityPoolOK) GetPayload() []*models.Coin {
+func (o *GetDistributionCommunityPoolOK) GetPayload() *GetDistributionCommunityPoolOKBody {
 	return o.Payload
 }
 
 func (o *GetDistributionCommunityPoolOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetDistributionCommunityPoolOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -90,5 +95,74 @@ func (o *GetDistributionCommunityPoolInternalServerError) Error() string {
 
 func (o *GetDistributionCommunityPoolInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetDistributionCommunityPoolOKBody get distribution community pool o k body
+swagger:model GetDistributionCommunityPoolOKBody
+*/
+type GetDistributionCommunityPoolOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result []*models.Coin `json:"result"`
+}
+
+// Validate validates this get distribution community pool o k body
+func (o *GetDistributionCommunityPoolOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetDistributionCommunityPoolOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Result); i++ {
+		if swag.IsZero(o.Result[i]) { // not required
+			continue
+		}
+
+		if o.Result[i] != nil {
+			if err := o.Result[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getDistributionCommunityPoolOK" + "." + "result" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetDistributionCommunityPoolOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetDistributionCommunityPoolOKBody) UnmarshalBinary(b []byte) error {
+	var res GetDistributionCommunityPoolOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

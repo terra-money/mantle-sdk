@@ -110,7 +110,7 @@ func NewGetAuthAccountsAddressInternalServerError() *GetAuthAccountsAddressInter
 
 /*GetAuthAccountsAddressInternalServerError handles this case with default header values.
 
-Server internel error
+Server internal error
 */
 type GetAuthAccountsAddressInternalServerError struct {
 }
@@ -129,22 +129,18 @@ swagger:model GetAuthAccountsAddressOKBody
 */
 type GetAuthAccountsAddressOKBody struct {
 
-	// account
-	Account *models.Account `json:"Account,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
 
-	// lazy graded vesting account
-	LazyGradedVestingAccount *models.LazyGradedVestingAccount `json:"LazyGradedVestingAccount,omitempty"`
+	// result
+	Result *GetAuthAccountsAddressOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get auth accounts address o k body
 func (o *GetAuthAccountsAddressOKBody) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := o.validateAccount(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := o.validateLazyGradedVestingAccount(formats); err != nil {
+	if err := o.validateResult(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -154,34 +150,16 @@ func (o *GetAuthAccountsAddressOKBody) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (o *GetAuthAccountsAddressOKBody) validateAccount(formats strfmt.Registry) error {
+func (o *GetAuthAccountsAddressOKBody) validateResult(formats strfmt.Registry) error {
 
-	if swag.IsZero(o.Account) { // not required
+	if swag.IsZero(o.Result) { // not required
 		return nil
 	}
 
-	if o.Account != nil {
-		if err := o.Account.Validate(formats); err != nil {
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("getAuthAccountsAddressOK" + "." + "Account")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (o *GetAuthAccountsAddressOKBody) validateLazyGradedVestingAccount(formats strfmt.Registry) error {
-
-	if swag.IsZero(o.LazyGradedVestingAccount) { // not required
-		return nil
-	}
-
-	if o.LazyGradedVestingAccount != nil {
-		if err := o.LazyGradedVestingAccount.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("getAuthAccountsAddressOK" + "." + "LazyGradedVestingAccount")
+				return ve.ValidateName("getAuthAccountsAddressOK" + "." + "result")
 			}
 			return err
 		}
@@ -201,6 +179,90 @@ func (o *GetAuthAccountsAddressOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetAuthAccountsAddressOKBody) UnmarshalBinary(b []byte) error {
 	var res GetAuthAccountsAddressOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetAuthAccountsAddressOKBodyResult get auth accounts address o k body result
+swagger:model GetAuthAccountsAddressOKBodyResult
+*/
+type GetAuthAccountsAddressOKBodyResult struct {
+
+	// account
+	Account *models.Account `json:"Account,omitempty"`
+
+	// lazy graded vesting account
+	LazyGradedVestingAccount *models.LazyGradedVestingAccount `json:"LazyGradedVestingAccount,omitempty"`
+}
+
+// Validate validates this get auth accounts address o k body result
+func (o *GetAuthAccountsAddressOKBodyResult) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateAccount(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateLazyGradedVestingAccount(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetAuthAccountsAddressOKBodyResult) validateAccount(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Account) { // not required
+		return nil
+	}
+
+	if o.Account != nil {
+		if err := o.Account.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getAuthAccountsAddressOK" + "." + "result" + "." + "Account")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *GetAuthAccountsAddressOKBodyResult) validateLazyGradedVestingAccount(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.LazyGradedVestingAccount) { // not required
+		return nil
+	}
+
+	if o.LazyGradedVestingAccount != nil {
+		if err := o.LazyGradedVestingAccount.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getAuthAccountsAddressOK" + "." + "result" + "." + "LazyGradedVestingAccount")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetAuthAccountsAddressOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetAuthAccountsAddressOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetAuthAccountsAddressOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

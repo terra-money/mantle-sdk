@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetSupplyTotalDenominationReader is a Reader for the GetSupplyTotalDenomination structure.
@@ -55,21 +56,23 @@ func NewGetSupplyTotalDenominationOK() *GetSupplyTotalDenominationOK {
 OK
 */
 type GetSupplyTotalDenominationOK struct {
-	Payload string
+	Payload *GetSupplyTotalDenominationOKBody
 }
 
 func (o *GetSupplyTotalDenominationOK) Error() string {
 	return fmt.Sprintf("[GET /supply/total/{denomination}][%d] getSupplyTotalDenominationOK  %+v", 200, o.Payload)
 }
 
-func (o *GetSupplyTotalDenominationOK) GetPayload() string {
+func (o *GetSupplyTotalDenominationOK) GetPayload() *GetSupplyTotalDenominationOKBody {
 	return o.Payload
 }
 
 func (o *GetSupplyTotalDenominationOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetSupplyTotalDenominationOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -115,5 +118,40 @@ func (o *GetSupplyTotalDenominationInternalServerError) Error() string {
 
 func (o *GetSupplyTotalDenominationInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetSupplyTotalDenominationOKBody get supply total denomination o k body
+swagger:model GetSupplyTotalDenominationOKBody
+*/
+type GetSupplyTotalDenominationOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get supply total denomination o k body
+func (o *GetSupplyTotalDenominationOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetSupplyTotalDenominationOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetSupplyTotalDenominationOKBody) UnmarshalBinary(b []byte) error {
+	var res GetSupplyTotalDenominationOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

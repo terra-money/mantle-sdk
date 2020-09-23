@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,20 +59,20 @@ func NewGetStakingValidatorsValidatorAddrOK() *GetStakingValidatorsValidatorAddr
 OK
 */
 type GetStakingValidatorsValidatorAddrOK struct {
-	Payload *models.Validator
+	Payload *GetStakingValidatorsValidatorAddrOKBody
 }
 
 func (o *GetStakingValidatorsValidatorAddrOK) Error() string {
 	return fmt.Sprintf("[GET /staking/validators/{validatorAddr}][%d] getStakingValidatorsValidatorAddrOK  %+v", 200, o.Payload)
 }
 
-func (o *GetStakingValidatorsValidatorAddrOK) GetPayload() *models.Validator {
+func (o *GetStakingValidatorsValidatorAddrOK) GetPayload() *GetStakingValidatorsValidatorAddrOKBody {
 	return o.Payload
 }
 
 func (o *GetStakingValidatorsValidatorAddrOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.Validator)
+	o.Payload = new(GetStakingValidatorsValidatorAddrOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -119,5 +121,67 @@ func (o *GetStakingValidatorsValidatorAddrInternalServerError) Error() string {
 
 func (o *GetStakingValidatorsValidatorAddrInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetStakingValidatorsValidatorAddrOKBody get staking validators validator addr o k body
+swagger:model GetStakingValidatorsValidatorAddrOKBody
+*/
+type GetStakingValidatorsValidatorAddrOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.Validator `json:"result,omitempty"`
+}
+
+// Validate validates this get staking validators validator addr o k body
+func (o *GetStakingValidatorsValidatorAddrOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetStakingValidatorsValidatorAddrOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getStakingValidatorsValidatorAddrOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetStakingValidatorsValidatorAddrOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetStakingValidatorsValidatorAddrOKBody) UnmarshalBinary(b []byte) error {
+	var res GetStakingValidatorsValidatorAddrOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

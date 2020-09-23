@@ -6,6 +6,7 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
@@ -16,7 +17,7 @@ import (
 type Delegation struct {
 
 	// balance
-	Balance string `json:"balance,omitempty"`
+	Balance *Coin `json:"balance,omitempty"`
 
 	// delegator address
 	DelegatorAddress string `json:"delegator_address,omitempty"`
@@ -30,6 +31,33 @@ type Delegation struct {
 
 // Validate validates this delegation
 func (m *Delegation) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateBalance(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *Delegation) validateBalance(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Balance) { // not required
+		return nil
+	}
+
+	if m.Balance != nil {
+		if err := m.Balance.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("balance")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 

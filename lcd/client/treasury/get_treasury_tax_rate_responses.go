@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetTreasuryTaxRateReader is a Reader for the GetTreasuryTaxRate structure.
@@ -49,21 +50,23 @@ func NewGetTreasuryTaxRateOK() *GetTreasuryTaxRateOK {
 OK
 */
 type GetTreasuryTaxRateOK struct {
-	Payload float32
+	Payload *GetTreasuryTaxRateOKBody
 }
 
 func (o *GetTreasuryTaxRateOK) Error() string {
 	return fmt.Sprintf("[GET /treasury/tax_rate][%d] getTreasuryTaxRateOK  %+v", 200, o.Payload)
 }
 
-func (o *GetTreasuryTaxRateOK) GetPayload() float32 {
+func (o *GetTreasuryTaxRateOK) GetPayload() *GetTreasuryTaxRateOKBody {
 	return o.Payload
 }
 
 func (o *GetTreasuryTaxRateOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetTreasuryTaxRateOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -88,5 +91,40 @@ func (o *GetTreasuryTaxRateInternalServerError) Error() string {
 
 func (o *GetTreasuryTaxRateInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetTreasuryTaxRateOKBody get treasury tax rate o k body
+swagger:model GetTreasuryTaxRateOKBody
+*/
+type GetTreasuryTaxRateOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get treasury tax rate o k body
+func (o *GetTreasuryTaxRateOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetTreasuryTaxRateOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetTreasuryTaxRateOKBody) UnmarshalBinary(b []byte) error {
+	var res GetTreasuryTaxRateOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

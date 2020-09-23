@@ -25,7 +25,7 @@ type UnsignedStdTx struct {
 	Memo string `json:"memo,omitempty"`
 
 	// msg
-	Msg []Msg `json:"msg"`
+	Msg []*Msg `json:"msg"`
 
 	// signatures
 	Signatures string `json:"signatures,omitempty"`
@@ -74,12 +74,17 @@ func (m *UnsignedStdTx) validateMsg(formats strfmt.Registry) error {
 	}
 
 	for i := 0; i < len(m.Msg); i++ {
+		if swag.IsZero(m.Msg[i]) { // not required
+			continue
+		}
 
-		if err := m.Msg[i].Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("msg" + "." + strconv.Itoa(i))
+		if m.Msg[i] != nil {
+			if err := m.Msg[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("msg" + "." + strconv.Itoa(i))
+				}
+				return err
 			}
-			return err
 		}
 
 	}

@@ -7,14 +7,40 @@ package models
 
 import (
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // Msg msg
 //
 // swagger:model Msg
-type Msg string
+type Msg struct {
+
+	// type
+	Type string `json:"type,omitempty"`
+
+	// value
+	Value interface{} `json:"value,omitempty"`
+}
 
 // Validate validates this msg
-func (m Msg) Validate(formats strfmt.Registry) error {
+func (m *Msg) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *Msg) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *Msg) UnmarshalBinary(b []byte) error {
+	var res Msg
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
 	return nil
 }

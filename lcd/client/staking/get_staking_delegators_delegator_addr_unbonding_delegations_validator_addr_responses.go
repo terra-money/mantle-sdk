@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,20 +59,20 @@ func NewGetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK() *
 OK
 */
 type GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK struct {
-	Payload *models.UnbondingDelegation
+	Payload *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody
 }
 
 func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK) Error() string {
 	return fmt.Sprintf("[GET /staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}][%d] getStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK  %+v", 200, o.Payload)
 }
 
-func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK) GetPayload() *models.UnbondingDelegation {
+func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK) GetPayload() *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody {
 	return o.Payload
 }
 
 func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.UnbondingDelegation)
+	o.Payload = new(GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -119,5 +121,67 @@ func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrInter
 
 func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody get staking delegators delegator addr unbonding delegations validator addr o k body
+swagger:model GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody
+*/
+type GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.UnbondingDelegation `json:"result,omitempty"`
+}
+
+// Validate validates this get staking delegators delegator addr unbonding delegations validator addr o k body
+func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody) UnmarshalBinary(b []byte) error {
+	var res GetStakingDelegatorsDelegatorAddrUnbondingDelegationsValidatorAddrOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

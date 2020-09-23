@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,20 +59,20 @@ func NewGetDistributionDelegatorsDelegatorAddrRewardsOK() *GetDistributionDelega
 OK
 */
 type GetDistributionDelegatorsDelegatorAddrRewardsOK struct {
-	Payload *models.DelegatorTotalRewards
+	Payload *GetDistributionDelegatorsDelegatorAddrRewardsOKBody
 }
 
 func (o *GetDistributionDelegatorsDelegatorAddrRewardsOK) Error() string {
 	return fmt.Sprintf("[GET /distribution/delegators/{delegatorAddr}/rewards][%d] getDistributionDelegatorsDelegatorAddrRewardsOK  %+v", 200, o.Payload)
 }
 
-func (o *GetDistributionDelegatorsDelegatorAddrRewardsOK) GetPayload() *models.DelegatorTotalRewards {
+func (o *GetDistributionDelegatorsDelegatorAddrRewardsOK) GetPayload() *GetDistributionDelegatorsDelegatorAddrRewardsOKBody {
 	return o.Payload
 }
 
 func (o *GetDistributionDelegatorsDelegatorAddrRewardsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.DelegatorTotalRewards)
+	o.Payload = new(GetDistributionDelegatorsDelegatorAddrRewardsOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -119,5 +121,67 @@ func (o *GetDistributionDelegatorsDelegatorAddrRewardsInternalServerError) Error
 
 func (o *GetDistributionDelegatorsDelegatorAddrRewardsInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetDistributionDelegatorsDelegatorAddrRewardsOKBody get distribution delegators delegator addr rewards o k body
+swagger:model GetDistributionDelegatorsDelegatorAddrRewardsOKBody
+*/
+type GetDistributionDelegatorsDelegatorAddrRewardsOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.DelegatorTotalRewards `json:"result,omitempty"`
+}
+
+// Validate validates this get distribution delegators delegator addr rewards o k body
+func (o *GetDistributionDelegatorsDelegatorAddrRewardsOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetDistributionDelegatorsDelegatorAddrRewardsOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getDistributionDelegatorsDelegatorAddrRewardsOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetDistributionDelegatorsDelegatorAddrRewardsOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetDistributionDelegatorsDelegatorAddrRewardsOKBody) UnmarshalBinary(b []byte) error {
+	var res GetDistributionDelegatorsDelegatorAddrRewardsOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

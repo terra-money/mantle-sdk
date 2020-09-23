@@ -16,26 +16,32 @@ import (
 // swagger:model TreasuryParams
 type TreasuryParams struct {
 
+	// budget share
+	BudgetShare float32 `json:"budget_share,omitempty"`
+
 	// mining increment
-	MiningIncrement float32 `json:"mining_increment,omitempty"`
+	MiningIncrement string `json:"mining_increment,omitempty"`
+
+	// oracle share
+	OracleShare float32 `json:"oracle_share,omitempty"`
 
 	// reward policy
 	RewardPolicy *PolicyConstraints `json:"reward_policy,omitempty"`
 
 	// 67%
-	SeigniorageBurdenTarget float32 `json:"seigniorage_burden_target,omitempty"`
+	SeigniorageBurdenTarget string `json:"seigniorage_burden_target,omitempty"`
 
 	// tax policy
 	TaxPolicy *PolicyConstraints `json:"tax_policy,omitempty"`
 
 	// window long
-	WindowLong int64 `json:"window_long,omitempty"`
+	WindowLong string `json:"window_long,omitempty"`
 
 	// window probation
-	WindowProbation int64 `json:"window_probation,omitempty"`
+	WindowProbation string `json:"window_probation,omitempty"`
 
 	// window short
-	WindowShort int64 `json:"window_short,omitempty"`
+	WindowShort string `json:"window_short,omitempty"`
 }
 
 // Validate validates this treasury params

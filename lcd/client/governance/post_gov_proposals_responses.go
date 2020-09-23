@@ -57,7 +57,7 @@ func NewPostGovProposalsOK() *PostGovProposalsOK {
 
 /*PostGovProposalsOK handles this case with default header values.
 
-Tx was succesfully generated
+Tx was successfully generated
 */
 type PostGovProposalsOK struct {
 	Payload *models.StdTx

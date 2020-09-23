@@ -61,7 +61,7 @@ for the post gov proposals community pool spend operation typically these are wr
 type PostGovProposalsCommunityPoolSpendParams struct {
 
 	/*PostProposalBody
-	  The community pool spend proposal body that contains receipient and reward info
+	  The community pool spend proposal body that contains recipient and reward info
 
 	*/
 	PostProposalBody PostGovProposalsCommunityPoolSpendBody
