@@ -16,41 +16,21 @@ import (
 // Supply supply
 //
 // swagger:model Supply
-type Supply struct {
-
-	// total
-	Total []*Coin `json:"total"`
-}
+type Supply []*Coin
 
 // Validate validates this supply
-func (m *Supply) Validate(formats strfmt.Registry) error {
+func (m Supply) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateTotal(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (m *Supply) validateTotal(formats strfmt.Registry) error {
-
-	if swag.IsZero(m.Total) { // not required
-		return nil
-	}
-
-	for i := 0; i < len(m.Total); i++ {
-		if swag.IsZero(m.Total[i]) { // not required
+	for i := 0; i < len(m); i++ {
+		if swag.IsZero(m[i]) { // not required
 			continue
 		}
 
-		if m.Total[i] != nil {
-			if err := m.Total[i].Validate(formats); err != nil {
+		if m[i] != nil {
+			if err := m[i].Validate(formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
-					return ve.ValidateName("total" + "." + strconv.Itoa(i))
+					return ve.ValidateName(strconv.Itoa(i))
 				}
 				return err
 			}
@@ -58,23 +38,8 @@ func (m *Supply) validateTotal(formats strfmt.Registry) error {
 
 	}
 
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *Supply) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
 	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *Supply) UnmarshalBinary(b []byte) error {
-	var res Supply
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
 	return nil
 }

@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -51,20 +53,20 @@ func NewGetSupplyTotalOK() *GetSupplyTotalOK {
 OK
 */
 type GetSupplyTotalOK struct {
-	Payload *models.Supply
+	Payload *GetSupplyTotalOKBody
 }
 
 func (o *GetSupplyTotalOK) Error() string {
 	return fmt.Sprintf("[GET /supply/total][%d] getSupplyTotalOK  %+v", 200, o.Payload)
 }
 
-func (o *GetSupplyTotalOK) GetPayload() *models.Supply {
+func (o *GetSupplyTotalOK) GetPayload() *GetSupplyTotalOKBody {
 	return o.Payload
 }
 
 func (o *GetSupplyTotalOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.Supply)
+	o.Payload = new(GetSupplyTotalOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -92,5 +94,65 @@ func (o *GetSupplyTotalInternalServerError) Error() string {
 
 func (o *GetSupplyTotalInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetSupplyTotalOKBody get supply total o k body
+swagger:model GetSupplyTotalOKBody
+*/
+type GetSupplyTotalOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result models.Supply `json:"result"`
+}
+
+// Validate validates this get supply total o k body
+func (o *GetSupplyTotalOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetSupplyTotalOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if err := o.Result.Validate(formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("getSupplyTotalOK" + "." + "result")
+		}
+		return err
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetSupplyTotalOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetSupplyTotalOKBody) UnmarshalBinary(b []byte) error {
+	var res GetSupplyTotalOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

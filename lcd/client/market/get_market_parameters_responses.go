@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,20 +59,20 @@ func NewGetMarketParametersOK() *GetMarketParametersOK {
 OK
 */
 type GetMarketParametersOK struct {
-	Payload *models.MarketParams
+	Payload *GetMarketParametersOKBody
 }
 
 func (o *GetMarketParametersOK) Error() string {
 	return fmt.Sprintf("[GET /market/parameters][%d] getMarketParametersOK  %+v", 200, o.Payload)
 }
 
-func (o *GetMarketParametersOK) GetPayload() *models.MarketParams {
+func (o *GetMarketParametersOK) GetPayload() *GetMarketParametersOKBody {
 	return o.Payload
 }
 
 func (o *GetMarketParametersOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.MarketParams)
+	o.Payload = new(GetMarketParametersOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -119,5 +121,67 @@ func (o *GetMarketParametersInternalServerError) Error() string {
 
 func (o *GetMarketParametersInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetMarketParametersOKBody get market parameters o k body
+swagger:model GetMarketParametersOKBody
+*/
+type GetMarketParametersOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.MarketParams `json:"result,omitempty"`
+}
+
+// Validate validates this get market parameters o k body
+func (o *GetMarketParametersOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetMarketParametersOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getMarketParametersOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetMarketParametersOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetMarketParametersOKBody) UnmarshalBinary(b []byte) error {
+	var res GetMarketParametersOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -153,18 +154,42 @@ swagger:model GetGovParametersTallyingOKBody
 */
 type GetGovParametersTallyingOKBody struct {
 
-	// quorum
-	Quorum string `json:"quorum,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
 
-	// threshold
-	Threshold string `json:"threshold,omitempty"`
-
-	// veto
-	Veto string `json:"veto,omitempty"`
+	// result
+	Result *GetGovParametersTallyingOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get gov parameters tallying o k body
 func (o *GetGovParametersTallyingOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetGovParametersTallyingOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getGovParametersTallyingOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -179,6 +204,44 @@ func (o *GetGovParametersTallyingOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetGovParametersTallyingOKBody) UnmarshalBinary(b []byte) error {
 	var res GetGovParametersTallyingOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetGovParametersTallyingOKBodyResult get gov parameters tallying o k body result
+swagger:model GetGovParametersTallyingOKBodyResult
+*/
+type GetGovParametersTallyingOKBodyResult struct {
+
+	// quorum
+	Quorum string `json:"quorum,omitempty"`
+
+	// threshold
+	Threshold string `json:"threshold,omitempty"`
+
+	// veto
+	Veto string `json:"veto,omitempty"`
+}
+
+// Validate validates this get gov parameters tallying o k body result
+func (o *GetGovParametersTallyingOKBodyResult) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetGovParametersTallyingOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetGovParametersTallyingOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetGovParametersTallyingOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

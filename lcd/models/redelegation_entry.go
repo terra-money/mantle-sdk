@@ -19,7 +19,7 @@ type RedelegationEntry struct {
 	Balance string `json:"balance,omitempty"`
 
 	// completion time
-	CompletionTime int64 `json:"completion_time,omitempty"`
+	CompletionTime string `json:"completion_time,omitempty"`
 
 	// creation height
 	CreationHeight int64 `json:"creation_height,omitempty"`

@@ -18,6 +18,9 @@ type CodeInfo struct {
 	// code hash
 	CodeHash string `json:"code_hash,omitempty"`
 
+	// code id
+	CodeID string `json:"code_id,omitempty"`
+
 	// creator
 	Creator string `json:"creator,omitempty"`
 }

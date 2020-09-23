@@ -57,7 +57,7 @@ func NewPostBankAccountsAddressTransfersAccepted() *PostBankAccountsAddressTrans
 
 /*PostBankAccountsAddressTransfersAccepted handles this case with default header values.
 
-Tx was succesfully generated
+Tx was successfully generated
 */
 type PostBankAccountsAddressTransfersAccepted struct {
 	Payload *models.StdTx

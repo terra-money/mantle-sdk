@@ -16,16 +16,16 @@ import (
 type WasmParams struct {
 
 	// defines how many cosmwasm gas points = 1 sdk gas point
-	GasMultiplier int64 `json:"gas_multiplier,omitempty"`
+	GasMultiplier string `json:"gas_multiplier,omitempty"`
 
 	// allowed max gas usages per each contract execution
-	MaxContractGas int64 `json:"max_contract_gas,omitempty"`
+	MaxContractGas string `json:"max_contract_gas,omitempty"`
 
 	// allowed max contract exe msg bytes size
-	MaxContractMsgSize int64 `json:"max_contract_msg_size,omitempty"`
+	MaxContractMsgSize string `json:"max_contract_msg_size,omitempty"`
 
 	// allowed max contract bytes size
-	MaxContractSize int64 `json:"max_contract_size,omitempty"`
+	MaxContractSize string `json:"max_contract_size,omitempty"`
 }
 
 // Validate validates this wasm params

@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetOracleVotersValidatorMissReader is a Reader for the GetOracleVotersValidatorMiss structure.
@@ -55,21 +56,23 @@ func NewGetOracleVotersValidatorMissOK() *GetOracleVotersValidatorMissOK {
 OK
 */
 type GetOracleVotersValidatorMissOK struct {
-	Payload int64
+	Payload *GetOracleVotersValidatorMissOKBody
 }
 
 func (o *GetOracleVotersValidatorMissOK) Error() string {
 	return fmt.Sprintf("[GET /oracle/voters/{validator}/miss][%d] getOracleVotersValidatorMissOK  %+v", 200, o.Payload)
 }
 
-func (o *GetOracleVotersValidatorMissOK) GetPayload() int64 {
+func (o *GetOracleVotersValidatorMissOK) GetPayload() *GetOracleVotersValidatorMissOKBody {
 	return o.Payload
 }
 
 func (o *GetOracleVotersValidatorMissOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetOracleVotersValidatorMissOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -115,5 +118,40 @@ func (o *GetOracleVotersValidatorMissInternalServerError) Error() string {
 
 func (o *GetOracleVotersValidatorMissInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetOracleVotersValidatorMissOKBody get oracle voters validator miss o k body
+swagger:model GetOracleVotersValidatorMissOKBody
+*/
+type GetOracleVotersValidatorMissOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get oracle voters validator miss o k body
+func (o *GetOracleVotersValidatorMissOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetOracleVotersValidatorMissOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetOracleVotersValidatorMissOKBody) UnmarshalBinary(b []byte) error {
+	var res GetOracleVotersValidatorMissOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

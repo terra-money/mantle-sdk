@@ -19,8 +19,8 @@ type BlockQuery struct {
 	// block
 	Block *Block `json:"block,omitempty"`
 
-	// block meta
-	BlockMeta *BlockQueryBlockMeta `json:"block_meta,omitempty"`
+	// block id
+	BlockID *BlockID `json:"block_id,omitempty"`
 }
 
 // Validate validates this block query
@@ -31,7 +31,7 @@ func (m *BlockQuery) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateBlockMeta(formats); err != nil {
+	if err := m.validateBlockID(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -59,16 +59,16 @@ func (m *BlockQuery) validateBlock(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *BlockQuery) validateBlockMeta(formats strfmt.Registry) error {
+func (m *BlockQuery) validateBlockID(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.BlockMeta) { // not required
+	if swag.IsZero(m.BlockID) { // not required
 		return nil
 	}
 
-	if m.BlockMeta != nil {
-		if err := m.BlockMeta.Validate(formats); err != nil {
+	if m.BlockID != nil {
+		if err := m.BlockID.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("block_meta")
+				return ve.ValidateName("block_id")
 			}
 			return err
 		}
@@ -88,90 +88,6 @@ func (m *BlockQuery) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *BlockQuery) UnmarshalBinary(b []byte) error {
 	var res BlockQuery
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
-	return nil
-}
-
-// BlockQueryBlockMeta block query block meta
-//
-// swagger:model BlockQueryBlockMeta
-type BlockQueryBlockMeta struct {
-
-	// block id
-	BlockID *BlockID `json:"block_id,omitempty"`
-
-	// header
-	Header *BlockHeader `json:"header,omitempty"`
-}
-
-// Validate validates this block query block meta
-func (m *BlockQueryBlockMeta) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if err := m.validateBlockID(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateHeader(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (m *BlockQueryBlockMeta) validateBlockID(formats strfmt.Registry) error {
-
-	if swag.IsZero(m.BlockID) { // not required
-		return nil
-	}
-
-	if m.BlockID != nil {
-		if err := m.BlockID.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("block_meta" + "." + "block_id")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *BlockQueryBlockMeta) validateHeader(formats strfmt.Registry) error {
-
-	if swag.IsZero(m.Header) { // not required
-		return nil
-	}
-
-	if m.Header != nil {
-		if err := m.Header.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("block_meta" + "." + "header")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *BlockQueryBlockMeta) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
-	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *BlockQueryBlockMeta) UnmarshalBinary(b []byte) error {
-	var res BlockQueryBlockMeta
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

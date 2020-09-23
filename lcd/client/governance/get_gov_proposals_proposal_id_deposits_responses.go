@@ -8,9 +8,12 @@ package governance
 import (
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,21 +60,23 @@ func NewGetGovProposalsProposalIDDepositsOK() *GetGovProposalsProposalIDDeposits
 OK
 */
 type GetGovProposalsProposalIDDepositsOK struct {
-	Payload []*models.Deposit
+	Payload *GetGovProposalsProposalIDDepositsOKBody
 }
 
 func (o *GetGovProposalsProposalIDDepositsOK) Error() string {
 	return fmt.Sprintf("[GET /gov/proposals/{proposalId}/deposits][%d] getGovProposalsProposalIdDepositsOK  %+v", 200, o.Payload)
 }
 
-func (o *GetGovProposalsProposalIDDepositsOK) GetPayload() []*models.Deposit {
+func (o *GetGovProposalsProposalIDDepositsOK) GetPayload() *GetGovProposalsProposalIDDepositsOKBody {
 	return o.Payload
 }
 
 func (o *GetGovProposalsProposalIDDepositsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetGovProposalsProposalIDDepositsOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -117,5 +122,74 @@ func (o *GetGovProposalsProposalIDDepositsInternalServerError) Error() string {
 
 func (o *GetGovProposalsProposalIDDepositsInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetGovProposalsProposalIDDepositsOKBody get gov proposals proposal ID deposits o k body
+swagger:model GetGovProposalsProposalIDDepositsOKBody
+*/
+type GetGovProposalsProposalIDDepositsOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result []*models.Deposit `json:"result"`
+}
+
+// Validate validates this get gov proposals proposal ID deposits o k body
+func (o *GetGovProposalsProposalIDDepositsOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetGovProposalsProposalIDDepositsOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Result); i++ {
+		if swag.IsZero(o.Result[i]) { // not required
+			continue
+		}
+
+		if o.Result[i] != nil {
+			if err := o.Result[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getGovProposalsProposalIdDepositsOK" + "." + "result" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetGovProposalsProposalIDDepositsOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetGovProposalsProposalIDDepositsOKBody) UnmarshalBinary(b []byte) error {
+	var res GetGovProposalsProposalIDDepositsOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

@@ -57,7 +57,7 @@ func NewPostGovProposalsTaxRateUpdateOK() *PostGovProposalsTaxRateUpdateOK {
 
 /*PostGovProposalsTaxRateUpdateOK handles this case with default header values.
 
-The transaction was succesfully generated
+The transaction was successfully generated
 */
 type PostGovProposalsTaxRateUpdateOK struct {
 	Payload *models.StdTx

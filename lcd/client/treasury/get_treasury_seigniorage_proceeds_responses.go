@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetTreasurySeigniorageProceedsReader is a Reader for the GetTreasurySeigniorageProceeds structure.
@@ -49,21 +50,23 @@ func NewGetTreasurySeigniorageProceedsOK() *GetTreasurySeigniorageProceedsOK {
 OK
 */
 type GetTreasurySeigniorageProceedsOK struct {
-	Payload int64
+	Payload *GetTreasurySeigniorageProceedsOKBody
 }
 
 func (o *GetTreasurySeigniorageProceedsOK) Error() string {
 	return fmt.Sprintf("[GET /treasury/seigniorage_proceeds][%d] getTreasurySeigniorageProceedsOK  %+v", 200, o.Payload)
 }
 
-func (o *GetTreasurySeigniorageProceedsOK) GetPayload() int64 {
+func (o *GetTreasurySeigniorageProceedsOK) GetPayload() *GetTreasurySeigniorageProceedsOKBody {
 	return o.Payload
 }
 
 func (o *GetTreasurySeigniorageProceedsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetTreasurySeigniorageProceedsOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -88,5 +91,40 @@ func (o *GetTreasurySeigniorageProceedsInternalServerError) Error() string {
 
 func (o *GetTreasurySeigniorageProceedsInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetTreasurySeigniorageProceedsOKBody get treasury seigniorage proceeds o k body
+swagger:model GetTreasurySeigniorageProceedsOKBody
+*/
+type GetTreasurySeigniorageProceedsOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get treasury seigniorage proceeds o k body
+func (o *GetTreasurySeigniorageProceedsOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetTreasurySeigniorageProceedsOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetTreasurySeigniorageProceedsOKBody) UnmarshalBinary(b []byte) error {
+	var res GetTreasurySeigniorageProceedsOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

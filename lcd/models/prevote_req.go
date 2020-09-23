@@ -19,13 +19,13 @@ type PrevoteReq struct {
 	// base req
 	BaseReq *BaseReq `json:"base_req,omitempty"`
 
-	// exchange rate of Luna in denom currency is to make prevote hash; this field is required to submit prevote in case absence of hash
+	// exchange rate of Luna in denom currency is to make provte hash; this field is required to submit prevote in case absense of hash
 	ExchangeRate float64 `json:"exchange_rate,omitempty"`
 
 	// hex string; hash of next vote; empty == skip prevote
 	Hash string `json:"hash,omitempty"`
 
-	// salt is to make prevote hash; this field is required to submit prevote in case  absence of hash
+	// salt is to make prevote hash; this field is required to submit prevote in case  absense of hash
 	Salt string `json:"salt,omitempty"`
 
 	// validator

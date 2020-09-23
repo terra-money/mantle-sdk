@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetMarketTerraPoolDeltaReader is a Reader for the GetMarketTerraPoolDelta structure.
@@ -55,21 +56,23 @@ func NewGetMarketTerraPoolDeltaOK() *GetMarketTerraPoolDeltaOK {
 OK
 */
 type GetMarketTerraPoolDeltaOK struct {
-	Payload float32
+	Payload *GetMarketTerraPoolDeltaOKBody
 }
 
 func (o *GetMarketTerraPoolDeltaOK) Error() string {
 	return fmt.Sprintf("[GET /market/terra_pool_delta][%d] getMarketTerraPoolDeltaOK  %+v", 200, o.Payload)
 }
 
-func (o *GetMarketTerraPoolDeltaOK) GetPayload() float32 {
+func (o *GetMarketTerraPoolDeltaOK) GetPayload() *GetMarketTerraPoolDeltaOKBody {
 	return o.Payload
 }
 
 func (o *GetMarketTerraPoolDeltaOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetMarketTerraPoolDeltaOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -115,5 +118,40 @@ func (o *GetMarketTerraPoolDeltaInternalServerError) Error() string {
 
 func (o *GetMarketTerraPoolDeltaInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetMarketTerraPoolDeltaOKBody get market terra pool delta o k body
+swagger:model GetMarketTerraPoolDeltaOKBody
+*/
+type GetMarketTerraPoolDeltaOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get market terra pool delta o k body
+func (o *GetMarketTerraPoolDeltaOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetMarketTerraPoolDeltaOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetMarketTerraPoolDeltaOKBody) UnmarshalBinary(b []byte) error {
+	var res GetMarketTerraPoolDeltaOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

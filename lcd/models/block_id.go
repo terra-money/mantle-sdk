@@ -102,7 +102,7 @@ type BlockIDParts struct {
 	Hash Hash `json:"hash,omitempty"`
 
 	// total
-	Total float64 `json:"total,omitempty"`
+	Total string `json:"total,omitempty"`
 }
 
 // Validate validates this block ID parts

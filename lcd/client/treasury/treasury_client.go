@@ -27,6 +27,8 @@ type Client struct {
 
 // ClientService is the interface for Client methods
 type ClientService interface {
+	GetTreasuryIndicators(params *GetTreasuryIndicatorsParams) (*GetTreasuryIndicatorsOK, error)
+
 	GetTreasuryParameters(params *GetTreasuryParametersParams) (*GetTreasuryParametersOK, error)
 
 	GetTreasuryRewardWeight(params *GetTreasuryRewardWeightParams) (*GetTreasuryRewardWeightOK, error)
@@ -40,6 +42,40 @@ type ClientService interface {
 	GetTreasuryTaxRate(params *GetTreasuryTaxRateParams) (*GetTreasuryTaxRateOK, error)
 
 	SetTransport(transport runtime.ClientTransport)
+}
+
+/*
+  GetTreasuryIndicators gets the current treasury indicators
+*/
+func (a *Client) GetTreasuryIndicators(params *GetTreasuryIndicatorsParams) (*GetTreasuryIndicatorsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetTreasuryIndicatorsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "GetTreasuryIndicators",
+		Method:             "GET",
+		PathPattern:        "/treasury/indicators",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"https"},
+		Params:             params,
+		Reader:             &GetTreasuryIndicatorsReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*GetTreasuryIndicatorsOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for GetTreasuryIndicators: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*

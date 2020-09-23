@@ -19,19 +19,19 @@ import (
 type PaginatedQueryTxs struct {
 
 	// count
-	Count float64 `json:"count,omitempty"`
+	Count string `json:"count,omitempty"`
 
 	// limit
-	Limit float64 `json:"limit,omitempty"`
+	Limit string `json:"limit,omitempty"`
 
 	// page number
-	PageNumber float64 `json:"page_number,omitempty"`
+	PageNumber string `json:"page_number,omitempty"`
 
 	// page total
-	PageTotal float64 `json:"page_total,omitempty"`
+	PageTotal string `json:"page_total,omitempty"`
 
 	// total count
-	TotalCount float64 `json:"total_count,omitempty"`
+	TotalCount string `json:"total_count,omitempty"`
 
 	// txs
 	Txs []*TxQuery `json:"txs"`

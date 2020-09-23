@@ -20,13 +20,13 @@ type PolicyConstraints struct {
 	Cap *Coin `json:"cap,omitempty"`
 
 	// 0.025%
-	ChangeMax float32 `json:"change_max,omitempty"`
+	ChangeMax string `json:"change_max,omitempty"`
 
 	// 1%
-	RateMax float32 `json:"rate_max,omitempty"`
+	RateMax string `json:"rate_max,omitempty"`
 
 	// 0.05%
-	RateMin float32 `json:"rate_min,omitempty"`
+	RateMin string `json:"rate_min,omitempty"`
 }
 
 // Validate validates this policy constraints

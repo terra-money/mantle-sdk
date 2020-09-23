@@ -157,18 +157,18 @@ swagger:model GetGovParametersDepositOKBody
 */
 type GetGovParametersDepositOKBody struct {
 
-	// max deposit period
-	MaxDepositPeriod string `json:"max_deposit_period,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
 
-	// min deposit
-	MinDeposit []*models.Coin `json:"min_deposit"`
+	// result
+	Result *GetGovParametersDepositOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get gov parameters deposit o k body
 func (o *GetGovParametersDepositOKBody) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := o.validateMinDeposit(formats); err != nil {
+	if err := o.validateResult(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -178,26 +178,19 @@ func (o *GetGovParametersDepositOKBody) Validate(formats strfmt.Registry) error 
 	return nil
 }
 
-func (o *GetGovParametersDepositOKBody) validateMinDeposit(formats strfmt.Registry) error {
+func (o *GetGovParametersDepositOKBody) validateResult(formats strfmt.Registry) error {
 
-	if swag.IsZero(o.MinDeposit) { // not required
+	if swag.IsZero(o.Result) { // not required
 		return nil
 	}
 
-	for i := 0; i < len(o.MinDeposit); i++ {
-		if swag.IsZero(o.MinDeposit[i]) { // not required
-			continue
-		}
-
-		if o.MinDeposit[i] != nil {
-			if err := o.MinDeposit[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
-					return ve.ValidateName("getGovParametersDepositOK" + "." + "min_deposit" + "." + strconv.Itoa(i))
-				}
-				return err
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getGovParametersDepositOK" + "." + "result")
 			}
+			return err
 		}
-
 	}
 
 	return nil
@@ -214,6 +207,75 @@ func (o *GetGovParametersDepositOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetGovParametersDepositOKBody) UnmarshalBinary(b []byte) error {
 	var res GetGovParametersDepositOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetGovParametersDepositOKBodyResult get gov parameters deposit o k body result
+swagger:model GetGovParametersDepositOKBodyResult
+*/
+type GetGovParametersDepositOKBodyResult struct {
+
+	// max deposit period
+	MaxDepositPeriod string `json:"max_deposit_period,omitempty"`
+
+	// min deposit
+	MinDeposit []*models.Coin `json:"min_deposit"`
+}
+
+// Validate validates this get gov parameters deposit o k body result
+func (o *GetGovParametersDepositOKBodyResult) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateMinDeposit(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetGovParametersDepositOKBodyResult) validateMinDeposit(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.MinDeposit) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.MinDeposit); i++ {
+		if swag.IsZero(o.MinDeposit[i]) { // not required
+			continue
+		}
+
+		if o.MinDeposit[i] != nil {
+			if err := o.MinDeposit[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getGovParametersDepositOK" + "." + "result" + "." + "min_deposit" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetGovParametersDepositOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetGovParametersDepositOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetGovParametersDepositOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

@@ -20,7 +20,7 @@ type ExchangeRateVote struct {
 	Denom string `json:"denom,omitempty"`
 
 	// exchange rate
-	ExchangeRate float64 `json:"exchange_rate,omitempty"`
+	ExchangeRate string `json:"exchange_rate,omitempty"`
 
 	// voter
 	Voter ValidatorAddress `json:"voter,omitempty"`

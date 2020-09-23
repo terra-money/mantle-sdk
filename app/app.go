@@ -83,34 +83,18 @@ func NewMantle(
 	}
 }
 
-func (mantle *Mantle) Sync(configuration SyncConfiguration) {
-	currentBlockHeight := mantle.app.GetApp().LastBlockHeight()
+func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
 	remoteBlock, err := subscriber.GetBlockLCD(configuration.LCDLatestBlockEndpoint)
+
 	if err != nil {
 		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
 	}
 
 	remoteHeight := remoteBlock.Header.Height
+	syncingBlockHeight := currentBlockHeight
 
-	// if block has caught up, start websocket sync
-	if currentBlockHeight == remoteHeight {
-		rpcSubscription := subscriber.NewRpcSubscription(configuration.TendermintEndpoint)
-		blockChannel := rpcSubscription.Subscribe()
-
-		for {
-			select {
-			case e := <-blockChannel:
-				mantle.Inject(&e)
-			}
-		}
-	} else if remoteHeight <= currentBlockHeight {
-		log.Printf("[mantle] Sync unnecessary, remoteHeight=%d, currentBlockHeight=%d", remoteHeight, currentBlockHeight)
-		return
-	}
-
-	syncingBlockHeight := currentBlockHeight + 1
 	for syncingBlockHeight < remoteHeight {
-		remoteBlock, err := subscriber.GetBlockLCD(fmt.Sprintf(configuration.LCDBlockEndpoint, syncingBlockHeight))
+		remoteBlock, err := subscriber.GetBlockLCD(fmt.Sprintf(configuration.LCDBlockEndpoint, syncingBlockHeight+1))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
 		}
@@ -122,8 +106,26 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 
 		syncingBlockHeight++
 	}
+}
 
-	mantle.Sync(configuration)
+func (mantle *Mantle) Sync(configuration SyncConfiguration) {
+	// subscribe to NewBlock event
+	rpcSubscription := subscriber.NewRpcSubscription(configuration.TendermintEndpoint)
+	blockChannel := rpcSubscription.Subscribe()
+
+	for {
+		select {
+		case block := <-blockChannel:
+			lastBlockHeight := mantle.app.GetApp().LastBlockHeight()
+
+			if block.Header.Height-lastBlockHeight != 1 {
+				log.Printf("[mantle] SyncByRPC mine: %d, chain: %d", lastBlockHeight, block.Header.Height)
+				mantle.QuerySync(configuration, lastBlockHeight)
+			} else {
+				mantle.Inject(&block)
+			}
+		}
+	}
 }
 
 func (mantle *Mantle) Server() {

@@ -157,18 +157,18 @@ swagger:model GetValidatorsetsHeightOKBody
 */
 type GetValidatorsetsHeightOKBody struct {
 
-	// block height
-	BlockHeight string `json:"block_height,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
 
-	// validators
-	Validators []*models.TendermintValidator `json:"validators"`
+	// result
+	Result *GetValidatorsetsHeightOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get validatorsets height o k body
 func (o *GetValidatorsetsHeightOKBody) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := o.validateValidators(formats); err != nil {
+	if err := o.validateResult(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -178,26 +178,19 @@ func (o *GetValidatorsetsHeightOKBody) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (o *GetValidatorsetsHeightOKBody) validateValidators(formats strfmt.Registry) error {
+func (o *GetValidatorsetsHeightOKBody) validateResult(formats strfmt.Registry) error {
 
-	if swag.IsZero(o.Validators) { // not required
+	if swag.IsZero(o.Result) { // not required
 		return nil
 	}
 
-	for i := 0; i < len(o.Validators); i++ {
-		if swag.IsZero(o.Validators[i]) { // not required
-			continue
-		}
-
-		if o.Validators[i] != nil {
-			if err := o.Validators[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
-					return ve.ValidateName("getValidatorsetsHeightOK" + "." + "validators" + "." + strconv.Itoa(i))
-				}
-				return err
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getValidatorsetsHeightOK" + "." + "result")
 			}
+			return err
 		}
-
 	}
 
 	return nil
@@ -214,6 +207,75 @@ func (o *GetValidatorsetsHeightOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetValidatorsetsHeightOKBody) UnmarshalBinary(b []byte) error {
 	var res GetValidatorsetsHeightOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetValidatorsetsHeightOKBodyResult get validatorsets height o k body result
+swagger:model GetValidatorsetsHeightOKBodyResult
+*/
+type GetValidatorsetsHeightOKBodyResult struct {
+
+	// block height
+	BlockHeight string `json:"block_height,omitempty"`
+
+	// validators
+	Validators []*models.TendermintValidator `json:"validators"`
+}
+
+// Validate validates this get validatorsets height o k body result
+func (o *GetValidatorsetsHeightOKBodyResult) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateValidators(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetValidatorsetsHeightOKBodyResult) validateValidators(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Validators) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Validators); i++ {
+		if swag.IsZero(o.Validators[i]) { // not required
+			continue
+		}
+
+		if o.Validators[i] != nil {
+			if err := o.Validators[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getValidatorsetsHeightOK" + "." + "result" + "." + "validators" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetValidatorsetsHeightOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetValidatorsetsHeightOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetValidatorsetsHeightOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

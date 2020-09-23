@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetWasmContractsContractAddressStoreRawReader is a Reader for the GetWasmContractsContractAddressStoreRaw structure.
@@ -43,23 +45,122 @@ func NewGetWasmContractsContractAddressStoreRawOK() *GetWasmContractsContractAdd
 OK
 */
 type GetWasmContractsContractAddressStoreRawOK struct {
-	Payload string
+	Payload *GetWasmContractsContractAddressStoreRawOKBody
 }
 
 func (o *GetWasmContractsContractAddressStoreRawOK) Error() string {
 	return fmt.Sprintf("[GET /wasm/contracts/{contractAddress}/store/raw][%d] getWasmContractsContractAddressStoreRawOK  %+v", 200, o.Payload)
 }
 
-func (o *GetWasmContractsContractAddressStoreRawOK) GetPayload() string {
+func (o *GetWasmContractsContractAddressStoreRawOK) GetPayload() *GetWasmContractsContractAddressStoreRawOKBody {
 	return o.Payload
 }
 
 func (o *GetWasmContractsContractAddressStoreRawOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetWasmContractsContractAddressStoreRawOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
+	return nil
+}
+
+/*GetWasmContractsContractAddressStoreRawOKBody get wasm contracts contract address store raw o k body
+swagger:model GetWasmContractsContractAddressStoreRawOKBody
+*/
+type GetWasmContractsContractAddressStoreRawOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *GetWasmContractsContractAddressStoreRawOKBodyResult `json:"result,omitempty"`
+}
+
+// Validate validates this get wasm contracts contract address store raw o k body
+func (o *GetWasmContractsContractAddressStoreRawOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetWasmContractsContractAddressStoreRawOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getWasmContractsContractAddressStoreRawOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetWasmContractsContractAddressStoreRawOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetWasmContractsContractAddressStoreRawOKBody) UnmarshalBinary(b []byte) error {
+	var res GetWasmContractsContractAddressStoreRawOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetWasmContractsContractAddressStoreRawOKBodyResult get wasm contracts contract address store raw o k body result
+swagger:model GetWasmContractsContractAddressStoreRawOKBodyResult
+*/
+type GetWasmContractsContractAddressStoreRawOKBodyResult struct {
+
+	// key
+	Key string `json:"key,omitempty"`
+
+	// value
+	Value string `json:"value,omitempty"`
+}
+
+// Validate validates this get wasm contracts contract address store raw o k body result
+func (o *GetWasmContractsContractAddressStoreRawOKBodyResult) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetWasmContractsContractAddressStoreRawOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetWasmContractsContractAddressStoreRawOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetWasmContractsContractAddressStoreRawOKBodyResult
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

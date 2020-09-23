@@ -61,7 +61,7 @@ for the post txs operation typically these are written to a http.Request
 type PostTxsParams struct {
 
 	/*TxBroadcast
-	  The tx must be a signed StdTx. The supported broadcast modes include `"block"`(return after tx commit), `"sync"`(return afer CheckTx) and `"async"`(return right away).
+	  The tx must be a signed StdTx. The supported broadcast modes include `"block"`(return after tx commit), `"sync"`(return after CheckTx) and `"async"`(return right away).
 
 	*/
 	TxBroadcast PostTxsBody

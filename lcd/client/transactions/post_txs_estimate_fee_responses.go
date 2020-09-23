@@ -90,7 +90,7 @@ func NewPostTxsEstimateFeeBadRequest() *PostTxsEstimateFeeBadRequest {
 
 /*PostTxsEstimateFeeBadRequest handles this case with default header values.
 
-The tx was malformated
+The tx was malformed
 */
 type PostTxsEstimateFeeBadRequest struct {
 }

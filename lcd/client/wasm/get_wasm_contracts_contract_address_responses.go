@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -45,25 +47,87 @@ func NewGetWasmContractsContractAddressOK() *GetWasmContractsContractAddressOK {
 OK
 */
 type GetWasmContractsContractAddressOK struct {
-	Payload *models.ContractInfo
+	Payload *GetWasmContractsContractAddressOKBody
 }
 
 func (o *GetWasmContractsContractAddressOK) Error() string {
 	return fmt.Sprintf("[GET /wasm/contracts/{contractAddress}][%d] getWasmContractsContractAddressOK  %+v", 200, o.Payload)
 }
 
-func (o *GetWasmContractsContractAddressOK) GetPayload() *models.ContractInfo {
+func (o *GetWasmContractsContractAddressOK) GetPayload() *GetWasmContractsContractAddressOKBody {
 	return o.Payload
 }
 
 func (o *GetWasmContractsContractAddressOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.ContractInfo)
+	o.Payload = new(GetWasmContractsContractAddressOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
+	return nil
+}
+
+/*GetWasmContractsContractAddressOKBody get wasm contracts contract address o k body
+swagger:model GetWasmContractsContractAddressOKBody
+*/
+type GetWasmContractsContractAddressOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.ContractInfo `json:"result,omitempty"`
+}
+
+// Validate validates this get wasm contracts contract address o k body
+func (o *GetWasmContractsContractAddressOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetWasmContractsContractAddressOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getWasmContractsContractAddressOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetWasmContractsContractAddressOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetWasmContractsContractAddressOKBody) UnmarshalBinary(b []byte) error {
+	var res GetWasmContractsContractAddressOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/terra-project/mantle/lcd/client/distribution"
 	"github.com/terra-project/mantle/lcd/client/governance"
 	"github.com/terra-project/mantle/lcd/client/market"
+	"github.com/terra-project/mantle/lcd/client/mint"
 	"github.com/terra-project/mantle/lcd/client/oracle"
 	"github.com/terra-project/mantle/lcd/client/slashing"
 	"github.com/terra-project/mantle/lcd/client/staking"
@@ -74,6 +75,7 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Client {
 	cli.Distribution = distribution.New(transport, formats)
 	cli.Governance = governance.New(transport, formats)
 	cli.Market = market.New(transport, formats)
+	cli.Mint = mint.New(transport, formats)
 	cli.Oracle = oracle.New(transport, formats)
 	cli.Slashing = slashing.New(transport, formats)
 	cli.Staking = staking.New(transport, formats)
@@ -138,6 +140,8 @@ type Client struct {
 
 	Market market.ClientService
 
+	Mint mint.ClientService
+
 	Oracle oracle.ClientService
 
 	Slashing slashing.ClientService
@@ -166,6 +170,7 @@ func (c *Client) SetTransport(transport runtime.ClientTransport) {
 	c.Distribution.SetTransport(transport)
 	c.Governance.SetTransport(transport)
 	c.Market.SetTransport(transport)
+	c.Mint.SetTransport(transport)
 	c.Oracle.SetTransport(transport)
 	c.Slashing.SetTransport(transport)
 	c.Staking.SetTransport(transport)

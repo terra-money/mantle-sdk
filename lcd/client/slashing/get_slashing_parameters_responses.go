@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -99,6 +100,68 @@ swagger:model GetSlashingParametersOKBody
 */
 type GetSlashingParametersOKBody struct {
 
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *GetSlashingParametersOKBodyResult `json:"result,omitempty"`
+}
+
+// Validate validates this get slashing parameters o k body
+func (o *GetSlashingParametersOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetSlashingParametersOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getSlashingParametersOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetSlashingParametersOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetSlashingParametersOKBody) UnmarshalBinary(b []byte) error {
+	var res GetSlashingParametersOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetSlashingParametersOKBodyResult get slashing parameters o k body result
+swagger:model GetSlashingParametersOKBodyResult
+*/
+type GetSlashingParametersOKBodyResult struct {
+
 	// downtime jail duration
 	DowntimeJailDuration string `json:"downtime_jail_duration,omitempty"`
 
@@ -118,13 +181,13 @@ type GetSlashingParametersOKBody struct {
 	SlashFractionDowntime string `json:"slash_fraction_downtime,omitempty"`
 }
 
-// Validate validates this get slashing parameters o k body
-func (o *GetSlashingParametersOKBody) Validate(formats strfmt.Registry) error {
+// Validate validates this get slashing parameters o k body result
+func (o *GetSlashingParametersOKBodyResult) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (o *GetSlashingParametersOKBody) MarshalBinary() ([]byte, error) {
+func (o *GetSlashingParametersOKBodyResult) MarshalBinary() ([]byte, error) {
 	if o == nil {
 		return nil, nil
 	}
@@ -132,8 +195,8 @@ func (o *GetSlashingParametersOKBody) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (o *GetSlashingParametersOKBody) UnmarshalBinary(b []byte) error {
-	var res GetSlashingParametersOKBody
+func (o *GetSlashingParametersOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetSlashingParametersOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
