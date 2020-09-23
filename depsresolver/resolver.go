@@ -97,11 +97,6 @@ func (resolver *DepsResolverInstance) Resolve(event reflect.Type) interface{} {
 	select {
 	case e := <-subchannel:
 		return e
-		//if isEntityZero(e) {
-		//	return resolver.latest[event]
-		//} else {
-		//	return e
-		//}
 	}
 }
 
