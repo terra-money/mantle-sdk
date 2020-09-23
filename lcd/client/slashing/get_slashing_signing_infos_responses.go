@@ -8,9 +8,12 @@ package slashing
 import (
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,21 +60,23 @@ func NewGetSlashingSigningInfosOK() *GetSlashingSigningInfosOK {
 OK
 */
 type GetSlashingSigningInfosOK struct {
-	Payload []*models.SigningInfo
+	Payload *GetSlashingSigningInfosOKBody
 }
 
 func (o *GetSlashingSigningInfosOK) Error() string {
 	return fmt.Sprintf("[GET /slashing/signing_infos][%d] getSlashingSigningInfosOK  %+v", 200, o.Payload)
 }
 
-func (o *GetSlashingSigningInfosOK) GetPayload() []*models.SigningInfo {
+func (o *GetSlashingSigningInfosOK) GetPayload() *GetSlashingSigningInfosOKBody {
 	return o.Payload
 }
 
 func (o *GetSlashingSigningInfosOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetSlashingSigningInfosOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -117,5 +122,74 @@ func (o *GetSlashingSigningInfosInternalServerError) Error() string {
 
 func (o *GetSlashingSigningInfosInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetSlashingSigningInfosOKBody get slashing signing infos o k body
+swagger:model GetSlashingSigningInfosOKBody
+*/
+type GetSlashingSigningInfosOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result []*models.SigningInfo `json:"result"`
+}
+
+// Validate validates this get slashing signing infos o k body
+func (o *GetSlashingSigningInfosOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetSlashingSigningInfosOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Result); i++ {
+		if swag.IsZero(o.Result[i]) { // not required
+			continue
+		}
+
+		if o.Result[i] != nil {
+			if err := o.Result[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getSlashingSigningInfosOK" + "." + "result" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetSlashingSigningInfosOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetSlashingSigningInfosOKBody) UnmarshalBinary(b []byte) error {
+	var res GetSlashingSigningInfosOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -45,25 +47,87 @@ func NewGetWasmCodesCodeIDOK() *GetWasmCodesCodeIDOK {
 OK
 */
 type GetWasmCodesCodeIDOK struct {
-	Payload *models.CodeInfo
+	Payload *GetWasmCodesCodeIDOKBody
 }
 
 func (o *GetWasmCodesCodeIDOK) Error() string {
 	return fmt.Sprintf("[GET /wasm/codes/{codeID}][%d] getWasmCodesCodeIdOK  %+v", 200, o.Payload)
 }
 
-func (o *GetWasmCodesCodeIDOK) GetPayload() *models.CodeInfo {
+func (o *GetWasmCodesCodeIDOK) GetPayload() *GetWasmCodesCodeIDOKBody {
 	return o.Payload
 }
 
 func (o *GetWasmCodesCodeIDOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.CodeInfo)
+	o.Payload = new(GetWasmCodesCodeIDOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
+	return nil
+}
+
+/*GetWasmCodesCodeIDOKBody get wasm codes code ID o k body
+swagger:model GetWasmCodesCodeIDOKBody
+*/
+type GetWasmCodesCodeIDOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.CodeInfo `json:"result,omitempty"`
+}
+
+// Validate validates this get wasm codes code ID o k body
+func (o *GetWasmCodesCodeIDOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetWasmCodesCodeIDOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getWasmCodesCodeIdOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetWasmCodesCodeIDOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetWasmCodesCodeIDOKBody) UnmarshalBinary(b []byte) error {
+	var res GetWasmCodesCodeIDOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

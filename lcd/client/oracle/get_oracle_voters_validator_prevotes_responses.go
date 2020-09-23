@@ -8,9 +8,12 @@ package oracle
 import (
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -57,21 +60,23 @@ func NewGetOracleVotersValidatorPrevotesOK() *GetOracleVotersValidatorPrevotesOK
 OK
 */
 type GetOracleVotersValidatorPrevotesOK struct {
-	Payload []*models.ExchangeRatePrevote
+	Payload *GetOracleVotersValidatorPrevotesOKBody
 }
 
 func (o *GetOracleVotersValidatorPrevotesOK) Error() string {
 	return fmt.Sprintf("[GET /oracle/voters/{validator}/prevotes][%d] getOracleVotersValidatorPrevotesOK  %+v", 200, o.Payload)
 }
 
-func (o *GetOracleVotersValidatorPrevotesOK) GetPayload() []*models.ExchangeRatePrevote {
+func (o *GetOracleVotersValidatorPrevotesOK) GetPayload() *GetOracleVotersValidatorPrevotesOKBody {
 	return o.Payload
 }
 
 func (o *GetOracleVotersValidatorPrevotesOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetOracleVotersValidatorPrevotesOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -117,5 +122,74 @@ func (o *GetOracleVotersValidatorPrevotesInternalServerError) Error() string {
 
 func (o *GetOracleVotersValidatorPrevotesInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetOracleVotersValidatorPrevotesOKBody get oracle voters validator prevotes o k body
+swagger:model GetOracleVotersValidatorPrevotesOKBody
+*/
+type GetOracleVotersValidatorPrevotesOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result []*models.ExchangeRatePrevote `json:"result"`
+}
+
+// Validate validates this get oracle voters validator prevotes o k body
+func (o *GetOracleVotersValidatorPrevotesOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetOracleVotersValidatorPrevotesOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Result); i++ {
+		if swag.IsZero(o.Result[i]) { // not required
+			continue
+		}
+
+		if o.Result[i] != nil {
+			if err := o.Result[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("getOracleVotersValidatorPrevotesOK" + "." + "result" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetOracleVotersValidatorPrevotesOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetOracleVotersValidatorPrevotesOKBody) UnmarshalBinary(b []byte) error {
+	var res GetOracleVotersValidatorPrevotesOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

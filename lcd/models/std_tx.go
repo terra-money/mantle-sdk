@@ -25,10 +25,10 @@ type StdTx struct {
 	Memo string `json:"memo,omitempty"`
 
 	// msg
-	Msg []Msg `json:"msg"`
+	Msg []*Msg `json:"msg"`
 
-	// signature
-	Signature *StdTxSignature `json:"signature,omitempty"`
+	// signatures
+	Signatures []*TxSignature `json:"signatures"`
 }
 
 // Validate validates this std tx
@@ -43,7 +43,7 @@ func (m *StdTx) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateSignature(formats); err != nil {
+	if err := m.validateSignatures(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -78,12 +78,17 @@ func (m *StdTx) validateMsg(formats strfmt.Registry) error {
 	}
 
 	for i := 0; i < len(m.Msg); i++ {
+		if swag.IsZero(m.Msg[i]) { // not required
+			continue
+		}
 
-		if err := m.Msg[i].Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("msg" + "." + strconv.Itoa(i))
+		if m.Msg[i] != nil {
+			if err := m.Msg[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("msg" + "." + strconv.Itoa(i))
+				}
+				return err
 			}
-			return err
 		}
 
 	}
@@ -91,19 +96,26 @@ func (m *StdTx) validateMsg(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *StdTx) validateSignature(formats strfmt.Registry) error {
+func (m *StdTx) validateSignatures(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Signature) { // not required
+	if swag.IsZero(m.Signatures) { // not required
 		return nil
 	}
 
-	if m.Signature != nil {
-		if err := m.Signature.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("signature")
-			}
-			return err
+	for i := 0; i < len(m.Signatures); i++ {
+		if swag.IsZero(m.Signatures[i]) { // not required
+			continue
 		}
+
+		if m.Signatures[i] != nil {
+			if err := m.Signatures[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("signatures" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
 	}
 
 	return nil
@@ -189,109 +201,6 @@ func (m *StdTxFee) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *StdTxFee) UnmarshalBinary(b []byte) error {
 	var res StdTxFee
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
-	return nil
-}
-
-// StdTxSignature std tx signature
-//
-// swagger:model StdTxSignature
-type StdTxSignature struct {
-
-	// account number
-	AccountNumber string `json:"account_number,omitempty"`
-
-	// pub key
-	PubKey *StdTxSignaturePubKey `json:"pub_key,omitempty"`
-
-	// sequence
-	Sequence string `json:"sequence,omitempty"`
-
-	// signature
-	Signature string `json:"signature,omitempty"`
-}
-
-// Validate validates this std tx signature
-func (m *StdTxSignature) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if err := m.validatePubKey(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (m *StdTxSignature) validatePubKey(formats strfmt.Registry) error {
-
-	if swag.IsZero(m.PubKey) { // not required
-		return nil
-	}
-
-	if m.PubKey != nil {
-		if err := m.PubKey.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("signature" + "." + "pub_key")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *StdTxSignature) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
-	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *StdTxSignature) UnmarshalBinary(b []byte) error {
-	var res StdTxSignature
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
-	return nil
-}
-
-// StdTxSignaturePubKey std tx signature pub key
-//
-// swagger:model StdTxSignaturePubKey
-type StdTxSignaturePubKey struct {
-
-	// type
-	Type string `json:"type,omitempty"`
-
-	// value
-	Value string `json:"value,omitempty"`
-}
-
-// Validate validates this std tx signature pub key
-func (m *StdTxSignaturePubKey) Validate(formats strfmt.Registry) error {
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *StdTxSignaturePubKey) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
-	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *StdTxSignaturePubKey) UnmarshalBinary(b []byte) error {
-	var res StdTxSignaturePubKey
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

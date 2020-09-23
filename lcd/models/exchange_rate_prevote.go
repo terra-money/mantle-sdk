@@ -23,7 +23,7 @@ type ExchangeRatePrevote struct {
 	Hash string `json:"hash,omitempty"`
 
 	// submit block
-	SubmitBlock float64 `json:"submit_block,omitempty"`
+	SubmitBlock string `json:"submit_block,omitempty"`
 
 	// voter
 	Voter ValidatorAddress `json:"voter,omitempty"`

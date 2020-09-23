@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetOracleDenomsDenomExchangeRateReader is a Reader for the GetOracleDenomsDenomExchangeRate structure.
@@ -55,21 +56,23 @@ func NewGetOracleDenomsDenomExchangeRateOK() *GetOracleDenomsDenomExchangeRateOK
 current exchange rate of denom i.e. "1000.0"
 */
 type GetOracleDenomsDenomExchangeRateOK struct {
-	Payload float64
+	Payload *GetOracleDenomsDenomExchangeRateOKBody
 }
 
 func (o *GetOracleDenomsDenomExchangeRateOK) Error() string {
 	return fmt.Sprintf("[GET /oracle/denoms/{denom}/exchange_rate][%d] getOracleDenomsDenomExchangeRateOK  %+v", 200, o.Payload)
 }
 
-func (o *GetOracleDenomsDenomExchangeRateOK) GetPayload() float64 {
+func (o *GetOracleDenomsDenomExchangeRateOK) GetPayload() *GetOracleDenomsDenomExchangeRateOKBody {
 	return o.Payload
 }
 
 func (o *GetOracleDenomsDenomExchangeRateOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetOracleDenomsDenomExchangeRateOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -115,5 +118,40 @@ func (o *GetOracleDenomsDenomExchangeRateInternalServerError) Error() string {
 
 func (o *GetOracleDenomsDenomExchangeRateInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetOracleDenomsDenomExchangeRateOKBody get oracle denoms denom exchange rate o k body
+swagger:model GetOracleDenomsDenomExchangeRateOKBody
+*/
+type GetOracleDenomsDenomExchangeRateOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get oracle denoms denom exchange rate o k body
+func (o *GetOracleDenomsDenomExchangeRateOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetOracleDenomsDenomExchangeRateOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetOracleDenomsDenomExchangeRateOKBody) UnmarshalBinary(b []byte) error {
+	var res GetOracleDenomsDenomExchangeRateOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

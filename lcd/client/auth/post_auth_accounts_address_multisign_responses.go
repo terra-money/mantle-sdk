@@ -83,7 +83,7 @@ func NewPostAuthAccountsAddressMultisignInternalServerError() *PostAuthAccountsA
 
 /*PostAuthAccountsAddressMultisignInternalServerError handles this case with default header values.
 
-Server internel error
+Server internal error
 */
 type PostAuthAccountsAddressMultisignInternalServerError struct {
 }

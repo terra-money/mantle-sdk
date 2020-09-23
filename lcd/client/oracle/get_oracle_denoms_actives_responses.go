@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetOracleDenomsActivesReader is a Reader for the GetOracleDenomsActives structure.
@@ -55,21 +56,23 @@ func NewGetOracleDenomsActivesOK() *GetOracleDenomsActivesOK {
 OK
 */
 type GetOracleDenomsActivesOK struct {
-	Payload []string
+	Payload *GetOracleDenomsActivesOKBody
 }
 
 func (o *GetOracleDenomsActivesOK) Error() string {
 	return fmt.Sprintf("[GET /oracle/denoms/actives][%d] getOracleDenomsActivesOK  %+v", 200, o.Payload)
 }
 
-func (o *GetOracleDenomsActivesOK) GetPayload() []string {
+func (o *GetOracleDenomsActivesOK) GetPayload() *GetOracleDenomsActivesOKBody {
 	return o.Payload
 }
 
 func (o *GetOracleDenomsActivesOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetOracleDenomsActivesOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -115,5 +118,40 @@ func (o *GetOracleDenomsActivesInternalServerError) Error() string {
 
 func (o *GetOracleDenomsActivesInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetOracleDenomsActivesOKBody get oracle denoms actives o k body
+swagger:model GetOracleDenomsActivesOKBody
+*/
+type GetOracleDenomsActivesOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result []string `json:"result"`
+}
+
+// Validate validates this get oracle denoms actives o k body
+func (o *GetOracleDenomsActivesOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetOracleDenomsActivesOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetOracleDenomsActivesOKBody) UnmarshalBinary(b []byte) error {
+	var res GetOracleDenomsActivesOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

@@ -57,7 +57,7 @@ func NewPostGovProposalsRewardWeightUpdateOK() *PostGovProposalsRewardWeightUpda
 
 /*PostGovProposalsRewardWeightUpdateOK handles this case with default header values.
 
-The transaction was succesfully generated
+The transaction was successfully generated
 */
 type PostGovProposalsRewardWeightUpdateOK struct {
 	Payload *models.StdTx

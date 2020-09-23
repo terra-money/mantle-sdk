@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -51,20 +53,20 @@ func NewGetWasmParametersOK() *GetWasmParametersOK {
 OK
 */
 type GetWasmParametersOK struct {
-	Payload *models.WasmParams
+	Payload *GetWasmParametersOKBody
 }
 
 func (o *GetWasmParametersOK) Error() string {
 	return fmt.Sprintf("[GET /wasm/parameters][%d] getWasmParametersOK  %+v", 200, o.Payload)
 }
 
-func (o *GetWasmParametersOK) GetPayload() *models.WasmParams {
+func (o *GetWasmParametersOK) GetPayload() *GetWasmParametersOKBody {
 	return o.Payload
 }
 
 func (o *GetWasmParametersOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.WasmParams)
+	o.Payload = new(GetWasmParametersOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -92,5 +94,67 @@ func (o *GetWasmParametersNotFound) Error() string {
 
 func (o *GetWasmParametersNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetWasmParametersOKBody get wasm parameters o k body
+swagger:model GetWasmParametersOKBody
+*/
+type GetWasmParametersOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.WasmParams `json:"result,omitempty"`
+}
+
+// Validate validates this get wasm parameters o k body
+func (o *GetWasmParametersOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetWasmParametersOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getWasmParametersOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetWasmParametersOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetWasmParametersOKBody) UnmarshalBinary(b []byte) error {
+	var res GetWasmParametersOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

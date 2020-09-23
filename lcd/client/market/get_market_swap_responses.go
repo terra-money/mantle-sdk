@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 
 	"github.com/terra-project/mantle/lcd/models"
 )
@@ -51,20 +53,20 @@ func NewGetMarketSwapOK() *GetMarketSwapOK {
 OK
 */
 type GetMarketSwapOK struct {
-	Payload *models.Coin
+	Payload *GetMarketSwapOKBody
 }
 
 func (o *GetMarketSwapOK) Error() string {
 	return fmt.Sprintf("[GET /market/swap][%d] getMarketSwapOK  %+v", 200, o.Payload)
 }
 
-func (o *GetMarketSwapOK) GetPayload() *models.Coin {
+func (o *GetMarketSwapOK) GetPayload() *GetMarketSwapOKBody {
 	return o.Payload
 }
 
 func (o *GetMarketSwapOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.Coin)
+	o.Payload = new(GetMarketSwapOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -92,5 +94,67 @@ func (o *GetMarketSwapInternalServerError) Error() string {
 
 func (o *GetMarketSwapInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetMarketSwapOKBody get market swap o k body
+swagger:model GetMarketSwapOKBody
+*/
+type GetMarketSwapOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result *models.Coin `json:"result,omitempty"`
+}
+
+// Validate validates this get market swap o k body
+func (o *GetMarketSwapOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetMarketSwapOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getMarketSwapOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetMarketSwapOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetMarketSwapOKBody) UnmarshalBinary(b []byte) error {
+	var res GetMarketSwapOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

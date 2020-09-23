@@ -81,6 +81,11 @@ type GetTxsParams struct {
 
 	*/
 	Page *int64
+	/*TxHeight
+	  transaction block height: 'GET /txs?tx.height=1'
+
+	*/
+	TxHeight int64
 
 	timeout    time.Duration
 	Context    context.Context
@@ -164,6 +169,17 @@ func (o *GetTxsParams) SetPage(page *int64) {
 	o.Page = page
 }
 
+// WithTxHeight adds the txHeight to the get txs params
+func (o *GetTxsParams) WithTxHeight(txHeight int64) *GetTxsParams {
+	o.SetTxHeight(txHeight)
+	return o
+}
+
+// SetTxHeight adds the txHeight to the get txs params
+func (o *GetTxsParams) SetTxHeight(txHeight int64) {
+	o.TxHeight = txHeight
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *GetTxsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -234,6 +250,15 @@ func (o *GetTxsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Regist
 			}
 		}
 
+	}
+
+	// query param tx.height
+	qrTxHeight := o.TxHeight
+	qTxHeight := swag.FormatInt64(qrTxHeight)
+	if qTxHeight != "" {
+		if err := r.SetQueryParam("tx.height", qTxHeight); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {

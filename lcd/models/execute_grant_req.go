@@ -25,7 +25,7 @@ type ExecuteGrantReq struct {
 
 	// msgs
 	// Required: true
-	Msgs []Msg `json:"msgs"`
+	Msgs []*Msg `json:"msgs"`
 }
 
 // Validate validates this execute grant req
@@ -71,12 +71,17 @@ func (m *ExecuteGrantReq) validateMsgs(formats strfmt.Registry) error {
 	}
 
 	for i := 0; i < len(m.Msgs); i++ {
+		if swag.IsZero(m.Msgs[i]) { // not required
+			continue
+		}
 
-		if err := m.Msgs[i].Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("msgs" + "." + strconv.Itoa(i))
+		if m.Msgs[i] != nil {
+			if err := m.Msgs[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("msgs" + "." + strconv.Itoa(i))
+				}
+				return err
 			}
-			return err
 		}
 
 	}

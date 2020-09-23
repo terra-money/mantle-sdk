@@ -57,7 +57,7 @@ func NewPostGovProposalsParamChangeOK() *PostGovProposalsParamChangeOK {
 
 /*PostGovProposalsParamChangeOK handles this case with default header values.
 
-The transaction was succesfully generated
+The transaction was successfully generated
 */
 type PostGovProposalsParamChangeOK struct {
 	Payload *models.StdTx

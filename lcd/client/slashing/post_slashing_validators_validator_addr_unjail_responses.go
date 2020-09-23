@@ -56,7 +56,7 @@ func NewPostSlashingValidatorsValidatorAddrUnjailOK() *PostSlashingValidatorsVal
 
 /*PostSlashingValidatorsValidatorAddrUnjailOK handles this case with default header values.
 
-Tx was succesfully generated
+Tx was successfully generated
 */
 type PostSlashingValidatorsValidatorAddrUnjailOK struct {
 	Payload *models.BroadcastTxCommitResult

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -99,18 +100,42 @@ swagger:model GetDistributionParametersOKBody
 */
 type GetDistributionParametersOKBody struct {
 
-	// base proposer reward
-	BaseProposerReward string `json:"base_proposer_reward,omitempty"`
+	// height
+	Height string `json:"height,omitempty"`
 
-	// bonus proposer reward
-	BonusProposerReward string `json:"bonus_proposer_reward,omitempty"`
-
-	// community tax
-	CommunityTax string `json:"community_tax,omitempty"`
+	// result
+	Result *GetDistributionParametersOKBodyResult `json:"result,omitempty"`
 }
 
 // Validate validates this get distribution parameters o k body
 func (o *GetDistributionParametersOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateResult(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *GetDistributionParametersOKBody) validateResult(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Result) { // not required
+		return nil
+	}
+
+	if o.Result != nil {
+		if err := o.Result.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("getDistributionParametersOK" + "." + "result")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -125,6 +150,44 @@ func (o *GetDistributionParametersOKBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *GetDistributionParametersOKBody) UnmarshalBinary(b []byte) error {
 	var res GetDistributionParametersOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*GetDistributionParametersOKBodyResult get distribution parameters o k body result
+swagger:model GetDistributionParametersOKBodyResult
+*/
+type GetDistributionParametersOKBodyResult struct {
+
+	// base proposer reward
+	BaseProposerReward string `json:"base_proposer_reward,omitempty"`
+
+	// bonus proposer reward
+	BonusProposerReward string `json:"bonus_proposer_reward,omitempty"`
+
+	// community tax
+	CommunityTax string `json:"community_tax,omitempty"`
+}
+
+// Validate validates this get distribution parameters o k body result
+func (o *GetDistributionParametersOKBodyResult) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetDistributionParametersOKBodyResult) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetDistributionParametersOKBodyResult) UnmarshalBinary(b []byte) error {
+	var res GetDistributionParametersOKBodyResult
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

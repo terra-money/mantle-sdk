@@ -6,8 +6,6 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"strconv"
-
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
@@ -18,24 +16,43 @@ import (
 // swagger:model TxQuery
 type TxQuery struct {
 
-	// hash
-	Hash string `json:"hash,omitempty"`
+	// events
+	Events TxEvents `json:"events,omitempty"`
+
+	// gas used
+	GasUsed string `json:"gas_used,omitempty"`
+
+	// gas wanted
+	GasWanted string `json:"gas_wanted,omitempty"`
 
 	// height
-	Height float64 `json:"height,omitempty"`
+	Height string `json:"height,omitempty"`
 
-	// result
-	Result *TxQueryResult `json:"result,omitempty"`
+	// logs
+	Logs TxLogs `json:"logs,omitempty"`
+
+	// raw logs
+	RawLogs string `json:"raw_logs,omitempty"`
+
+	// timestamp
+	Timestamp string `json:"timestamp,omitempty"`
 
 	// tx
-	Tx *StdTx `json:"tx,omitempty"`
+	Tx *TxQueryTx `json:"tx,omitempty"`
+
+	// txhash
+	Txhash string `json:"txhash,omitempty"`
 }
 
 // Validate validates this tx query
 func (m *TxQuery) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateResult(formats); err != nil {
+	if err := m.validateEvents(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLogs(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -49,19 +66,33 @@ func (m *TxQuery) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *TxQuery) validateResult(formats strfmt.Registry) error {
+func (m *TxQuery) validateEvents(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Result) { // not required
+	if swag.IsZero(m.Events) { // not required
 		return nil
 	}
 
-	if m.Result != nil {
-		if err := m.Result.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("result")
-			}
-			return err
+	if err := m.Events.Validate(formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("events")
 		}
+		return err
+	}
+
+	return nil
+}
+
+func (m *TxQuery) validateLogs(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Logs) { // not required
+		return nil
+	}
+
+	if err := m.Logs.Validate(formats); err != nil {
+		if ve, ok := err.(*errors.Validation); ok {
+			return ve.ValidateName("logs")
+		}
+		return err
 	}
 
 	return nil
@@ -103,29 +134,23 @@ func (m *TxQuery) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-// TxQueryResult tx query result
+// TxQueryTx tx query tx
 //
-// swagger:model TxQueryResult
-type TxQueryResult struct {
+// swagger:model TxQueryTx
+type TxQueryTx struct {
 
-	// gas used
-	GasUsed string `json:"gas_used,omitempty"`
+	// type
+	Type string `json:"type,omitempty"`
 
-	// gas wanted
-	GasWanted string `json:"gas_wanted,omitempty"`
-
-	// log
-	Log string `json:"log,omitempty"`
-
-	// tags
-	Tags []*KVPair `json:"tags"`
+	// value
+	Value *StdTx `json:"value,omitempty"`
 }
 
-// Validate validates this tx query result
-func (m *TxQueryResult) Validate(formats strfmt.Registry) error {
+// Validate validates this tx query tx
+func (m *TxQueryTx) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateTags(formats); err != nil {
+	if err := m.validateValue(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -135,33 +160,26 @@ func (m *TxQueryResult) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *TxQueryResult) validateTags(formats strfmt.Registry) error {
+func (m *TxQueryTx) validateValue(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Tags) { // not required
+	if swag.IsZero(m.Value) { // not required
 		return nil
 	}
 
-	for i := 0; i < len(m.Tags); i++ {
-		if swag.IsZero(m.Tags[i]) { // not required
-			continue
-		}
-
-		if m.Tags[i] != nil {
-			if err := m.Tags[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
-					return ve.ValidateName("result" + "." + "tags" + "." + strconv.Itoa(i))
-				}
-				return err
+	if m.Value != nil {
+		if err := m.Value.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("tx" + "." + "value")
 			}
+			return err
 		}
-
 	}
 
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (m *TxQueryResult) MarshalBinary() ([]byte, error) {
+func (m *TxQueryTx) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -169,8 +187,8 @@ func (m *TxQueryResult) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *TxQueryResult) UnmarshalBinary(b []byte) error {
-	var res TxQueryResult
+func (m *TxQueryTx) UnmarshalBinary(b []byte) error {
+	var res TxQueryTx
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

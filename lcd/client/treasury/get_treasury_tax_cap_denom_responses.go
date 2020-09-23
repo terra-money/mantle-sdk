@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // GetTreasuryTaxCapDenomReader is a Reader for the GetTreasuryTaxCapDenom structure.
@@ -49,21 +50,23 @@ func NewGetTreasuryTaxCapDenomOK() *GetTreasuryTaxCapDenomOK {
 OK
 */
 type GetTreasuryTaxCapDenomOK struct {
-	Payload int64
+	Payload *GetTreasuryTaxCapDenomOKBody
 }
 
 func (o *GetTreasuryTaxCapDenomOK) Error() string {
 	return fmt.Sprintf("[GET /treasury/tax_cap/{denom}][%d] getTreasuryTaxCapDenomOK  %+v", 200, o.Payload)
 }
 
-func (o *GetTreasuryTaxCapDenomOK) GetPayload() int64 {
+func (o *GetTreasuryTaxCapDenomOK) GetPayload() *GetTreasuryTaxCapDenomOKBody {
 	return o.Payload
 }
 
 func (o *GetTreasuryTaxCapDenomOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(GetTreasuryTaxCapDenomOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -88,5 +91,40 @@ func (o *GetTreasuryTaxCapDenomNotFound) Error() string {
 
 func (o *GetTreasuryTaxCapDenomNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	return nil
+}
+
+/*GetTreasuryTaxCapDenomOKBody get treasury tax cap denom o k body
+swagger:model GetTreasuryTaxCapDenomOKBody
+*/
+type GetTreasuryTaxCapDenomOKBody struct {
+
+	// height
+	Height string `json:"height,omitempty"`
+
+	// result
+	Result string `json:"result,omitempty"`
+}
+
+// Validate validates this get treasury tax cap denom o k body
+func (o *GetTreasuryTaxCapDenomOKBody) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetTreasuryTaxCapDenomOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetTreasuryTaxCapDenomOKBody) UnmarshalBinary(b []byte) error {
+	var res GetTreasuryTaxCapDenomOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }
