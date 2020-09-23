@@ -30,7 +30,7 @@ type request struct {
 	}
 	FaucetBalance struct {
 		Result sdk.Coins
-	} `mantle:"BankBalancesAddress(Address: $address)"`
+	} `query:"BankBalancesAddress(Address: $address)"`
 }
 
 func YourIndexer(query types.Query, commit types.Commit) {
@@ -39,7 +39,7 @@ func YourIndexer(query types.Query, commit types.Commit) {
 
     // make the request!
     err := query(&request, map[string]interface{}{
-        "address": ""terra1h8ljdmae7lx05kjj79c9ekscwsyjd3yr8wyvdn"
+        "address": "terra1h8ljdmae7lx05kjj79c9ekscwsyjd3yr8wyvdn"
     })
     
     if err != nil {
@@ -58,7 +58,7 @@ Notice how the `request` type defines all data you are requesting for this speci
 In fact, the request we just wrote after graphql query conversion is:
 
 ```graphql
-query(Address: string!) {
+query(Address: String!) {
     BaseState {
         Height
         Block {
@@ -90,7 +90,7 @@ type request struct {
     Entity  Entity
 
     // specifying Height will resolve the specific entity generated at that specific height.
-    Entity1 Entity `mantle:"Entity(Height: 1000)"`
+    Entity1 Entity `query:"Entity(Height: 1000)"`
 }
 ```
 
@@ -116,7 +116,7 @@ The inherent race condition is introduced by the way mantle handles cross-indexe
 For example, let's assume that you wrote the following indexer (more on the `commit` part later):
 
 ```go
-type Entity {
+type Entity struct {
     Data string
 }
 
@@ -221,14 +221,14 @@ type request struct {
 	}
 	FaucetBalance struct {
 		Result sdk.Coins
-	} `mantle:"BankBalancesAddress(Address: $address)"`
+	} `query:"BankBalancesAddress(Address: $address)"`
 }
 
 type TrackFaucet struct {
 	Height              uint64
 	ProofThatThisIsReal string
-	BalanceUluna        string `mantle:"index=uluna"`
-	BalanceUkrw         string `mantle:"index=ukrw"`
+	BalanceUluna        string `model:"index"`
+	BalanceUkrw         string `model:"index"`
 }
 
 func InitTrackFaucet(register types.Register) {
@@ -294,11 +294,19 @@ For efficient search request, you may use
 ```go
 // entity definition
 type TrackFaucet struct {
-    // Supplying `mantle:"index"` will use field name as index key.
-    BalanceUluna        string `mantle:"index"`
+    // Supplying `model:"index"` will use field name as index key.
+    BalanceUluna        string `model:"index"`
    
-    // Supplying `mantle:"index={name}"` will use the supplied name as index key.
-    BalanceUkrw         string `mantle:"index=ukrw"`
+    // Supplying `model:"primary"` will create a primary index key.
+    // Entity with primary key is unique, meaning only __ONE__ entity
+    // with the designated primary key can exist in database.
+    //
+    // Committing another entity with a pre-existing primary key will
+    // overwrite the previously committed entity.
+    //
+    // This is useful if you don't want to index by block Height.
+    // i.e. a model which only persists the latest state, and is keyed by account address.
+    AccountAddress         string `model:"primary"`
 }
 ```
 
@@ -312,7 +320,7 @@ Mantle indexes every entity by `Height`. You can request any entity with height:
 ```go
 // define your query with Height parameter
 type request struct {
-	faucetBalance TrackFaucet `mantle:"TrackFaucet(Height: $address)"`
+	faucetBalance TrackFaucet `query:"TrackFaucet(Height: $address)"`
 }
 
 // in your request call
@@ -327,7 +335,7 @@ reqErr := query(&req, map[string]interface{}{
 ```go
 // define your query with the index name
 type request struct {
-	faucetBalance TrackFaucet `mantle:"TrackFaucet(Uluna: $lunaAmount)"`
+	faucetBalance TrackFaucet `query:"TrackFaucet(Uluna: $lunaAmount)"`
 }
 
 // in your request call
@@ -351,15 +359,17 @@ To search by range you __MUST__:
 
 ```go
 // notice how we are:
-// - using TrackFaucet[] instead of TrackFaucet.
+// - using []TrackFaucet instead of TrackFaucet.
+// - also using TrackFaucets instead of TrackFaucet.
 type request struct {
-	faucetBalance TrackFaucet[] `mantle:"TrackFaucets(Uluna_range: ["100", "10000"])"`
+	faucetBalance []TrackFaucet `query:"TrackFaucets(Uluna_range: [$range_start, $range_end])"`
 }
 
 // in your request call
 req := request{}
 reqErr := query(&req, map[string]interface{}{
-    "lunaAmount": "someLunaAmount" // type must be the same as index field type
+    "range_start": "60000" // type must be the same as index field type
+    "range_end": "100000" // type must be the same as index field type
 })
 ```
 
