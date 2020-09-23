@@ -49,7 +49,7 @@ func NewABCIStubTransport(localClient compatlocalclient.LocalClient) (*httptrans
 
 	viper.Set(flags.FlagTrustNode, true)
 
-	f := httptransport.New("", "", nil)
+	f := httptransport.New("", "/", nil)
 	f.Transport = NewRoundTripper(router)
 
 	ctx := client.
