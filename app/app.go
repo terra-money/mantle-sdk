@@ -92,7 +92,7 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 	syncingBlockHeight := currentBlockHeight
 	tStart := time.Now()
 
-	for syncingBlockHeight < remoteHeight && syncingBlockHeight < 1000 {
+	for syncingBlockHeight < remoteHeight {
 		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block?height=%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
@@ -107,7 +107,7 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 	dur := time.Now().Sub(tStart)
 
 	if dur > time.Second {
-		log.Printf("[mantle] total spent time: %dms", dur.Milliseconds())
+		log.Printf("[mantle] QuerySync: %d to %d, Elapsed: %dms", currentBlockHeight, remoteHeight, dur.Milliseconds())
 	}
 }
 
@@ -122,7 +122,6 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 			lastBlockHeight := mantle.app.GetApp().LastBlockHeight()
 
 			if block.Header.Height-lastBlockHeight != 1 {
-				log.Printf("[mantle] QuerySync started %d to %d", lastBlockHeight, block.Header.Height)
 				mantle.QuerySync(configuration, lastBlockHeight)
 			} else {
 				mantle.Inject(&block)
