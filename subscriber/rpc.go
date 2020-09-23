@@ -2,7 +2,6 @@ package subscriber
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 
 	websocket "github.com/gorilla/websocket"
@@ -85,13 +84,9 @@ func (c *RPCSubscription) Subscribe() chan types.Block {
 // filter that out by only sending through channel when there is
 // "data" field present
 func (c *RPCSubscription) handleInitialHandhake() error {
-	_, message, err := c.ws.ReadMessage()
+	_, _, err := c.ws.ReadMessage()
 
 	if err != nil {
-		return err
-	}
-
-	if _, err := sanitizeMessage(message); err != nil {
 		return err
 	}
 
@@ -102,49 +97,34 @@ func (c *RPCSubscription) handleInitialHandhake() error {
 func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
 	for {
 		_, message, err := c.ws.ReadMessage()
+
 		if err != nil {
 			panic(err)
 		}
 
-		sanitized, err := sanitizeMessage(message)
-		if err != nil {
-			panic(err)
+		data := new(struct {
+			Result struct {
+				Data struct {
+					Value struct {
+						Block json.RawMessage
+					} `json:"value"`
+				} `json:"data"`
+			} `json:"result"`
+		})
+
+		if unmarshalErr := json.Unmarshal(message, data); unmarshalErr != nil {
+			panic(unmarshalErr)
 		}
 
-		// unmarshaling to BlockEvent failed, handle me
-		blockEvent := types.Block{}
-		if err := json.Unmarshal([]byte(sanitized), &blockEvent); err != nil {
+		block := types.Block{}
+
+		if err := json.Unmarshal(data.Result.Data.Value.Block, &block); err != nil {
 			panic(err)
 		}
 
 		// send!
-		onBlock <- blockEvent
+		onBlock <- block
 	}
-}
-
-func sanitizeMessage(message []byte) ([]byte, error) {
-	// tendermint rpc sends the "subscription ok" for the intiail response
-	// filter that out by only sending through channel when there is
-	// "data" field present
-
-	var response map[string]*json.RawMessage
-	if err := json.Unmarshal(message, &response); err != nil {
-		return nil, err
-	}
-
-	var result map[string]*json.RawMessage
-	if err := json.Unmarshal(*response["result"], &result); err != nil {
-		return nil, err
-	}
-
-	// return data part of result if it exists
-	if _, ok := result["data"]; ok {
-		return *result["data"], nil
-	}
-
-	// if code ever reaches here it's an unknown case
-	// return error
-	return nil, errors.New("Unknown RPC response received")
 }
 
 // TODO: get specific block
