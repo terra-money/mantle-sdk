@@ -2,14 +2,12 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 )
 
 // MustUnmarshal panics if json unmarshal fails.
 // Use with care.
 func MustUnmarshal(data []byte, target interface{}) {
-	fmt.Println(string(data))
 	if err := json.Unmarshal(data, target); err != nil {
 		panic(err)
 	}

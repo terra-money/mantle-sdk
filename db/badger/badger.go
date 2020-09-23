@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"fmt"
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"

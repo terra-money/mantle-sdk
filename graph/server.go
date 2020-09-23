@@ -65,22 +65,22 @@ func (server *GraphQLInstance) UpdateState(data interface{}) {
 	server.depsResolver.SetPredefinedState(data)
 }
 
-//func (server *GraphQLInstance) Query(
-//	gqlQuery string,
-//	variables types.GraphQLParams,
-//	dependencies []types.Model,
-//) types.GraphQLResult {
-//	//log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
-//	params := graphql.Params{
-//		Schema:         server.schema,
-//		RequestString:  gqlQuery,
-//		VariableValues: variables,
-//		Context:        server.prepareResolverContext(dependencies, true),
-//	}
-//
-//	// unresolved dependency are to be handled in resolver functions
-//	return graphql.Do(params)
-//}
+func (server *GraphQLInstance) Query(
+	gqlQuery string,
+	variables types.GraphQLParams,
+	dependencies []types.Model,
+) types.GraphQLResult {
+	//log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
+	params := graphql.Params{
+		Schema:         server.schema,
+		RequestString:  gqlQuery,
+		VariableValues: variables,
+		Context:        server.prepareResolverContext(dependencies, true),
+	}
+
+	// unresolved dependency are to be handled in resolver functions
+	return graphql.Do(params)
+}
 
 func (server *GraphQLInstance) QueryInternal(
 	gqlQuery string,
