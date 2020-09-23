@@ -28,6 +28,12 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 		}
 	}
 
+	// set limit argument
+	rangeArgs["limit"] = &graphql.ArgumentConfig{
+		Type:        graphql.Int,
+		Description: "Limit",
+	}
+
 	// if the output type is already a slice type,
 	// don't make list of it.
 	var outputType graphql.Output
@@ -55,7 +61,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				// for byte comparison purposes, string is fine
 				intersectionSets := make([]map[string]bool, 0)
 
-				for indexKey, indexParam := range args {
+				for indexKey, indexParam := range FilterArgs(args, ReservedArgKeys) {
 					queryResolver, err := q.Build(entityName, indexKey, indexParam)
 					if err != nil {
 						return nil, err
@@ -79,6 +85,12 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					intersectionSets = append(intersectionSets, keysHashMap)
 				}
 
+				// if intersectionSets was never populated,
+				// we couldn't find anything. return nil
+				if len(intersectionSets) == 0 {
+					return nil, nil
+				}
+
 				// find intersections
 				intersection := intersectionSets[0]
 				for _, set := range intersectionSets[1:] {
@@ -94,7 +106,12 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 
 				// iterate again and get actual values
 				entities := make([]interface{}, 0)
+				var count = 0
+				var limit = p.Args["limit"]
 				for documentKey := range intersection {
+					if limit != nil && count > p.Args["limit"].(int) {
+						break
+					}
 					doc, err := q.Get([]byte(documentKey))
 					if err != nil {
 						return nil, fmt.Errorf("Document(%s) does not exist.", documentKey)
@@ -106,6 +123,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					}
 
 					entities = append(entities, docValue.Interface())
+					count++
 				}
 
 				return entities, nil
