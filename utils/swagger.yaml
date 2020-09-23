@@ -3154,7 +3154,7 @@ paths:
               height:
                 type: string
               result:
-                $ref: "#/definitions/ContractInfo"
+                type: string
   /wasm/contracts/{contractAddress}/migrate:
     post:
       summary: Migrate wasm contract to new code base
@@ -3230,7 +3230,12 @@ paths:
         200:
           description: OK
           schema:
-            type: string
+            type: object
+            properties:
+              height:
+                type: string
+              result:
+                type: string
   /wasm/contracts/{contractAddress}/store/raw:
     get:
       summary: Get stored information with store key

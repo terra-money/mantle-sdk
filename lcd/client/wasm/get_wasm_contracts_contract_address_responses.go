@@ -9,12 +9,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
-
-	"github.com/terra-project/mantle/lcd/models"
 )
 
 // GetWasmContractsContractAddressReader is a Reader for the GetWasmContractsContractAddress structure.
@@ -79,38 +76,11 @@ type GetWasmContractsContractAddressOKBody struct {
 	Height string `json:"height,omitempty"`
 
 	// result
-	Result *models.ContractInfo `json:"result,omitempty"`
+	Result string `json:"result,omitempty"`
 }
 
 // Validate validates this get wasm contracts contract address o k body
 func (o *GetWasmContractsContractAddressOKBody) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if err := o.validateResult(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (o *GetWasmContractsContractAddressOKBody) validateResult(formats strfmt.Registry) error {
-
-	if swag.IsZero(o.Result) { // not required
-		return nil
-	}
-
-	if o.Result != nil {
-		if err := o.Result.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("getWasmContractsContractAddressOK" + "." + "result")
-			}
-			return err
-		}
-	}
-
 	return nil
 }
 
