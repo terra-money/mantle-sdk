@@ -37,14 +37,14 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 	event := getEvent(entity)
 
 	if _, alreadyEmitted := resolver.published[event]; alreadyEmitted {
-		return fmt.Errorf("cannot commit same entity more than once.")
+		return fmt.Errorf("cannot commit same entity more than once")
 	}
 
 	var emitSource interface{}
 
 	// if commit result is zero value (i.e. empty)
 	// use the latest result as source
-	if reflect.Indirect(reflect.ValueOf(entity)).IsZero() {
+	if isEntityZero(entity) {
 		// copy over from latest
 		resolver.published[event] = resolver.latest[event]
 		emitSource = resolver.published[event]
@@ -53,14 +53,15 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 		resolver.published[event] = entity
 		emitSource = resolver.published[event]
 	}
-
 	resolver.rmux.Unlock()
 
+	resolver.mux.Lock()
 	if len(resolver.channels[event]) != 0 {
 		for _, subscription := range resolver.channels[event] {
 			subscription <- emitSource
 		}
 	}
+	resolver.mux.Unlock()
 
 	return nil
 }
@@ -79,11 +80,11 @@ func (resolver *DepsResolverInstance) Resolve(event reflect.Type) interface{} {
 	// check if this event has been delivered already
 	// in such case, get data directly from resolver.published
 	resolver.rmux.RLock()
+
 	if entity, ok := resolver.published[event]; ok {
 		resolver.rmux.RUnlock()
 		return entity
 	}
-	resolver.rmux.RUnlock()
 
 	// otherwise start polling on the event channel
 	subchannel := make(chan interface{})
@@ -91,10 +92,16 @@ func (resolver *DepsResolverInstance) Resolve(event reflect.Type) interface{} {
 	resolver.mux.Lock()
 	resolver.channels[event] = append(resolver.channels[event], subchannel)
 	resolver.mux.Unlock()
+	resolver.rmux.RUnlock()
 
 	select {
 	case e := <-subchannel:
 		return e
+		//if isEntityZero(e) {
+		//	return resolver.latest[event]
+		//} else {
+		//	return e
+		//}
 	}
 }
 
@@ -124,5 +131,24 @@ func getEvent(entity interface{}) reflect.Type {
 		return t
 	default:
 		panic("Invalid type entity provided")
+	}
+}
+
+func isEntityZero(entity interface{}) bool {
+	if entity == nil {
+		return true
+	}
+
+	ref := reflect.Indirect(reflect.ValueOf(entity))
+
+	switch ref.Kind() {
+	case reflect.Ptr:
+		return ref.IsNil()
+	case reflect.Struct:
+		return ref.IsZero()
+	case reflect.Slice, reflect.Array, reflect.Map:
+		return ref.IsNil() || (ref.Len() == 0)
+	default:
+		return ref.IsZero()
 	}
 }
