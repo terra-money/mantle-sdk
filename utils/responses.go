@@ -1,26 +1,12 @@
 package utils
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/terra-project/mantle/types"
 )
-
-func UnmarshalBlockResponseFromLCD(blockResponse []byte, target *types.Block) {
-	tmp := make(map[string]json.RawMessage)
-
-	if err := json.Unmarshal(blockResponse, &tmp); err != nil {
-		panic(fmt.Sprintf("Error while converting block: %s", err))
-	}
-
-	if err := json.Unmarshal(tmp["block"], &target); err != nil {
-		panic("Error during UnmarshalBlockResponseFromLCD")
-	}
-}
 
 func ConvertToABCIHeader(header *types.Header) abci.Header {
 	var abciHeader = abci.Header{}
