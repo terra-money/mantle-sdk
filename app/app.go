@@ -92,7 +92,18 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 
 	remoteHeight := remoteBlock.Header.Height
 
-	if remoteHeight <= currentBlockHeight {
+	// if block has caught up, start websocket sync
+	if currentBlockHeight == remoteHeight {
+		rpcSubscription := subscriber.NewRpcSubscription(configuration.TendermintEndpoint)
+		blockChannel := rpcSubscription.Subscribe()
+
+		for {
+			select {
+			case e := <-blockChannel:
+				mantle.Inject(&e)
+			}
+		}
+	} else if remoteHeight <= currentBlockHeight {
 		log.Printf("[mantle] Sync unnecessary, remoteHeight=%d, currentBlockHeight=%d", remoteHeight, currentBlockHeight)
 		return
 	}
@@ -111,6 +122,8 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 
 		syncingBlockHeight++
 	}
+
+	mantle.Sync(configuration)
 }
 
 func (mantle *Mantle) Server() {
