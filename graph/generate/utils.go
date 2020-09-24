@@ -6,7 +6,9 @@ import (
 
 var ReservedArgKeys = []string{
 	"limit",
-	"reverse",
+	"order",
+	"order_by",
+	"offset",
 }
 
 func FilterArgs(args map[string]interface{}, skip []string) map[string]interface{} {

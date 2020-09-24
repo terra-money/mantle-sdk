@@ -106,10 +106,7 @@ func (resolver *SequentialResolverIterator) Next() {
 }
 
 func (resolver *SequentialResolverIterator) Key() []byte {
-	return utils.BuildDocumentKey(
-		resolver.entityName,
-		resolver.it.DocumentKey(),
-	)
+	return resolver.it.Key()
 }
 
 func (resolver *SequentialResolverIterator) Close() {
