@@ -23,8 +23,7 @@ func NewBadgerDB(path string) db.DB {
 	// TODO: tweak me
 	options := bd.
 		DefaultOptions(path).
-		WithInMemory(inMemory).
-		WithKeepL0InMemory(true)
+		WithInMemory(inMemory)
 
 	db, err := bd.Open(options)
 	if err != nil {
@@ -37,7 +36,8 @@ func NewBadgerDB(path string) db.DB {
 }
 
 func (bdb *BadgerDB) Compact() error {
-	if err := bdb.db.RunValueLogGC(0.5); err == bd.ErrNoRewrite {
+	bdb.db.Flatten(8)
+	if err := bdb.db.RunValueLogGC(1); err == bd.ErrNoRewrite {
 		fmt.Println("nothing to compact!")
 	}
 
