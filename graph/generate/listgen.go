@@ -3,16 +3,14 @@ package generate
 import (
 	"fmt"
 	"github.com/terra-project/mantle/depsresolver"
+	"github.com/terra-project/mantle/serdes"
 	"reflect"
+	"sort"
 
 	"github.com/graphql-go/graphql"
-	"github.com/vmihailenco/msgpack/v5"
-
 	"github.com/terra-project/mantle/querier"
 	"github.com/terra-project/mantle/utils"
 )
-
-var defaultLimit = 50
 
 func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Field) (*graphql.Field, error) {
 	t := utils.GetType(modelType)
@@ -104,11 +102,30 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					intersection = nextIntersection
 				}
 
+				// order intersection
+				var sortedIntersection = make([]string, len(intersection))
+				var i = 0
+				for key, _ := range intersection {
+					sortedIntersection[i] = key
+					i++
+				}
+				var currentSortOrder = defaultOrder
+				desigatedSortOrder, exists := p.Args["sort"]
+				if exists {
+					currentSortOrder = stringOrderToConst[desigatedSortOrder.(string)]
+				}
+				switch currentSortOrder {
+				case DESC:
+					sort.Sort(sort.Reverse(sort.StringSlice(sortedIntersection)))
+				case ASC:
+					sort.Sort(sort.StringSlice(sortedIntersection))
+				}
+
 				// iterate again and get actual values
 				entities := make([]interface{}, 0)
 				var count = 0
 				var limit = p.Args["limit"]
-				for documentKey := range intersection {
+				for _, documentKey := range sortedIntersection {
 					if limit != nil && count > p.Args["limit"].(int) {
 						break
 					}
@@ -118,8 +135,9 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					}
 
 					docValue := reflect.New(t.Elem())
-					if err := msgpack.Unmarshal(doc, docValue.Interface()); err != nil {
-						return nil, err
+
+					if err := serdes.Deserialize(t, doc, docValue.Interface()); err != nil {
+						return nil, fmt.Errorf("document unpack failed, path=%s, err=%s", p.Info.Path.AsArray(), err)
 					}
 
 					entities = append(entities, docValue.Interface())
@@ -164,6 +182,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				it.Close()
 
 				entities := make([]interface{}, 0)
+
 				for _, documentKey := range documentKeys {
 					if len(documentKey) == 0 {
 						break
@@ -174,7 +193,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					}
 
 					docValue := reflect.New(t.Elem())
-					if err := msgpack.Unmarshal(doc, docValue.Interface()); err != nil {
+					if err := serdes.Deserialize(t, doc, docValue.Interface()); err != nil {
 						return nil, fmt.Errorf("msgunpack failed, entityName=%s, err=%s", entityName, err)
 					}
 
