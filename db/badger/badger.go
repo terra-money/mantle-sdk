@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"fmt"
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
@@ -22,7 +23,8 @@ func NewBadgerDB(path string) db.DB {
 	// TODO: tweak me
 	options := bd.
 		DefaultOptions(path).
-		WithInMemory(inMemory)
+		WithInMemory(inMemory).
+		WithKeepL0InMemory(true)
 
 	db, err := bd.Open(options)
 	if err != nil {
@@ -35,7 +37,11 @@ func NewBadgerDB(path string) db.DB {
 }
 
 func (bdb *BadgerDB) Compact() error {
-	return bdb.db.Flatten(8)
+	if err := bdb.db.RunValueLogGC(0.5); err == bd.ErrNoRewrite {
+		fmt.Println("nothing to compact!")
+	}
+
+	return nil
 }
 
 func (bdb *BadgerDB) GetCosmosAdapter() tmdb.DB {
