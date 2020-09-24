@@ -31,6 +31,12 @@ func BuildIndexGroupPrefix(entityName, indexName []byte) []byte {
 	)
 }
 
+func GetReverseSeekKeyFromIndexGroupPrefix(key []byte) []byte {
+	copy := key
+	copy[len(copy)-1] = copy[len(copy)-1] + 1
+	return copy
+}
+
 func BuildIndexIteratorPrefix(entityName, indexName, indexKey []byte) []byte {
 	return ConcatBytes(
 		entityName,
