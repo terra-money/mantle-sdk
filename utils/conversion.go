@@ -96,3 +96,32 @@ func ConvertToLexicographicBytes(data interface{}) ([]byte, error) {
 		return nil, fmt.Errorf("this type of data is disallowed for indexing: %s", reflect.TypeOf(data).Name())
 	}
 }
+
+func ConvertToIndexValueToCorrectType(indexType reflect.Type, data interface{}) ([]byte, error) {
+	switch indexType.Kind() {
+	case reflect.String:
+		return []byte(data.(string)), nil
+	case reflect.Uint:
+		return LeToBe(uint64(data.(int))), nil
+	case reflect.Uint8:
+		return LeToBe(uint64(data.(int))), nil
+	case reflect.Uint16:
+		return LeToBe(uint64(data.(int))), nil
+	case reflect.Uint32:
+		return LeToBe(uint64(data.(int))), nil
+	case reflect.Uint64:
+		return LeToBe(uint64(data.(int))), nil
+	case reflect.Int:
+		return LeToBe(IntToUintLexicographic(int64(data.(int)))), nil
+	case reflect.Int8:
+		return LeToBe(IntToUintLexicographic(int64(data.(int)))), nil
+	case reflect.Int16:
+		return LeToBe(IntToUintLexicographic(int64(data.(int)))), nil
+	case reflect.Int32:
+		return LeToBe(IntToUintLexicographic(int64(data.(int)))), nil
+	case reflect.Int64:
+		return LeToBe(IntToUintLexicographic(int64(data.(int)))), nil
+	default:
+		return nil, fmt.Errorf("this type of data is disallowed for indexing: %s", reflect.TypeOf(data).Name())
+	}
+}
