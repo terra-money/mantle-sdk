@@ -19,7 +19,7 @@ type BaseState struct {
 	Height             int64
 	BeginBlockResponse abci.ResponseBeginBlock
 	EndBlockResponse   abci.ResponseEndBlock
-	DeliverTxResponses []abci.ResponseDeliverTx
+	DeliverTxResponses []ResponseDeliverTx
 	Block              Block
-	Txs                []TxResult
+	Txs                []LazyTx
 }
