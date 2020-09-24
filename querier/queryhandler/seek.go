@@ -35,7 +35,7 @@ func NewSeekResolver(
 		return nil, fmt.Errorf("acquiring kvIndexEntry failed, queryHandler=seek, entityName=%s, indexName=%s", entityName, indexName)
 	}
 
-	seekKey, seekKeyErr := utils.ConvertToLexicographicBytes(indexOption)
+	seekKey, seekKeyErr := utils.ConvertToIndexValueToCorrectType(kvIndexEntry.Type(), indexOption)
 
 	// if ResolveKeyType fails, that means
 	if seekKeyErr != nil {

@@ -2,10 +2,8 @@ package queryhandler
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle/db/kvindex"
-	"strings"
-
 	"github.com/terra-project/mantle/db"
+	"github.com/terra-project/mantle/db/kvindex"
 	"github.com/terra-project/mantle/utils"
 )
 
@@ -25,7 +23,7 @@ func NewHeightResolver(
 	indexName string,
 	indexOption interface{},
 ) (QueryHandler, error) {
-	if !strings.HasPrefix(indexName, "Height") {
+	if !(indexName == "Height" || indexName == "Height_range") {
 		return nil, nil
 	}
 

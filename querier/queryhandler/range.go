@@ -46,45 +46,62 @@ func NewRangeResolver(
 		indexName:    indexName,
 		startKey:     indexOptionSlice[0],
 		endKey:       indexOptionSlice[1],
+		reverse:      true,
 	}, nil
 }
 
 func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	kviEntry := resolver.kvindexEntry
-	startKey, err := utils.ConvertToLexicographicBytes(resolver.startKey)
+	rangeStart, err := utils.ConvertToIndexValueToCorrectType(kviEntry.Type(), resolver.startKey)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"range parameter `start` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s. %s",
 			resolver.entityName,
 			resolver.indexName,
-			startKey,
+			rangeStart,
 			err,
 		)
 	}
 
-	endKey, err := utils.ConvertToLexicographicBytes(resolver.endKey)
+	rangeEnd, err := utils.ConvertToIndexValueToCorrectType(kviEntry.Type(), resolver.endKey)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"range parameter `end` cannot be converted to underlying index type, entityName=%s, indexName=%s, start=%s",
 			resolver.entityName,
 			resolver.indexName,
-			endKey,
+			rangeEnd,
 		)
 	}
 
 	db := resolver.db
 	indexName := kviEntry.Name()
 	entityName := resolver.entityName
+
+	var seekKey, endKey []byte
+	if resolver.reverse {
+		seekKey = rangeEnd
+		endKey = rangeStart
+	} else {
+		seekKey = rangeStart
+		endKey = rangeEnd
+	}
+
 	it := db.IndexIterator(
-		utils.BuildIndexIteratorPrefix(
+		utils.GetReverseSeekKeyFromIndexGroupPrefix(utils.BuildIndexIteratorPrefix(
 			[]byte(entityName),
 			[]byte(indexName),
-			startKey,
-		),
+			seekKey,
+		)),
 		resolver.reverse,
 	)
 
-	return NewRangeResolverIterator(entityName, indexName, endKey, it), nil
+	return NewRangeResolverIterator(
+		entityName,
+		indexName,
+		endKey,
+		it,
+		resolver.reverse,
+	), nil
 }
 
 type RangeResolverIterator struct {
@@ -93,6 +110,7 @@ type RangeResolverIterator struct {
 	endKey     []byte
 	it         db.Iterator
 	prefix     []byte
+	reverse    bool
 }
 
 func NewRangeResolverIterator(
@@ -100,43 +118,54 @@ func NewRangeResolverIterator(
 	indexName string,
 	endKey []byte,
 	it db.Iterator,
+	reverse bool,
 ) *RangeResolverIterator {
 	return &RangeResolverIterator{
 		entityName: entityName,
 		indexName:  indexName,
 		endKey:     endKey,
 		it:         it,
-		prefix:     utils.ConcatBytes([]byte(entityName), []byte(indexName)),
+		prefix: utils.BuildIndexGroupPrefix(
+			[]byte(entityName),
+			[]byte(indexName),
+		),
+		reverse: reverse,
 	}
 }
 
-func (resolver *RangeResolverIterator) Valid() bool {
-	isPrefixValid := resolver.it.Valid(resolver.prefix)
+func (iterator *RangeResolverIterator) Valid() bool {
+	prefixValid := iterator.it.Valid(iterator.prefix)
+	var withinRangeValid = false
 
-	if !isPrefixValid {
-		return false
+	currentIndexKey := iterator.it.Key()[len(iterator.prefix):]
+	currentIndexKey = currentIndexKey[:len(iterator.endKey)]
+
+	comparison := bytes.Compare(
+		currentIndexKey,
+		iterator.endKey,
+	)
+
+	if iterator.reverse {
+		// in case of reverse, currentKey should be the same or bigger than current
+		withinRangeValid = comparison >= 0
+	} else {
+		withinRangeValid = comparison <= 0
 	}
 
-	// iteration is valid until
-	// the compare{slice(len(item.Key)), endKey} is equal or lower
-	key := resolver.it.Key()
-	comp := key[:len(key)-8][len(resolver.prefix):]
-	isKeyValid := bytes.Compare(
-		comp,
-		resolver.endKey,
-	) <= 0
-
-	return isKeyValid
+	return prefixValid && withinRangeValid
 }
 
-func (resolver *RangeResolverIterator) Next() {
-	resolver.it.Next()
+func (iterator *RangeResolverIterator) Next() {
+	iterator.it.Next()
 }
 
-func (resolver *RangeResolverIterator) Key() []byte {
-	return append([]byte(resolver.entityName), resolver.it.DocumentKey()...)
+func (iterator *RangeResolverIterator) Key() []byte {
+	return utils.BuildDocumentKey(
+		[]byte(iterator.entityName),
+		iterator.it.DocumentKey(),
+	)
 }
 
-func (resolver *RangeResolverIterator) Close() {
-	resolver.it.Close()
+func (iterator *RangeResolverIterator) Close() {
+	iterator.it.Close()
 }
