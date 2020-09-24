@@ -2,12 +2,12 @@ package committer
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/serdes"
 	"reflect"
 
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/db/kvindex"
 	"github.com/terra-project/mantle/utils"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 type CommitterInstance struct {
@@ -132,6 +132,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 type commitTarget struct {
 	pk   []byte
+	t    reflect.Type
 	data interface{}
 }
 
@@ -172,6 +173,7 @@ func flattenCommitTargets(
 
 		commitTargets[i] = commitTarget{
 			pk:   pk,
+			t:    v.Type(),
 			data: entitiesInterface[i],
 		}
 	}
@@ -181,7 +183,7 @@ func flattenCommitTargets(
 
 func (ct commitTarget) commit(commit CommitFunc) error {
 	documentKey := utils.BuildDocumentKey(nil, ct.pk)
-	documentValue, err := msgpack.Marshal(ct.data)
+	documentValue, err := serdes.Serialize(ct.t, ct.data)
 	if err != nil {
 		return fmt.Errorf("failed to serialize entity")
 	}
