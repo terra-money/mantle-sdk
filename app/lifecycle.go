@@ -47,12 +47,9 @@ func (c *LifecycleContext) Inject(block *types.Block) types.BaseState {
 	endBlockerResponse := c.app.EndBlocker(block)
 
 	// put together a primitive state
-	txs := make([]types.TxResult, 0)
+	txs := make([]types.LazyTx, len(block.Data.Txs))
 	for i, txstring := range block.Data.Txs {
-		txs = append(txs, types.TxResult{
-			Result: deliverTxResponses[i],
-			Tx:     types.NewLazyTx(txstring),
-		})
+		txs[i] = types.NewLazyTx(txstring)
 	}
 
 	primState := types.BaseState{
