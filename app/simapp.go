@@ -1,6 +1,7 @@
 package app
 
 import (
+	compattypes "github.com/terra-project/mantle-compatibility/types"
 	"github.com/terra-project/mantle/db/badger"
 	"github.com/terra-project/mantle/types"
 )
@@ -14,7 +15,7 @@ type (
 	CommitRecord interface{}
 )
 
-func NewSimMantle(genesis *types.GenesisDoc, indexers ...types.IndexerRegisterer) *Mantle {
+func NewSimMantle(genesis *compattypes.GenesisDoc, indexers ...types.IndexerRegisterer) *Mantle {
 	return NewMantle(
 		badger.NewBadgerDB(""),
 		genesis,
