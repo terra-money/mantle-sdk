@@ -183,7 +183,10 @@ func createIndexMapIter(
 				}
 
 				if _, isPrimary := modelTag.Option("primary"); isPrimary {
-					isPrimaryKey = true
+					// is only primary when top level
+					if len(path) == 0 {
+						isPrimaryKey = true
+					}
 				}
 			}
 
