@@ -2,16 +2,15 @@ package generate
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/serdes"
 	"reflect"
 	"strings"
 
 	"github.com/graphql-go/graphql/language/ast"
 
-	"github.com/terra-project/mantle/querier"
-	"github.com/vmihailenco/msgpack/v5"
-
 	"github.com/graphql-go/graphql"
 	"github.com/terra-project/mantle/depsresolver"
+	"github.com/terra-project/mantle/querier"
 	"github.com/terra-project/mantle/utils"
 )
 
@@ -90,8 +89,8 @@ func GenerateGraphResolver(modelType reflect.Type) (*graphql.Field, error) {
 					}
 					docValue := reflect.New(t)
 
-					if err := msgpack.Unmarshal(doc, docValue.Interface()); err != nil {
-						return nil, fmt.Errorf("Could not unmarshal msgpack")
+					if err := serdes.Deserialize(t, doc, docValue.Interface()); err != nil {
+						return nil, fmt.Errorf("could not unmarshal msgpack")
 					}
 
 					return docValue.Interface(), err
@@ -132,6 +131,11 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 		return nil
 	}
 
+	// check if this field is scalar
+	if scalar, isScalar := IsCosmosScalar(t); isScalar {
+		return scalar
+	}
+
 	switch kind {
 	// in case of struct,
 	case reflect.Struct:
@@ -143,16 +147,11 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 			var fieldType graphql.Output
 
 			// see if this field should be implemented as scalar type
-			scalar, isScalar := IsCosmosScalar(field.Type)
-			if isScalar {
-				fieldType = scalar
-			} else {
-				fieldType = buildResponseType(field.Type, field.Name, structName)
+			fieldType = buildResponseType(field.Type, field.Name, structName)
 
-				// skip nil fields
-				if fieldType == nil {
-					continue
-				}
+			// skip nil fields
+			if fieldType == nil {
+				continue
 			}
 
 			fields[field.Name] = &graphql.Field{
