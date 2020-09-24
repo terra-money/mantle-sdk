@@ -5,6 +5,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+var GlobalAccountNumber uint64 = 0
+
 type TestAccount struct {
 	name string
 	info keys.Info

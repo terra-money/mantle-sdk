@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 	"github.com/terra-project/core/x/auth"
@@ -44,7 +45,7 @@ func (tx *TestkitTx) ToTx(signer TestAccount) Tx {
 		0,
 		0.0,
 		false,
-		"tequila-0004",
+		"mantle-test",
 		"",
 		Coins{
 			{Denom: "uusd", Amount: NewInt(100000000)},
@@ -101,8 +102,16 @@ func getOrCreateAccount(address AccAddress) exported.Account {
 	ar := auth.NewAccountRetriever(querier)
 
 	acc, accErr := ar.GetAccount(address)
+	// account was never
+	if acc == nil {
+		fmt.Println("???")
+	} else {
+		if GlobalAccountNumber < acc.GetAccountNumber() {
+			GlobalAccountNumber = acc.GetAccountNumber()
+		}
+	}
 	if accErr != nil {
-		panic("account was never made known. send a tx to this account")
+		acc.SetAccountNumber(GlobalAccountNumber + 1)
 	}
 
 	return acc
