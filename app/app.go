@@ -32,6 +32,7 @@ type Mantle struct {
 
 type SyncConfiguration struct {
 	TendermintEndpoint string
+	SyncUntil uint64
 }
 
 func NewMantle(
@@ -84,7 +85,7 @@ func NewMantle(
 }
 
 func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
-	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block", configuration.TendermintEndpoint))
+	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("https://%s/blocks/latest", configuration.TendermintEndpoint))
 
 	if err != nil {
 		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
@@ -95,7 +96,12 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 	tStart := time.Now()
 
 	for syncingBlockHeight < remoteHeight {
-		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block?height=%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
+		// stop sync if SyncUntil is given
+		if configuration.SyncUntil != 0 && uint64(syncingBlockHeight) == configuration.SyncUntil {
+			for{}
+		}
+
+		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("https://%s/blocks/%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
 		}
@@ -114,6 +120,7 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 }
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
+	mantle.QuerySync(configuration, 1)
 	// subscribe to NewBlock event
 	rpcSubscription := subscriber.NewRpcSubscription(fmt.Sprintf("ws://%s/websocket", configuration.TendermintEndpoint))
 	blockChannel := rpcSubscription.Subscribe()
@@ -122,6 +129,11 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 		select {
 		case block := <-blockChannel:
 			lastBlockHeight := mantle.app.GetApp().LastBlockHeight()
+
+			// stop sync if SyncUntil is given
+			if configuration.SyncUntil != 0 && uint64(lastBlockHeight) == configuration.SyncUntil {
+				for{}
+			}
 
 			if block.Header.Height-lastBlockHeight != 1 {
 				mantle.QuerySync(configuration, lastBlockHeight)
