@@ -85,7 +85,7 @@ func NewMantle(
 }
 
 func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
-	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("https://%s/blocks/latest", configuration.TendermintEndpoint))
+	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block", configuration.TendermintEndpoint))
 
 	if err != nil {
 		panic(fmt.Errorf("error during mantle sync: remote head fetch failed. fromHeight=%d, (%s)", currentBlockHeight, err))
@@ -100,8 +100,7 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 		if configuration.SyncUntil != 0 && uint64(syncingBlockHeight) == configuration.SyncUntil {
 			for{}
 		}
-
-		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("https://%s/blocks/%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
+		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block?height=%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
 		}
