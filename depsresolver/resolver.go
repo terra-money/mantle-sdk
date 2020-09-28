@@ -29,6 +29,7 @@ func (resolver *DepsResolverInstance) SetPredefinedState(entity interface{}) {
 
 	resolver.rmux.Lock()
 	resolver.published[event] = entity
+	resolver.latest[event] = entity
 	resolver.rmux.Unlock()
 }
 
@@ -44,15 +45,15 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 
 	// if commit result is zero value (i.e. empty)
 	// use the latest result as source
-	if isEntityZero(entity) {
-		// copy over from latest
-		resolver.published[event] = resolver.latest[event]
-		emitSource = resolver.published[event]
-	} else {
-		resolver.latest[event] = entity
-		resolver.published[event] = entity
-		emitSource = resolver.published[event]
-	}
+	//if isEntityZero(entity) {
+	//	// copy over from latest
+	//	resolver.published[event] = resolver.latest[event]
+	//	emitSource = resolver.published[event]
+	//} else {
+	resolver.latest[event] = entity
+	resolver.published[event] = entity
+	emitSource = resolver.published[event]
+	//}
 	resolver.rmux.Unlock()
 
 	resolver.mux.Lock()
@@ -69,6 +70,7 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 func (resolver *DepsResolverInstance) GetState() map[string]interface{} {
 	state := map[string]interface{}{}
 	for key, entity := range resolver.published {
+		if isEntityZero(entity) { continue }
 		state[key.Name()] = entity
 	}
 
@@ -105,15 +107,18 @@ func (resolver *DepsResolverInstance) ResolveLatest(event reflect.Type) interfac
 }
 
 func (resolver *DepsResolverInstance) Dispose() {
+	resolver.rmux.Lock()
 	for _, entity := range resolver.channels {
 		for _, channel := range entity {
 			close(channel)
 		}
 	}
+
 	resolver.channels = make(map[reflect.Type][]chan interface{})
 
 	// and dispose the previous published data
 	resolver.published = make(map[reflect.Type]interface{})
+	resolver.rmux.Unlock()
 }
 
 func getEvent(entity interface{}) reflect.Type {
