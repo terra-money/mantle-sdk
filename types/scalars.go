@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"github.com/graphql-go/graphql"
 )
 
 type JSONScalar string
@@ -20,3 +21,20 @@ func NewJSONScalar(data interface{}, customMarshaller JSONScalarCustomMarshaler)
 	return JSONScalar(bz)
 }
 func (scalar *JSONScalar) IsJsonScalar() {}
+
+var Order = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "Order",
+	Values:      graphql.EnumValueConfigMap{
+		"ASC": &graphql.EnumValueConfig{
+			Value:             "ASC",
+			//DeprecationReason: "",
+			Description:       "Ascending order",
+		},
+		"DESC": &graphql.EnumValueConfig{
+			Value:             "DESC",
+			//DeprecationReason: "",
+			Description:       "Ascending order",
+		},
+	},
+	Description: "",
+})
