@@ -160,7 +160,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				entities := make([]interface{}, 0)
 				var count = 0
 				for _, documentKey := range sortedIntersection {
-					if limit != 0 && count > limit {
+					if limit != 0 && count >= limit {
 						break
 					}
 					doc, err := q.Get([]byte(documentKey))
