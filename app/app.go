@@ -119,7 +119,6 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 }
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
-	mantle.QuerySync(configuration, 1)
 	// subscribe to NewBlock event
 	rpcSubscription := subscriber.NewRpcSubscription(fmt.Sprintf("ws://%s/websocket", configuration.TendermintEndpoint))
 	blockChannel := rpcSubscription.Subscribe()
