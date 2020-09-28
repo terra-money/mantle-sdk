@@ -1,6 +1,7 @@
 package queryhandler
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/terra-project/mantle/db"
 	"github.com/terra-project/mantle/db/kvindex"
@@ -83,8 +84,8 @@ func (resolver HeightResolver) Resolve() (QueryHandlerIterator, error) {
 		prefixStart,
 		prefixEnd,
 		resolver.db.IndexIterator(
-			prefixEnd,
-			true,
+			prefixStart,
+			false,
 		),
 	), nil
 }
@@ -109,8 +110,9 @@ func NewHeightResolverIterator(entityName, prefixGroup, prefixStart, prefixEnd [
 
 func (resolver *HeightResolverIterator) Valid() bool {
 	if len(resolver.prefixEnd) > 0 {
-		return resolver.it.Valid(resolver.prefixStart) ||
-			resolver.it.Valid(resolver.prefixEnd)
+		psCompare := bytes.Compare(resolver.it.Key(), resolver.prefixStart)
+		peCompare := bytes.Compare(resolver.it.Key(), utils.GetReverseSeekKeyFromIndexGroupPrefix(resolver.prefixEnd))
+		return psCompare == 1 && peCompare <= 0
 	} else {
 		return resolver.it.Valid(resolver.prefixStart)
 	}
