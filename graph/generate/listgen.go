@@ -2,8 +2,10 @@ package generate
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle/constants"
 	"github.com/terra-project/mantle/depsresolver"
 	"github.com/terra-project/mantle/serdes"
+	"github.com/terra-project/mantle/types"
 	"reflect"
 	"sort"
 
@@ -27,9 +29,15 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 	}
 
 	// set limit argument
-	rangeArgs["limit"] = &graphql.ArgumentConfig{
+	rangeArgs["Limit"] = &graphql.ArgumentConfig{
 		Type:        graphql.Int,
 		Description: "Limit",
+	}
+
+	// order scalars
+	rangeArgs["Order"] = &graphql.ArgumentConfig{
+		Type:        types.Order,
+		Description: "Sort order",
 	}
 
 	// if the output type is already a slice type,
@@ -52,18 +60,42 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 			args := p.Args
 			filteredArgs := FilterArgs(args, ReservedArgKeys)
 
-			var limit = defaultLimit
-			if customLimit, customLimitExists := args["limit"]; customLimitExists {
+			var limit = constants.DefaultLimit
+			if customLimit, customLimitExists := args["Limit"]; customLimitExists {
 				limit = customLimit.(int)
 			}
 
-			if args != nil && len(filteredArgs) > 0 {
+			if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) || args != nil && len(filteredArgs) > 0 {
 				// query
 				q := p.Context.Value(utils.QuerierKey).(querier.Querier)
 
 				// must of been map[[]byte]bool but golang doesn't like that
 				// for byte comparison purposes, string is fine
 				intersectionSets := make([]map[string]bool, 0)
+
+				if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) {
+					queryResolver, err := q.Build(entityName, "", nil)
+					if err != nil {
+						return nil, err
+					}
+
+					it, err := queryResolver.Resolve()
+					if err != nil {
+						return nil, err
+					}
+
+					// for every key found, mark them found
+					keysHashMap := make(map[string]bool)
+
+					for it.Valid() {
+						keysHashMap[string(it.Key())] = true
+						it.Next()
+					}
+
+					it.Close()
+
+					intersectionSets = append(intersectionSets, keysHashMap)
+				}
 
 				for indexKey, indexParam := range FilterArgs(args, ReservedArgKeys) {
 					queryResolver, err := q.Build(entityName, indexKey, indexParam)
@@ -115,16 +147,13 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					sortedIntersection[i] = key
 					i++
 				}
-				var currentSortOrder = defaultOrder
-				desigatedSortOrder, exists := p.Args["sort"]
-				if exists {
-					currentSortOrder = stringOrderToConst[desigatedSortOrder.(string)]
-				}
+
+				var currentSortOrder = constants.GetOrder(args)
 				switch currentSortOrder {
-				case DESC:
-					sort.Sort(sort.Reverse(sort.StringSlice(sortedIntersection)))
-				case ASC:
+				case constants.ASC:
 					sort.Sort(sort.StringSlice(sortedIntersection))
+				case constants.DESC:
+					sort.Sort(sort.Reverse(sort.StringSlice(sortedIntersection)))
 				}
 
 				// iterate again and get actual values
@@ -157,53 +186,53 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
 			}
 
-			// if resolve immediately flag is set, don't await for dependency.
-			// in case of list resolver, data must be fetched from database
-			// with default entry size of 100
-			if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) {
-				q := p.Context.Value(utils.QuerierKey).(querier.Querier)
-				resolver, resolverErr := q.Build(entityName, "", nil)
-				if resolverErr != nil {
-					return nil, fmt.Errorf("resolver build failed, entityName=%s, err=%s", entityName, resolverErr)
-				}
-
-				it, itErr := resolver.Resolve()
-				if itErr != nil {
-					return nil, fmt.Errorf("resolver iteration failed, entityName=%s, err=%s", entityName, itErr)
-				}
-
-				var documentKeys = make([]string, limit)
-				var i = 0
-
-				for it.Valid() && (i < limit) {
-					documentKeys[i] = string(it.Key())
-					it.Next()
-					i++
-				}
-
-				it.Close()
-
-				entities := make([]interface{}, 0)
-				for _, documentKey := range documentKeys {
-					if len(documentKey) == 0 {
-						break
-					}
-
-					doc, err := q.Get([]byte(documentKey))
-					if err != nil {
-						return nil, fmt.Errorf("document(%s) does not exist.", documentKey)
-					}
-
-					docValue := reflect.New(t.Elem())
-					if err := serdes.Deserialize(t, doc, docValue.Interface()); err != nil {
-						return nil, fmt.Errorf("msgunpack failed, entityName=%s, err=%s", entityName, err)
-					}
-
-					entities = append(entities, docValue.Interface())
-				}
-
-				return entities, nil
-			}
+			//// if resolve immediately flag is set, don't await for dependency.
+			//// in case of list resolver, data must be fetched from database
+			//// with default entry size of 100
+			//if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) {
+			//	q := p.Context.Value(utils.QuerierKey).(querier.Querier)
+			//	resolver, resolverErr := q.Build(entityName, "", nil)
+			//	if resolverErr != nil {
+			//		return nil, fmt.Errorf("resolver build failed, entityName=%s, err=%s", entityName, resolverErr)
+			//	}
+			//
+			//	it, itErr := resolver.Resolve()
+			//	if itErr != nil {
+			//		return nil, fmt.Errorf("resolver iteration failed, entityName=%s, err=%s", entityName, itErr)
+			//	}
+			//
+			//	var documentKeys = make([]string, limit)
+			//	var i = 0
+			//
+			//	for it.Valid() && (i < limit) {
+			//		documentKeys[i] = string(it.Key())
+			//		it.Next()
+			//		i++
+			//	}
+			//
+			//	it.Close()
+			//
+			//	entities := make([]interface{}, 0)
+			//	for _, documentKey := range documentKeys {
+			//		if len(documentKey) == 0 {
+			//			break
+			//		}
+			//
+			//		doc, err := q.Get([]byte(documentKey))
+			//		if err != nil {
+			//			return nil, fmt.Errorf("document(%s) does not exist.", documentKey)
+			//		}
+			//
+			//		docValue := reflect.New(t.Elem())
+			//		if err := serdes.Deserialize(t, doc, docValue.Interface()); err != nil {
+			//			return nil, fmt.Errorf("msgunpack failed, entityName=%s, err=%s", entityName, err)
+			//		}
+			//
+			//		entities = append(entities, docValue.Interface())
+			//	}
+			//
+			//	return entities, nil
+			//}
 
 			// resolve current round
 			var dependencies = p.Context.Value(utils.DependenciesKey).(utils.DependenciesKeyType)

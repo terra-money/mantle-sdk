@@ -5,9 +5,8 @@ import (
 )
 
 var ReservedArgKeys = []string{
-	"limit",
-	"order",
-	"order_by",
+	"Limit",
+	"Order",
 	"offset",
 }
 
