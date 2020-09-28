@@ -220,7 +220,7 @@ func createIndexMapIter(
 			indexName:    indexName,
 			indexPath:    path,
 		}
-
+		
 		return nil
 	}
 }
