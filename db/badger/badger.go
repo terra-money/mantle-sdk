@@ -37,7 +37,7 @@ func NewBadgerDB(path string) db.DB {
 
 func (bdb *BadgerDB) Compact() error {
 	bdb.db.Flatten(8)
-	if err := bdb.db.RunValueLogGC(1); err == bd.ErrNoRewrite {
+	if err := bdb.db.RunValueLogGC(0.5); err == bd.ErrNoRewrite {
 		fmt.Println("nothing to compact!")
 	}
 
