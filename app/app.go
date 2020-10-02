@@ -144,16 +144,8 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	}
 }
 
-func (mantle *Mantle) Server() {
-	go mantle.gqlInstance.ServeHTTP(1337)
-}
-
-func (mantle *Mantle) Rebuild() {
-
-}
-
-func (mantle *Mantle) Start() {
-
+func (mantle *Mantle) Server(port int) {
+	go mantle.gqlInstance.ServeHTTP(port)
 }
 
 func (mantle *Mantle) Inject(block *types.Block) types.BaseState {
@@ -197,21 +189,4 @@ func (mantle *Mantle) Inject(block *types.Block) types.BaseState {
 	)
 
 	return baseState
-}
-
-func start(
-	baseStateEvent chan types.BaseState,
-	gql *graph.GraphQLInstance,
-	indexer *indexer.IndexerBaseInstance,
-) {
-	log.Print("Starting mantle...")
-	for {
-		baseState := <-baseStateEvent
-		fmt.Println(baseState)
-	}
-	// for {
-	// 	baseState := <-baseStateEvent
-	// 	subcontext := gql.CreateSubContext(baseState)
-	// 	indexer.RunCollectors()
-	// }
 }

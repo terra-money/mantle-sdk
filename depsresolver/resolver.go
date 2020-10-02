@@ -9,7 +9,7 @@ import (
 type DepsResolverInstance struct {
 	mux       sync.RWMutex
 	rmux      sync.RWMutex
-	channels  map[reflect.Type]([]chan interface{})
+	channels  map[reflect.Type][]chan interface{}
 	published map[reflect.Type]interface{}
 	latest    map[reflect.Type]interface{}
 }
@@ -43,17 +43,10 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 
 	var emitSource interface{}
 
-	// if commit result is zero value (i.e. empty)
-	// use the latest result as source
-	//if isEntityZero(entity) {
-	//	// copy over from latest
-	//	resolver.published[event] = resolver.latest[event]
-	//	emitSource = resolver.published[event]
-	//} else {
 	resolver.latest[event] = entity
 	resolver.published[event] = entity
 	emitSource = resolver.published[event]
-	//}
+
 	resolver.rmux.Unlock()
 
 	resolver.mux.Lock()
@@ -70,7 +63,9 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 func (resolver *DepsResolverInstance) GetState() map[string]interface{} {
 	state := map[string]interface{}{}
 	for key, entity := range resolver.published {
-		if isEntityZero(entity) { continue }
+		if isEntityZero(entity) {
+			continue
+		}
 		state[key.Name()] = entity
 	}
 
