@@ -220,7 +220,7 @@ func createIndexMapIter(
 			indexName:    indexName,
 			indexPath:    path,
 		}
-		
+
 		return nil
 	}
 }
@@ -246,18 +246,14 @@ func _getLeafValues(entity reflect.Value, valuePath []string, values *[]reflect.
 						return err
 					}
 				}
-			//case reflect.Map:
-			//	for _, key := range entity.MapKeys() {
-			//		if err := _getLeafValues(entity.MapIndex(key), valuePath[1:], values); err != nil {
-			//			return err
-			//		}
-			//	}
 			default:
 				return fmt.Errorf("entity is not slice yet path * is given")
 			}
 		} else {
 			return _getLeafValues(entity.FieldByName(currentPath), valuePath[1:], values)
 		}
+
+		return nil
 	}
 
 	*values = append(*values, entity)
