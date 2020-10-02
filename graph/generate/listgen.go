@@ -112,7 +112,6 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					keysHashMap := make(map[string]bool)
 
 					for it.Valid() {
-						fmt.Println(it.Key())
 						keysHashMap[string(it.Key())] = true
 						it.Next()
 					}
