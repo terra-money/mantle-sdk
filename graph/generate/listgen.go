@@ -112,6 +112,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					keysHashMap := make(map[string]bool)
 
 					for it.Valid() {
+						fmt.Println(it.Key())
 						keysHashMap[string(it.Key())] = true
 						it.Next()
 					}
@@ -163,6 +164,7 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					if limit != 0 && count >= limit {
 						break
 					}
+
 					doc, err := q.Get([]byte(documentKey))
 					if err != nil {
 						return nil, fmt.Errorf("Document(%s) does not exist.", documentKey)
@@ -185,54 +187,6 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 			if !depsResolverNotCleared {
 				panic(fmt.Sprintf("DepsResolver is either cleared or not set, in ResolveFunc for %s", entityName))
 			}
-
-			//// if resolve immediately flag is set, don't await for dependency.
-			//// in case of list resolver, data must be fetched from database
-			//// with default entry size of 100
-			//if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) {
-			//	q := p.Context.Value(utils.QuerierKey).(querier.Querier)
-			//	resolver, resolverErr := q.Build(entityName, "", nil)
-			//	if resolverErr != nil {
-			//		return nil, fmt.Errorf("resolver build failed, entityName=%s, err=%s", entityName, resolverErr)
-			//	}
-			//
-			//	it, itErr := resolver.Resolve()
-			//	if itErr != nil {
-			//		return nil, fmt.Errorf("resolver iteration failed, entityName=%s, err=%s", entityName, itErr)
-			//	}
-			//
-			//	var documentKeys = make([]string, limit)
-			//	var i = 0
-			//
-			//	for it.Valid() && (i < limit) {
-			//		documentKeys[i] = string(it.Key())
-			//		it.Next()
-			//		i++
-			//	}
-			//
-			//	it.Close()
-			//
-			//	entities := make([]interface{}, 0)
-			//	for _, documentKey := range documentKeys {
-			//		if len(documentKey) == 0 {
-			//			break
-			//		}
-			//
-			//		doc, err := q.Get([]byte(documentKey))
-			//		if err != nil {
-			//			return nil, fmt.Errorf("document(%s) does not exist.", documentKey)
-			//		}
-			//
-			//		docValue := reflect.New(t.Elem())
-			//		if err := serdes.Deserialize(t, doc, docValue.Interface()); err != nil {
-			//			return nil, fmt.Errorf("msgunpack failed, entityName=%s, err=%s", entityName, err)
-			//		}
-			//
-			//		entities = append(entities, docValue.Interface())
-			//	}
-			//
-			//	return entities, nil
-			//}
 
 			// resolve current round
 			var dependencies = p.Context.Value(utils.DependenciesKey).(utils.DependenciesKeyType)

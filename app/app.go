@@ -32,7 +32,7 @@ type Mantle struct {
 
 type SyncConfiguration struct {
 	TendermintEndpoint string
-	SyncUntil uint64
+	SyncUntil          uint64
 }
 
 func NewMantle(
@@ -98,7 +98,8 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 	for syncingBlockHeight < remoteHeight {
 		// stop sync if SyncUntil is given
 		if configuration.SyncUntil != 0 && uint64(syncingBlockHeight) == configuration.SyncUntil {
-			for{}
+			for {
+			}
 		}
 		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block?height=%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
 		if err != nil {
@@ -130,7 +131,8 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 
 			// stop sync if SyncUntil is given
 			if configuration.SyncUntil != 0 && uint64(lastBlockHeight) == configuration.SyncUntil {
-				for{}
+				for {
+				}
 			}
 
 			if block.Header.Height-lastBlockHeight != 1 {

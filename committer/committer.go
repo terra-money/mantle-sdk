@@ -50,6 +50,7 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 		// convert some properties to byte beforehand
 		heightInBe := utils.LeToBe(height)
 		var commit CommitFunc = func(key, value []byte) error {
+			//utils.DebugStoreKey(utils.ConcatBytes([]byte(entityName), key))
 			return writeBatch.Set(utils.ConcatBytes([]byte(entityName), key), value)
 		}
 		var getSequence = NewSequenceGenerator(entityName, kvIndex, committer.db)
@@ -83,12 +84,6 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 				}
 
 				indexName := kviEntry.Name()
-
-				//// if entity is either slice or map, the leading '*' must go away
-				//if commitTarget.entityType == EntityTypeSlice {
-				//	valuePath = valuePath[1:]
-				//}
-
 				leafValues, leafValuesErr := kviEntry.ResolveIndexKeySingle(commitTarget.data)
 				if leafValuesErr != nil {
 					return leafValuesErr
@@ -100,7 +95,8 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 					if indexValueErr != nil {
 						return fmt.Errorf(
-							"index creation failed due to unmatching index key type, entityName=%s, indexName=%s, expectedIndexKeyType=%s, actual=%s",
+							"%s. entityName=%s, indexName=%s, expectedIndexKeyType=%s, actual=%s",
+							indexValueErr,
 							entityName,
 							kviEntry.Name(),
 							kviEntry.Type().Name(),
