@@ -70,6 +70,15 @@ func BeToLe(v uint64) []byte {
 
 func ConvertToLexicographicBytes(data interface{}) ([]byte, error) {
 	switch data.(type) {
+	case bool:
+		switch data.(bool) {
+		case true:
+			return []byte{1}, nil
+		case false:
+			return []byte{0}, nil
+		default:
+			panic("unknown bool")
+		}
 	case string:
 		return []byte(data.(string)), nil
 	case uint:
@@ -99,6 +108,15 @@ func ConvertToLexicographicBytes(data interface{}) ([]byte, error) {
 
 func ConvertToIndexValueToCorrectType(indexType reflect.Type, data interface{}) ([]byte, error) {
 	switch indexType.Kind() {
+	case reflect.Bool:
+		switch data.(bool) {
+		case true:
+			return []byte{1}, nil
+		case false:
+			return []byte{0}, nil
+		default:
+			panic("unknown bool")
+		}
 	case reflect.String:
 		return []byte(data.(string)), nil
 	case reflect.Uint:
