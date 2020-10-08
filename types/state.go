@@ -3,6 +3,7 @@ package types
 import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 type (
@@ -10,7 +11,7 @@ type (
 	ResponseDeliverTx = abci.ResponseDeliverTx
 	TxResult          struct {
 		Result abci.ResponseDeliverTx
-		Tx     LazyTx
+		Tx     tmtypes.Tx
 	}
 )
 
@@ -21,5 +22,5 @@ type BaseState struct {
 	EndBlockResponse   abci.ResponseEndBlock
 	DeliverTxResponses []ResponseDeliverTx
 	Block              Block
-	Txs                []LazyTx
+	Txs                []tmtypes.Tx
 }

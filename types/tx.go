@@ -1,57 +1,28 @@
 package types
 
 import (
-	"encoding/base64"
-	"errors"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	TerraApp "github.com/terra-project/core/app"
+	"fmt"
+	terra "github.com/terra-project/core/app"
 )
 
-type (
-	TxDecoder = func(string) (*Tx, error)
-)
-
+//
 var (
-	decoder = NewDecoder()
+	codec = terra.MakeCodec()
 )
 
-type LazyTx struct {
-	TxString string
-}
+func TxDecoder(txbytes []byte) (*StdTx, error) {
+	var tx = StdTx{}
 
-func NewLazyTx(txstring string) LazyTx {
-	return LazyTx{
-		TxString: txstring,
-	}
-}
-
-func (lazyTx LazyTx) Decode() *types.StdTx {
-	tx, decodeErr := decoder(lazyTx.TxString)
-	if decodeErr != nil {
-		panic(decodeErr)
+	if len(txbytes) == 0 {
+		return nil, fmt.Errorf("Tx bytes are empty")
 	}
 
-	return tx
-}
-
-func NewDecoder() TxDecoder {
-	codec := TerraApp.MakeCodec()
-	return func(encodedTx string) (*Tx, error) {
-		txBytes, err := base64.StdEncoding.DecodeString(encodedTx)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(txBytes) == 0 {
-			return &Tx{}, nil
-		}
-
-		tx := Tx{}
-		err = codec.UnmarshalBinaryLengthPrefixed(txBytes, &tx)
-		if err != nil {
-			return nil, errors.New("error decoding transaction")
-		}
-
-		return &tx, nil
+	// StdTx.Msg is an interface. The concrete types
+	// are registered by MakeTxCodec
+	err := codec.UnmarshalBinaryLengthPrefixed(txbytes, &tx)
+	if err != nil {
+		return nil, err
 	}
+
+	return &tx, nil
 }
