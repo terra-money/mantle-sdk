@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 	"github.com/terra-project/core/x/auth"
@@ -13,7 +12,7 @@ import (
 
 // dragons ahead
 type (
-	Tx = types.Tx
+	Tx = types.StdTx
 )
 
 type TestkitTx struct {
@@ -102,9 +101,9 @@ func getOrCreateAccount(address AccAddress) exported.Account {
 	ar := auth.NewAccountRetriever(querier)
 
 	acc, accErr := ar.GetAccount(address)
-	// account was never
+	// account was never set
 	if acc == nil {
-		fmt.Println("???")
+		panic("account was never set")
 	} else {
 		if GlobalAccountNumber < acc.GetAccountNumber() {
 			GlobalAccountNumber = acc.GetAccountNumber()
