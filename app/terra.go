@@ -1,16 +1,15 @@
 package app
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/state"
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	TerraApp "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
-	"github.com/terra-project/core/x/auth"
 	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle/types"
 	"github.com/terra-project/mantle/utils"
@@ -19,6 +18,7 @@ import (
 
 type App struct {
 	terra *TerraApp.TerraApp
+	db    dbm.DB
 }
 
 var (
@@ -59,6 +59,10 @@ func NewApp(
 
 		initChainResponse := app.InitChain(ic)
 		initChainResponseJSON, _ := json.Marshal(initChainResponse)
+
+		validatorUpdate(db, 1, initChainResponse.Validators)
+		consensusParamUpdate(db, 1, initChainResponse.ConsensusParams)
+
 		commitResponse := app.Commit()
 		commitResponseJSON, _ := json.Marshal(commitResponse)
 
@@ -70,6 +74,7 @@ func NewApp(
 	GlobalTerraApp = app
 
 	return &App{
+		db:    db,
 		terra: app,
 	}
 }
@@ -84,8 +89,15 @@ func (c *App) GetQueryRouter() sdk.QueryRouter {
 
 func (c *App) BeginBlocker(block *types.Block) abci.ResponseBeginBlock {
 	var abciHeader = utils.ConvertToABCIHeader(&block.Header)
+
+	// beginblock validator info
+	commitInfo, byzVals := getBeginBlockValidatorInfo(block, c.db)
+
 	var abciRequest = abci.RequestBeginBlock{
-		Header: abciHeader,
+		Hash:                nil,
+		Header:              abciHeader,
+		LastCommitInfo:      commitInfo,
+		ByzantineValidators: byzVals,
 	}
 
 	abciResponse := c.terra.BeginBlock(abciRequest)
@@ -99,36 +111,26 @@ func (c *App) EndBlocker(block *types.Block) abci.ResponseEndBlock {
 	}
 	abciResponse := c.terra.EndBlock(abciRequest)
 
+	// need to do validator, consensusParam update
+	// only do this if nextHeight is NOT 1 (same as tendermint)
+	defer func() {
+		height := block.Header.Height
+		validatorUpdate(c.db, height, abciResponse.ValidatorUpdates)
+		consensusParamUpdate(c.db, height, abciResponse.ConsensusParamUpdates)
+	}()
+
 	return abciResponse
 }
 
 func (c *App) decodeTx(txbytes []byte) (sdk.Tx, error) {
-	var tx = auth.StdTx{}
-
-	if len(txbytes) == 0 {
-		return nil, fmt.Errorf("Tx bytes are empty")
-	}
-
-	// StdTx.Msg is an interface. The concrete types
-	// are registered by MakeTxCodec
-	err := c.terra.Codec().UnmarshalBinaryLengthPrefixed(txbytes, &tx)
-	if err != nil {
-		return nil, err
-	}
-
-	return tx, nil
+	return types.TxDecoder(txbytes)
 }
 
-func (c *App) DeliverTxs(txs []string) []abci.ResponseDeliverTx {
+func (c *App) DeliverTxs(txs []tmtypes.Tx) []abci.ResponseDeliverTx {
 	responses := make([]abci.ResponseDeliverTx, len(txs))
-	for i, txstring := range txs {
-		txbytes, err := base64.StdEncoding.DecodeString(txstring)
-		if err != nil {
-			panic(err)
-		}
-
+	for i, tx := range txs {
 		response := c.terra.DeliverTx(abci.RequestDeliverTx{
-			Tx: txbytes,
+			Tx: tx,
 		})
 
 		responses[i] = response
@@ -141,10 +143,101 @@ func (c *App) Commit(transactional bool) abci.ResponseCommit {
 	response := c.terra.Commit()
 
 	// no need to further save app state per block
+
+	if c.terra.LastBlockHeight() == 192 {
+		s, v, _ := c.terra.ExportAppStateAndValidators(false, []string{})
+		fmt.Println(string(s), v)
+	}
+
 	if !transactional {
 		return response
 	}
-	// c.terra.ExportAppStateAndValidators()
 
 	return response
+}
+
+func validatorUpdate(db dbm.DB, height int64, validatorUpdates abci.ValidatorUpdates) error {
+	// may need to port this logic to mantle-compatibility,
+	// as this logic tends to change with tendermint version
+	var valInfo = &state.ValidatorsInfo{
+		ValidatorSet:      nil,
+		LastHeightChanged: height + 1,
+	} //saveValidatorsInfo(db, nextHeight+1, state.LastHeightValidatorsChanged, state.NextValidators)
+
+	//if height%100000 == 0 {
+	validators, err := tmtypes.PB2TM.ValidatorUpdates(validatorUpdates)
+	var validatorSet = tmtypes.NewValidatorSet(validators)
+
+	if err != nil {
+		return err
+	}
+	valInfo.ValidatorSet = validatorSet
+	//}
+
+	if len(valInfo.ValidatorSet.Validators) > 0 {
+		fmt.Println("validator update")
+
+	}
+
+	return db.Set([]byte(fmt.Sprintf("validatorsKey:%v", height)), valInfo.Bytes())
+}
+
+func consensusParamUpdate(db dbm.DB, height int64, consensusParamUpdates *abci.ConsensusParams) {
+	//tmtypes.
+}
+
+func getBeginBlockValidatorInfo(block *types.Block, stateDB dbm.DB) (abci.LastCommitInfo, []abci.Evidence) {
+	voteInfos := make([]abci.VoteInfo, block.LastCommit.Size())
+	// block.Height=1 -> LastCommitInfo.Votes are empty.
+	// Remember that the first LastCommit is intentionally empty, so it makes
+	// sense for LastCommitInfo.Votes to also be empty.
+	if block.Header.Height > 1 {
+		lastValSet, err := state.LoadValidators(stateDB, block.Header.Height-1)
+		if err != nil {
+			panic(err)
+		}
+
+		// Sanity check that commit size matches validator set size - only applies
+		// after first block.
+		var (
+			commitSize = block.LastCommit.Size()
+			valSetLen  = len(lastValSet.Validators)
+		)
+		if commitSize != valSetLen {
+			panic(fmt.Sprintf("commit size (%d) doesn't match valset length (%d) at height %d\n\n%v\n\n%v",
+				commitSize, valSetLen, block.Header.Height, block.LastCommit.Signatures, lastValSet.Validators))
+		}
+
+		for i, val := range lastValSet.Validators {
+			commitSig := block.LastCommit.Signatures[i]
+			voteInfos[i] = abci.VoteInfo{
+				Validator:       tmtypes.TM2PB.Validator(val),
+				SignedLastBlock: !commitSig.Absent(),
+			}
+		}
+	}
+
+	byzVals := make([]abci.Evidence, len(block.Evidence.Evidence))
+	for i, ev := range block.Evidence.Evidence {
+		// We need the validator set. We already did this in validateBlock.
+		// TODO: Should we instead cache the valset in the evidence itself and add
+		// `SetValidatorSet()` and `ToABCI` methods ?
+		valset, err := state.LoadValidators(stateDB, ev.Height())
+		if err != nil {
+			panic(err)
+		}
+		byzVals[i] = tmtypes.TM2PB.Evidence(ev, valset, block.Header.Time)
+	}
+
+	// testkit blocks don't have LastCommit reference set,
+	// treat this
+	var round int32 = 0
+	if block.LastCommit != nil {
+		round = int32(block.LastCommit.Round)
+	}
+
+	return abci.LastCommitInfo{
+		Round: round,
+		Votes: voteInfos,
+	}, byzVals
 }
