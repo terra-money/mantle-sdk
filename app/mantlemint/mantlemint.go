@@ -1,0 +1,162 @@
+package mantlemint
+
+import (
+	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	abcicli "github.com/tendermint/tendermint/abci/client"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/state"
+	tmtypes "github.com/tendermint/tendermint/types"
+	tmdb "github.com/tendermint/tm-db"
+	terra "github.com/terra-project/core/app"
+	core "github.com/terra-project/core/types"
+	"github.com/terra-project/mantle/types"
+)
+
+var (
+	errNoBlock = "block is never injected"
+)
+
+type MantlemintInstance struct {
+	// mem-cached LastState for faster retrieval
+	lastState  state.State
+	lastHeight int64
+	lastBlock  *types.Block
+	executer   *state.BlockExecutor
+	conn       abcicli.Client
+	db         tmdb.DB
+}
+
+func NewMantlemint(
+	db tmdb.DB,
+	app *terra.TerraApp,
+	middlewares ...Middleware,
+) Mantlemint {
+	// create proxyapp out of terra app,
+	// and decorate with middlewares
+	conn := NewMantleAppConn(app)
+	for _, middleware := range middlewares {
+		conn = middleware(conn)
+	}
+
+	// here we go!
+	return &MantlemintInstance{
+		// subsystem
+		executer: NewMantlemintExecuter(db, conn),
+		db:       db,
+		conn:     conn,
+
+		// state related
+		lastBlock:  nil,
+		lastState:  state.LoadState(db),
+		lastHeight: 0,
+	}
+}
+
+// Init is port of ReplayBlocks() from tendermint,
+// where it only handles initializing the chain.
+func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
+	// TODO: move this bit to mantle-compatibility
+	// some config
+	config := sdk.GetConfig()
+	config.SetCoinType(core.CoinType)
+	config.SetFullFundraiserPath(core.FullFundraiserPath)
+	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
+	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
+	config.Seal()
+
+	// loaded state has LastBlockHeight 0,
+	// meaning chain was never initialized
+	// run genesis
+	if mm.lastState.IsEmpty() {
+		// create default state from genesis
+		var genesisState, err = state.MakeGenesisState(genesis)
+		if err != nil {
+			return err
+		}
+
+		validators := make([]*tmtypes.Validator, len(genesis.Validators))
+		for i, val := range genesis.Validators {
+			validators[i] = tmtypes.NewValidator(val.PubKey, val.Power)
+		}
+		validatorSet := tmtypes.NewValidatorSet(validators)
+		nextVals := tmtypes.TM2PB.ValidatorUpdates(validatorSet)
+
+		csParams := tmtypes.TM2PB.ConsensusParams(genesis.ConsensusParams)
+		req := abci.RequestInitChain{
+			Time:            genesis.GenesisTime,
+			ChainId:         genesis.ChainID,
+			AppStateBytes:   genesis.AppState,
+			ConsensusParams: csParams,
+			Validators:      nextVals,
+		}
+
+		res, err := mm.conn.InitChainSync(req)
+		if err != nil {
+			return err
+		}
+
+		// If the app returned validators or consensus params, update the state.
+		if len(res.Validators) > 0 {
+			vals, err := tmtypes.PB2TM.ValidatorUpdates(res.Validators)
+			if err != nil {
+				panic(err)
+			}
+			genesisState.Validators = tmtypes.NewValidatorSet(vals)
+			genesisState.NextValidators = tmtypes.NewValidatorSet(vals)
+		} else if len(genesis.Validators) == 0 {
+			// If validator set is not set in genesis and still empty after InitChain, exit.
+			panic(fmt.Errorf("validator set is nil in genesis and still empty after InitChain"))
+		}
+
+		if res.ConsensusParams != nil {
+			genesisState.ConsensusParams = genesisState.ConsensusParams.Update(res.ConsensusParams)
+		}
+
+		// NOTE: do NOT persist state in db
+		state.SaveState(mm.db, genesisState)
+		mm.lastState = genesisState
+	}
+
+	return nil
+}
+
+func (mm *MantlemintInstance) Inject(block *types.Block) error {
+	var currentState = mm.lastState
+	var blockID = tmtypes.BlockID{
+		Hash:        block.Hash(),
+		PartsHeader: block.MakePartSet(tmtypes.BlockPartSizeBytes).Header(),
+	}
+
+	// apply this block
+	var nextState state.State
+	var retainHeight int64
+	var err error
+
+	// lastBlock must be set before running ApplyBlock
+	mm.lastBlock = block
+
+	// patch AppHash of lastState to the current block's last app hash
+	// because we still want to use fauxMerkleTree for speed (way faster this way!)
+	currentState.AppHash = block.AppHash
+
+	// process blocks
+	if nextState, retainHeight, err = mm.executer.ApplyBlock(currentState, blockID, block); err != nil {
+		return err
+	}
+
+	// save cache of last state
+	mm.lastState = nextState
+	mm.lastHeight = retainHeight
+
+	return nil
+}
+
+func (mm *MantlemintInstance) GetCurrentBlock() *types.Block {
+	if mm.lastBlock == nil {
+		panic(errNoBlock)
+	}
+
+	return mm.lastBlock
+}

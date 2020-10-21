@@ -6,20 +6,15 @@ import (
 )
 
 type (
-	StdTx             = auth.StdTx
-	ResponseDeliverTx = abci.ResponseDeliverTx
-	TxResult          struct {
-		Result abci.ResponseDeliverTx
-		Tx     LazyTx
+	StdTx              = auth.StdTx
+	ResponseDeliverTx  = abci.ResponseDeliverTx
+	ResponseBeginBlock = abci.ResponseBeginBlock
+	ResponseEndBlock   = abci.ResponseEndBlock
+	BlockState         struct {
+		Height             int64
+		ResponseBeginBlock abci.ResponseBeginBlock
+		ResponseEndBlock   abci.ResponseEndBlock
+		ResponseDeliverTx  []ResponseDeliverTx
+		Block              Block
 	}
 )
-
-// State houses all primitive data
-type BaseState struct {
-	Height             int64
-	BeginBlockResponse abci.ResponseBeginBlock
-	EndBlockResponse   abci.ResponseEndBlock
-	DeliverTxResponses []ResponseDeliverTx
-	Block              Block
-	Txs                []LazyTx
-}

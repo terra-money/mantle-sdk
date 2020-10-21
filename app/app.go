@@ -2,6 +2,12 @@ package app
 
 import (
 	"fmt"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/state"
+	TerraApp "github.com/terra-project/core/app"
+	compatapp "github.com/terra-project/mantle-compatibility/app"
+	"github.com/terra-project/mantle/app/mantlemint"
+	"github.com/terra-project/mantle/app/middlewares"
 	"log"
 	"reflect"
 	"time"
@@ -21,13 +27,15 @@ import (
 )
 
 type Mantle struct {
-	isSynced          bool
-	app               *App
-	lifecycle         *LifecycleContext
-	gqlInstance       *graph.GraphQLInstance
-	committerInstance committer.Committer
-	indexerInstance   *indexer.IndexerBaseInstance
-	db                db.DB
+	isSynced             bool
+	app                  *TerraApp.TerraApp
+	registry             *reg.Registry
+	mantlemint           mantlemint.Mantlemint
+	gqlInstance          *graph.GraphQLInstance
+	depsResolverInstance depsresolver.DepsResolver
+	committerInstance    committer.Committer
+	indexerInstance      *indexer.IndexerBaseInstance
+	db                   db.DB
 }
 
 type SyncConfiguration struct {
@@ -35,16 +43,19 @@ type SyncConfiguration struct {
 	SyncUntil          uint64
 }
 
+var (
+	GlobalTerraApp *TerraApp.TerraApp
+)
+
 func NewMantle(
 	db db.DB,
 	genesis *utils.GenesisDoc,
 	indexers ...types.IndexerRegisterer,
-) *Mantle {
+) (mantleApp *Mantle) {
 	// create new terra app with postgres-patched KVStore
-	app := NewApp(db.GetCosmosAdapter(), genesis)
-
-	// create an auxiliary terra app lifecycle
-	lc := NewLifecycle(app, false)
+	tmdb := db.GetCosmosAdapter()
+	terraApp := compatapp.NewTerraApp(tmdb)
+	GlobalTerraApp = terraApp
 
 	// gather outputs of indexer registry
 	registry := reg.NewRegistry(indexers)
@@ -57,8 +68,8 @@ func NewMantle(
 	gqlInstance := graph.NewGraphQLInstance(
 		depsResolverInstance,
 		querierInstance,
-		schemabuilders.CreateABCIStubSchemaBuilder(app.GetApp()),
-		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BaseState)(nil))),
+		schemabuilders.CreateABCIStubSchemaBuilder(terraApp),
+		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BlockState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.KVIndexMap, registry.Models...),
 	)
 
@@ -73,15 +84,87 @@ func NewMantle(
 		gqlInstance.Commit,
 	)
 
-	return &Mantle{
-		isSynced:          false,
-		app:               app,
-		lifecycle:         lc,
-		committerInstance: committerInstance,
-		gqlInstance:       gqlInstance,
-		indexerInstance:   indexerInstance,
-		db:                db,
+	mantleApp = &Mantle{
+		isSynced: false,
+		app:      terraApp,
+		registry: nil,
+		mantlemint: mantlemint.NewMantlemint(
+			tmdb,
+			terraApp,
+
+			// in order to prevent indexer output to be in disparity
+			// w/ tendermint state, indexers MUST run before commit.
+			// use middlewares to run indexers (in CommitSync/CommitAsync)
+			middlewares.NewIndexerMiddleware(func(responses state.ABCIResponses) {
+				mantleApp.indexerLifecycle(responses)
+			}),
+		),
+		gqlInstance:          gqlInstance,
+		depsResolverInstance: depsResolverInstance,
+		committerInstance:    committerInstance,
+		indexerInstance:      indexerInstance,
+		db:                   db,
 	}
+
+	// initialize chain
+	if initErr := mantleApp.mantlemint.Init(genesis); initErr != nil {
+		panic(initErr)
+	}
+
+	return mantleApp
+}
+
+func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
+	var block = mantle.mantlemint.GetCurrentBlock()
+	var height = block.Header.Height
+
+	tStart := time.Now()
+
+	// create blockState
+	var deliverTxsCopy = make([]abci.ResponseDeliverTx, len(responses.DeliverTxs))
+	for i, deliverTx := range responses.DeliverTxs {
+		deliverTxsCopy[i] = *deliverTx
+	}
+	blockState := types.BlockState{
+		Height:             block.Height,
+		ResponseBeginBlock: *responses.BeginBlock,
+		ResponseEndBlock:   *responses.EndBlock,
+		ResponseDeliverTx:  deliverTxsCopy,
+		Block:              *block,
+	}
+
+	// set BlockState in depsResolver
+	mantle.depsResolverInstance.SetPredefinedState(blockState)
+
+	// RunIndexerRound panics when an indexer fails
+	mantle.indexerInstance.RunIndexerRound()
+
+	// flush states to database
+	// note that indexer outputs are committed __BEFORE__ IAVL
+	// because reversing indexer outputs is trivial (i.e. overwrite them)
+	// whereas IAVL reversal is a little tricky.
+	indexerOutputs := mantle.depsResolverInstance.GetState()
+	defer mantle.depsResolverInstance.Dispose()
+
+	// convert indexer outputs to slice
+	var commitTargets = make([]interface{}, len(indexerOutputs))
+	var i = 0
+	for _, output := range indexerOutputs {
+		commitTargets[i] = output
+		i++
+	}
+
+	if commitErr := mantle.committerInstance.Commit(uint64(height), commitTargets...); commitErr != nil {
+		panic(commitErr)
+	}
+
+	tEnd := time.Now()
+
+	log.Printf(
+		"[mantle] Indexing finished for block(%d), processed in %dms",
+		height,
+		tEnd.Sub(tStart).Milliseconds(),
+	)
 }
 
 func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
@@ -127,7 +210,7 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	for {
 		select {
 		case block := <-blockChannel:
-			lastBlockHeight := mantle.app.GetApp().LastBlockHeight()
+			lastBlockHeight := mantle.app.LastBlockHeight()
 
 			// stop sync if SyncUntil is given
 			if configuration.SyncUntil != 0 && uint64(lastBlockHeight) == configuration.SyncUntil {
@@ -148,45 +231,15 @@ func (mantle *Mantle) Server(port int) {
 	go mantle.gqlInstance.ServeHTTP(port)
 }
 
-func (mantle *Mantle) Inject(block *types.Block) types.BaseState {
-	height := block.Header.Height
-
-	// force compact every 100th block
-	if height%100 == 0 {
-		if compactErr := mantle.db.Compact(); compactErr != nil {
-			panic(compactErr)
-		}
+func (mantle *Mantle) Inject(block *types.Block) error {
+	// inject
+	if err := mantle.mantlemint.Inject(block); err != nil {
+		return err
 	}
 
-	tStart := time.Now()
-	baseState := mantle.lifecycle.Inject(block)
-	mantle.gqlInstance.UpdateState(baseState)
-	mantle.indexerInstance.RunIndexerRound()
+	return nil
+}
 
-	// flush states to database
-	// note that indexer outputs are committed __BEFORE__ IAVL
-	// because reversing indexer outputs is trivial (i.e. overwrite them)
-	// whereas IAVL reversal is a little tricky.
-	exportedStates := mantle.gqlInstance.ExportStates()
-	err := mantle.committerInstance.Commit(uint64(height), exportedStates...)
-
-	mantle.lifecycle.Commit()
-
-	defer func() {
-		mantle.gqlInstance.Flush()
-	}()
-
-	if err != nil {
-		panic(err)
-	}
-	tEnd := time.Now()
-
-	log.Printf(
-		"[mantle] Indexing finished for block(%d), committing %d indexer outputs processed in %dms",
-		height,
-		len(exportedStates),
-		tEnd.Sub(tStart).Milliseconds(),
-	)
-
-	return baseState
+func (mantle *Mantle) ExportStates() map[string]interface{} {
+	return mantle.depsResolverInstance.GetState()
 }

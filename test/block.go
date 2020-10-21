@@ -1,7 +1,7 @@
 package test
 
 import (
-	"encoding/base64"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/core/app"
 	"github.com/terra-project/mantle/types"
 	"time"
@@ -16,7 +16,7 @@ type (
 	Block        = types.Block
 	TestkitBlock struct {
 		block Block
-		txs   []string
+		txs   []tmtypes.Tx
 	}
 )
 
@@ -25,24 +25,24 @@ func NewBlock() *TestkitBlock {
 }
 
 func (block *TestkitBlock) WithTx(tx Tx) *TestkitBlock {
-	block.txs = append(block.txs, base64.StdEncoding.EncodeToString(codec.MustMarshalBinaryLengthPrefixed(tx)))
+	block.txs = append(block.txs, codec.MustMarshalBinaryLengthPrefixed(tx))
 	return block
 }
 
 func (block *TestkitBlock) WithHeight(height int64) *TestkitBlock {
-	block.block.Header.Height = int64(height)
+	block.block.Header.Height = height
 	return block
 }
 
 func (block *TestkitBlock) WithTime(t time.Time) *TestkitBlock {
-	block.block.Header.Time = t.Format(time.RFC3339)
+	block.block.Header.Time = t
 	return block
 }
 
 func (block *TestkitBlock) ToBlock() *Block {
 	block.block.Header.ChainID = "mantle-test"
-	if block.block.Header.Time == "" {
-		block.block.Header.Time = time.Now().Format(time.RFC3339)
+	if block.block.Header.Time.IsZero() {
+		block.block.Header.Time = time.Now()
 	}
 
 	if block.block.Header.Height == 0 {
@@ -51,5 +51,6 @@ func (block *TestkitBlock) ToBlock() *Block {
 	}
 
 	block.block.Data.Txs = block.txs
+
 	return &block.block
 }

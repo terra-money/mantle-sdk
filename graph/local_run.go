@@ -22,9 +22,11 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 
 	validationResult := graphql.ValidateDocument(&p.Schema, AST, nil)
 	if !validationResult.IsValid {
-		return InternalResultInvariant([]error{
-			fmt.Errorf("nope"),
-		})
+		var errors []error
+		for _, e := range validationResult.Errors {
+			errors = append(errors, fmt.Errorf(e.Error()))
+		}
+		return InternalResultInvariant(errors)
 	}
 
 	fields := p.Schema.QueryType().Fields()

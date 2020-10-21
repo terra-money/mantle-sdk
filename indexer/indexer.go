@@ -76,7 +76,6 @@ func createIsolatedQuerier(
 	return func(query interface{}, variables types.GraphQLParams) error {
 		qs := generate.GenerateQuery(query, variables)
 		result := querier(qs, variables, indexerSelfOutput)
-
 		resultInternal := result.(*types.GraphQLInternalResult)
 
 		return graph.UnmarshalInternalQueryResult(resultInternal, query)

@@ -87,18 +87,6 @@ func (server *GraphQLInstance) Commit(entity interface{}) error {
 	return server.depsResolver.Emit(entity)
 }
 
-func (server *GraphQLInstance) ExportStates() []interface{} {
-	entities := make([]interface{}, 0)
-	for _, entity := range server.depsResolver.GetState() {
-		if entity == nil {
-			continue
-		}
-		entities = append(entities, entity)
-	}
-
-	return entities
-}
-
 func (server *GraphQLInstance) prepareResolverContext(
 	dependencies []types.Model,
 	resolveImmediately bool,
@@ -118,10 +106,6 @@ func (server *GraphQLInstance) prepareResolverContext(
 	}
 
 	return ctx
-}
-
-func (server *GraphQLInstance) Flush() {
-	server.depsResolver.Dispose()
 }
 
 func buildSchema(schemabuilders ...SchemaBuilder) graphql.Schema {
