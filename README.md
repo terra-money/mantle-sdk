@@ -20,7 +20,7 @@ Here is how you would do extraction in mantle.
 
 ```go
 type request struct {
-	BaseState struct {
+	BlockState struct {
 		Height uint64
 		Block  struct {
 			Header struct {
@@ -59,7 +59,7 @@ In fact, the request we just wrote after graphql query conversion is:
 
 ```graphql
 query(Address: String!) {
-    BaseState {
+    BlockState {
         Height
         Block {
             Header {
@@ -211,7 +211,7 @@ import (
 )
 
 type request struct {
-	BaseState struct {
+	BlockState struct {
 		Height uint64
 		Block  struct {
 			Header struct {
@@ -269,8 +269,8 @@ func collectTrackFaucet(query types.Query, commit types.Commit) error {
     
     // save!
     commitError := commit(TrackFaucet{
-        Height:              req.BaseState.Height,
-        ProofThatThisIsReal: req.BaseState.Block.Header.AppHash,
+        Height:              req.BlockState.Height,
+        ProofThatThisIsReal: req.BlockState.Block.Header.AppHash,
         BalanceUluna:        uluna,
         BalanceUkrw:         ukrw,
     })
