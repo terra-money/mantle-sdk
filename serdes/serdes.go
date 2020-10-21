@@ -2,7 +2,7 @@ package serdes
 
 import (
 	"github.com/terra-project/core/app"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/types"
 	"github.com/vmihailenco/msgpack/v5"
 	"reflect"
 )

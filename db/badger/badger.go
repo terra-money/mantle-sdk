@@ -5,8 +5,8 @@ import (
 	bd "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
-	"github.com/terra-project/mantle/db"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/db"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 type BadgerDB struct {

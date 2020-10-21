@@ -6,7 +6,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/types"
 	"github.com/vmihailenco/msgpack/v5"
 )
 

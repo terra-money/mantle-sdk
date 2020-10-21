@@ -7,9 +7,9 @@ import (
 	"github.com/graphql-go/graphql"
 	terra "github.com/terra-project/core/app"
 	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
-	"github.com/terra-project/mantle/graph"
-	"github.com/terra-project/mantle/graph/schemabuilders/abcistub"
-	lcd "github.com/terra-project/mantle/lcd/client"
+	"github.com/terra-project/mantle-sdk/graph"
+	"github.com/terra-project/mantle-sdk/graph/schemabuilders/abcistub"
+	lcd "github.com/terra-project/mantle-sdk/lcd/client"
 )
 
 func CreateABCIStubSchemaBuilder(app *terra.TerraApp) graph.SchemaBuilder {

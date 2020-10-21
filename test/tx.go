@@ -7,8 +7,8 @@ import (
 	"github.com/terra-project/core/x/auth"
 	authutilsterra "github.com/terra-project/core/x/auth/client/utils"
 	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
-	"github.com/terra-project/mantle/app"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/app"
+	"github.com/terra-project/mantle-sdk/types"
 )
 
 // dragons ahead

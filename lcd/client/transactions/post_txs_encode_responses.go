@@ -14,7 +14,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 
-	"github.com/terra-project/mantle/lcd/models"
+	"github.com/terra-project/mantle-sdk/lcd/models"
 )
 
 // PostTxsEncodeReader is a Reader for the PostTxsEncode structure.

@@ -14,7 +14,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 
-	"github.com/terra-project/mantle/lcd/models"
+	"github.com/terra-project/mantle-sdk/lcd/models"
 )
 
 // GetMsgauthGrantersGranterAddressGranteesGranteeAddressGrantsMsgTypeReader is a Reader for the GetMsgauthGrantersGranterAddressGranteesGranteeAddressGrantsMsgType structure.

@@ -3,7 +3,7 @@ package test
 import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/core/app"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/types"
 	"time"
 )
 

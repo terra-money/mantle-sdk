@@ -12,13 +12,13 @@ func whatever() {
 // 	"testing"
 //
 // 	"github.com/stretchr/testify/assert"
-// 	"github.com/terra-project/mantle/db/badger"
-// 	"github.com/terra-project/mantle/db/kvindex"
-// 	. "github.com/terra-project/mantle/graph"
-// 	"github.com/terra-project/mantle/graph/depsresolver"
-// 	"github.com/terra-project/mantle/graph/schemabuilders"
-// 	"github.com/terra-project/mantle/querier"
-// 	testutil "github.com/terra-project/mantle/sim"
+// 	"github.com/terra-project/mantle-sdk/db/badger"
+// 	"github.com/terra-project/mantle-sdk/db/kvindex"
+// 	. "github.com/terra-project/mantle-sdk/graph"
+// 	"github.com/terra-project/mantle-sdk/graph/depsresolver"
+// 	"github.com/terra-project/mantle-sdk/graph/schemabuilders"
+// 	"github.com/terra-project/mantle-sdk/querier"
+// 	testutil "github.com/terra-project/mantle-sdk/sim"
 // )
 //
 // type TestChild1 struct {

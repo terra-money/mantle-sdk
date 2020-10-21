@@ -2,8 +2,8 @@ package app
 
 import (
 	compattypes "github.com/terra-project/mantle-compatibility/types"
-	"github.com/terra-project/mantle/db/badger"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/db/badger"
+	"github.com/terra-project/mantle-sdk/types"
 )
 
 type (

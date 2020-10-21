@@ -3,7 +3,7 @@ package mantlemint
 import (
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/types"
 )
 
 type Mantlemint interface {

@@ -154,7 +154,7 @@ Much like requests, you first need to write type definition for your entity. Som
 - Root type must be of `struct` or `[]struct` type; no `interface` or primitive types allowed
 - Not all types of golang are supported.
     - Try to use primitive golang types. For example, `BigInt`s can be safely converted to `string`.
-    - Some composite types (i.e. `time.Time`, `sdk.Coins`) are supported, but don't expect full coverage. If you deem a specific type nessary, [open an  issue](https://github.com/terra-project/mantle/issues).
+    - Some composite types (i.e. `time.Time`, `sdk.Coins`) are supported, but don't expect full coverage. If you deem a specific type nessary, [open an  issue](https://github.com/terra-project/mantle-sdk/issues).
 
 ```go
 // declare your entity
@@ -207,7 +207,7 @@ import (
 	"reflect"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/types"
 )
 
 type request struct {

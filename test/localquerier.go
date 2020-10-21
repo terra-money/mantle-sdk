@@ -3,7 +3,7 @@ package test
 import (
 	"github.com/terra-project/core/x/auth"
 	"github.com/terra-project/mantle-compatibility/localclient"
-	"github.com/terra-project/mantle/app"
+	"github.com/terra-project/mantle-sdk/app"
 )
 
 type LocalQuerier struct {

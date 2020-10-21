@@ -5,8 +5,8 @@ import (
 	"reflect"
 
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle/db/kvindex"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 func GenerateArgument(kvindex *kvindex.KVIndex) graphql.FieldConfigArgument {

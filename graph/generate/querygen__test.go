@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	types "github.com/terra-project/mantle/types"
+	types "github.com/terra-project/mantle-sdk/types"
 )
 
 type TestQueryStruct struct {

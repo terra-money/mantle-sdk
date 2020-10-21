@@ -3,11 +3,11 @@ package queryhandler
 import (
 	"bytes"
 	"fmt"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/utils"
 	"strings"
 
-	"github.com/terra-project/mantle/db"
-	"github.com/terra-project/mantle/db/kvindex"
+	"github.com/terra-project/mantle-sdk/db"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
 )
 
 type RangeResolver struct {

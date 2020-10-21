@@ -3,9 +3,9 @@ package indexer
 import (
 	"sync"
 
-	"github.com/terra-project/mantle/graph"
-	"github.com/terra-project/mantle/graph/generate"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/graph"
+	"github.com/terra-project/mantle-sdk/graph/generate"
+	"github.com/terra-project/mantle-sdk/types"
 )
 
 type IndexerBaseInstance struct {
