@@ -1,4 +1,4 @@
-module github.com/terra-project/mantle
+module github.com/terra-project/mantle-sdk
 
 go 1.13
 
@@ -34,7 +34,6 @@ require (
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0
 )
 
 replace github.com/CosmWasm/go-cosmwasm => github.com/terra-project/go-cosmwasm v0.10.1-terra
