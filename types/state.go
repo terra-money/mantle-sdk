@@ -13,14 +13,11 @@ type (
 		Result abci.ResponseDeliverTx
 		Tx     tmtypes.Tx
 	}
+	BlockState struct {
+		Height             int64
+		ResponseBeginBlock abci.ResponseBeginBlock
+		ResponseEndBlock   abci.ResponseEndBlock
+		ResponseDeliverTx  []ResponseDeliverTx
+		Block              Block
+	}
 )
-
-// State houses all primitive data
-type BaseState struct {
-	Height             int64
-	BeginBlockResponse abci.ResponseBeginBlock
-	EndBlockResponse   abci.ResponseEndBlock
-	DeliverTxResponses []ResponseDeliverTx
-	Block              Block
-	Txs                []tmtypes.Tx
-}

@@ -19,13 +19,13 @@ func NewRegistry(indexRegisterers []types.IndexerRegisterer) Registry {
 		Models:   []types.Model{},
 	}
 
-	// add BaseState to kvindexes
-	baseStateKVIndex, baseStateKVIndexErr := kvindex.NewKVIndex(reflect.TypeOf(types.BaseState{}))
-	if baseStateKVIndexErr != nil {
-		panic(baseStateKVIndexErr)
+	// add BlockState to kvindexes
+	blockStateKVIndex, blockStateKVIndexErr := kvindex.NewKVIndex(reflect.TypeOf(types.BlockState{}))
+	if blockStateKVIndexErr != nil {
+		panic(blockStateKVIndexErr)
 	}
 	kvindexes := []*kvindex.KVIndex{
-		baseStateKVIndex,
+		blockStateKVIndex,
 	}
 
 	r := func(indexer types.Indexer, models ...types.Model) {
