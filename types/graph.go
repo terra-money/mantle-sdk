@@ -1,16 +1,5 @@
 package types
 
-import (
-	"time"
-)
-
-type BaseFilter struct {
-	Height     uint64
-	Datetime   time.Time
-	ParentHash string
-}
-
-type GraphQLQueryRaw interface{}
 type GraphQLParams map[string]interface{}
 type GraphQLQuerier func(
 	query string,
