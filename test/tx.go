@@ -2,6 +2,7 @@ package test
 
 import (
 	"github.com/cosmos/cosmos-sdk/client/context"
+	types2 "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 	"github.com/terra-project/core/x/auth"
 	authutilsterra "github.com/terra-project/core/x/auth/client/utils"
@@ -66,7 +67,9 @@ func (tx *TestkitTx) ToTx(signer TestAccount) Tx {
 		ctx,
 		emptyTx,
 		1.2,
-		[]DecCoin{},
+		[]DecCoin{
+			DecCoin{Denom: "uluna", Amount: types2.NewDecWithPrec(15, 6)},
+		},
 	)
 
 	if gaserr != nil {
