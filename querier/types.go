@@ -1,7 +1,7 @@
 package querier
 
 import (
-	"github.com/terra-project/mantle/querier/queryhandler"
+	"github.com/terra-project/mantle-sdk/querier/queryhandler"
 )
 
 type Querier interface {

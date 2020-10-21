@@ -1,7 +1,7 @@
 package generate
 
 import (
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 var ReservedArgKeys = []string{

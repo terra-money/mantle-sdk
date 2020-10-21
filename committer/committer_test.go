@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/utils"
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/terra-project/mantle/db/badger"
-	"github.com/terra-project/mantle/db/kvindex"
+	"github.com/terra-project/mantle-sdk/db/badger"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
 )
 
 func TestCommitter(t *testing.T) {

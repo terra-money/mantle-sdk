@@ -2,10 +2,10 @@ package queryhandler
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/terra-project/mantle/committer"
-	"github.com/terra-project/mantle/db/badger"
-	"github.com/terra-project/mantle/db/kvindex"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/committer"
+	"github.com/terra-project/mantle-sdk/db/badger"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-project/mantle-sdk/utils"
 	"reflect"
 	"testing"
 )

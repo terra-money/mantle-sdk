@@ -1,8 +1,8 @@
 package registry
 
 import (
-	"github.com/terra-project/mantle/db/kvindex"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-project/mantle-sdk/types"
 	"reflect"
 )
 

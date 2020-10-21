@@ -4,9 +4,9 @@ package app
 // import (
 // 	sdk "github.com/cosmos/cosmos-sdk/types"
 // 	core "github.com/terra-project/core/types"
-// 	"github.com/terra-project/mantle/db/badger"
-// 	"github.com/terra-project/mantle/sim"
-// 	"github.com/terra-project/mantle/types"
+// 	"github.com/terra-project/mantle-sdk/db/badger"
+// 	"github.com/terra-project/mantle-sdk/sim"
+// 	"github.com/terra-project/mantle-sdk/types"
 // 	"testing"
 // )
 //

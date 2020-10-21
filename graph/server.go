@@ -9,10 +9,10 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
-	"github.com/terra-project/mantle/depsresolver"
-	"github.com/terra-project/mantle/querier"
-	"github.com/terra-project/mantle/types"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/depsresolver"
+	"github.com/terra-project/mantle-sdk/querier"
+	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 type SchemaBuilder func(fields *graphql.Fields) error

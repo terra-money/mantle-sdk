@@ -5,7 +5,7 @@ import (
 	"log"
 
 	websocket "github.com/gorilla/websocket"
-	types "github.com/terra-project/mantle/types"
+	types "github.com/terra-project/mantle-sdk/types"
 )
 
 type (

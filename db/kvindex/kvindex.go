@@ -2,8 +2,8 @@ package kvindex
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle/types"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-project/mantle-sdk/utils"
 	"reflect"
 	"regexp"
 )

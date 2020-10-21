@@ -2,13 +2,13 @@ package querier
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/terra-project/mantle/querier/queryhandler"
+	"github.com/terra-project/mantle-sdk/querier/queryhandler"
 	"reflect"
 	"testing"
 
-	"github.com/terra-project/mantle/db"
-	"github.com/terra-project/mantle/db/badger"
-	"github.com/terra-project/mantle/db/kvindex"
+	"github.com/terra-project/mantle-sdk/db"
+	"github.com/terra-project/mantle-sdk/db/badger"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
 )
 
 type TestStruct struct {

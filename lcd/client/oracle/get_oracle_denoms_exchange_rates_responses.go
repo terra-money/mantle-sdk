@@ -15,7 +15,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 
-	"github.com/terra-project/mantle/lcd/models"
+	"github.com/terra-project/mantle-sdk/lcd/models"
 )
 
 // GetOracleDenomsExchangeRatesReader is a Reader for the GetOracleDenomsExchangeRates structure.

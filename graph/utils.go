@@ -1,8 +1,8 @@
 package graph
 
 import (
-	"github.com/terra-project/mantle/serdes"
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/serdes"
+	"github.com/terra-project/mantle-sdk/types"
 	"reflect"
 )
 

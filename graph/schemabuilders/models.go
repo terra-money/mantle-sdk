@@ -2,11 +2,11 @@ package schemabuilders
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle/db/kvindex"
-	"github.com/terra-project/mantle/graph"
-	"github.com/terra-project/mantle/graph/generate"
-	"github.com/terra-project/mantle/types"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-project/mantle-sdk/graph"
+	"github.com/terra-project/mantle-sdk/graph/generate"
+	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 func CreateModelSchemaBuilder(kvindexMap kvindex.KVIndexMap, models ...types.Model) graph.SchemaBuilder {

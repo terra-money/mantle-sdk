@@ -15,7 +15,7 @@ import (
 	cr "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/terra-project/mantle/lcd/models"
+	"github.com/terra-project/mantle-sdk/lcd/models"
 )
 
 // NewPostMsgauthGrantersGranterAddressGranteesGranteeAddressGrantsMsgTypeParams creates a new PostMsgauthGrantersGranterAddressGranteesGranteeAddressGrantsMsgTypeParams object

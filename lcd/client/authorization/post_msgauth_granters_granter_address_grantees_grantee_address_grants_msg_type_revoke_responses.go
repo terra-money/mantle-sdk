@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/terra-project/mantle/lcd/models"
+	"github.com/terra-project/mantle-sdk/lcd/models"
 )
 
 // PostMsgauthGrantersGranterAddressGranteesGranteeAddressGrantsMsgTypeRevokeReader is a Reader for the PostMsgauthGrantersGranterAddressGranteesGranteeAddressGrantsMsgTypeRevoke structure.

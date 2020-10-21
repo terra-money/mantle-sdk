@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/terra-project/mantle/graph/generate"
+	"github.com/terra-project/mantle-sdk/graph/generate"
 
 	"github.com/graphql-go/graphql/language/ast"
 
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle/utils"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 type contextKey int

@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/terra-project/mantle/types"
+	"github.com/terra-project/mantle-sdk/types"
 )
 
 type BlockGetter func(height interface{}) (*types.Block, error)
