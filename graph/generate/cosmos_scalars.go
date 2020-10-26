@@ -5,6 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 	"math/big"
 	"reflect"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
@@ -55,6 +56,8 @@ var lists = []ScalarGeneratorPair{
 			},
 		}),
 	},
+
+	// StdTx/Msg
 	{
 		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
 			t := reflect.TypeOf((*types.Msg)(nil)).Elem()
@@ -95,6 +98,29 @@ var lists = []ScalarGeneratorPair{
 			},
 			ParseValue: func(value interface{}) interface{} {
 				return value
+			},
+			ParseLiteral: func(valueAST ast.Value) interface{} {
+				return valueAST.GetValue()
+			},
+		}),
+	},
+
+	// time.Time
+	{
+		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
+			if target == reflect.TypeOf((*time.Time)(nil)).Elem() {
+				return true
+			}
+			return false
+		},
+		Scalar: graphql.NewScalar(graphql.ScalarConfig{
+			Name:        "Time",
+			Description: "golang's time.Time",
+			Serialize: func(value interface{}) interface{} {
+				return value.(time.Time).String()
+			},
+			ParseValue: func(value interface{}) interface{} {
+				return value.(time.Time)
 			},
 			ParseLiteral: func(valueAST ast.Value) interface{} {
 				return valueAST.GetValue()
