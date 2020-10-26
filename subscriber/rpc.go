@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"encoding/json"
+	"github.com/terra-project/mantle-sdk/utils"
 	"log"
 
 	websocket "github.com/gorilla/websocket"
@@ -116,11 +117,7 @@ func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
 			panic(unmarshalErr)
 		}
 
-		block := types.Block{}
-
-		if err := json.Unmarshal(data.Result.Data.Value.Block, &block); err != nil {
-			panic(err)
-		}
+		block := utils.ConvertBlockHeaderToTMHeader(data.Result.Data.Value.Block)
 
 		// send!
 		onBlock <- block

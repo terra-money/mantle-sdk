@@ -6,8 +6,8 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
+	"github.com/terra-project/mantle-sdk/serdes"
 	"github.com/terra-project/mantle-sdk/types"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 // skip all internal fields
@@ -72,7 +72,7 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 				})
 			}
 
-			pack, packErr := msgpack.Marshal(result)
+			pack, packErr := serdes.Serialize(nil, result)
 			if packErr != nil {
 				return InternalResultInvariant([]error{
 					packErr,

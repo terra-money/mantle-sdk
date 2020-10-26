@@ -14,7 +14,11 @@ type (
 		Height             int64
 		ResponseBeginBlock abci.ResponseBeginBlock
 		ResponseEndBlock   abci.ResponseEndBlock
-		ResponseDeliverTx  []ResponseDeliverTx
-		Block              Block
+		ResponseDeliverTx  []abci.ResponseDeliverTx
+
+		// graphql can't handle inlined structs properly
+		// so define RawBlock
+		//Block              Block
+		Block RawBlock
 	}
 )

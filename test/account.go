@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/tendermint/tendermint/crypto"
 )
 
 var GlobalAccountNumber uint64 = 0
@@ -14,6 +15,10 @@ type TestAccount struct {
 
 func (ta TestAccount) GetAddress() AccAddress {
 	return AccAddressFromBech32(ta.info.GetAddress().String())
+}
+
+func (ta TestAccount) GetPubKey() crypto.PubKey {
+	return ta.info.GetPubKey()
 }
 
 func NewAccount(name string) TestAccount {

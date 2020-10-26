@@ -7,8 +7,9 @@ import (
 )
 
 type Mantlemint interface {
-	Inject(*types.Block) error
+	Inject(*types.Block) (*types.BlockState, error)
 	Init(*tmtypes.GenesisDoc) error
+	GetCurrentHeight() int64
 	GetCurrentBlock() *types.Block
 }
 

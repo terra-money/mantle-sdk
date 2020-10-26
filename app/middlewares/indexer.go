@@ -80,7 +80,9 @@ func (middleware *IndexerMiddleware) CommitSync() (*types.ResponseCommit, error)
 	}()
 
 	// run indexer before client commit
-	middleware.callback(*middleware.responses)
+	if middleware.responses != nil {
+		middleware.callback(*middleware.responses)
+	}
 
 	// commit
 	return middleware.Client.CommitSync()

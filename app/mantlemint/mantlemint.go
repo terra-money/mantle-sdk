@@ -69,6 +69,7 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	// loaded state has LastBlockHeight 0,
 	// meaning chain was never initialized
 	// run genesis
+
 	if mm.lastState.IsEmpty() {
 		// create default state from genesis
 		var genesisState, err = state.MakeGenesisState(genesis)
@@ -93,6 +94,7 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 		}
 
 		res, err := mm.conn.InitChainSync(req)
+
 		if err != nil {
 			return err
 		}
@@ -114,15 +116,17 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 			genesisState.ConsensusParams = genesisState.ConsensusParams.Update(res.ConsensusParams)
 		}
 
-		// NOTE: do NOT persist state in db
+		// state needs to be saved
 		state.SaveState(mm.db, genesisState)
+
 		mm.lastState = genesisState
+		mm.lastHeight = 0
 	}
 
 	return nil
 }
 
-func (mm *MantlemintInstance) Inject(block *types.Block) error {
+func (mm *MantlemintInstance) Inject(block *types.Block) (*types.BlockState, error) {
 	var currentState = mm.lastState
 	var blockID = tmtypes.BlockID{
 		Hash:        block.Hash(),
@@ -141,16 +145,27 @@ func (mm *MantlemintInstance) Inject(block *types.Block) error {
 	// because we still want to use fauxMerkleTree for speed (way faster this way!)
 	currentState.AppHash = block.AppHash
 
+	// set new event listener for this round
+	// note that we create new event collector for every block,
+	// however this operation is quite cheap.
+	ev := NewMantlemintEventCollector()
+	mm.executer.SetEventBus(ev)
+
 	// process blocks
 	if nextState, retainHeight, err = mm.executer.ApplyBlock(currentState, blockID, block); err != nil {
-		return err
+		return nil, err
 	}
 
 	// save cache of last state
 	mm.lastState = nextState
 	mm.lastHeight = retainHeight
 
-	return nil
+	// read events, form blockState and return it
+	return ev.GetBlockState(), nil
+}
+
+func (mm *MantlemintInstance) GetCurrentHeight() int64 {
+	return mm.lastHeight
 }
 
 func (mm *MantlemintInstance) GetCurrentBlock() *types.Block {
