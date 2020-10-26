@@ -1,6 +1,8 @@
 package indexer
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/terra-project/mantle-sdk/graph"
@@ -77,6 +79,18 @@ func createIsolatedQuerier(
 		qs := generate.GenerateQuery(query, variables)
 		result := querier(qs, variables, indexerSelfOutput)
 		resultInternal := result.(*types.GraphQLInternalResult)
+
+		if resultInternal.HasErrors() {
+			var errorsString = make([]string, len(resultInternal.Errors))
+			for i, e := range resultInternal.Errors {
+				errorsString[i] = e.Error()
+			}
+
+			return fmt.Errorf(
+				"graphql query resulted in errors: %s",
+				strings.Join(errorsString, " "),
+			)
+		}
 
 		return graph.UnmarshalInternalQueryResult(resultInternal, query)
 	}
