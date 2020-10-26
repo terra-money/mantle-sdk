@@ -2,7 +2,7 @@ package subscriber
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/terra-project/mantle-sdk/utils"
 	"io/ioutil"
 	"net/http"
 
@@ -32,25 +32,7 @@ func GetBlock(endpoint string) (*types.Block, error) {
 		panic(unmarshalErr)
 	}
 
-	block := types.Block{}
-
-	if err := json.Unmarshal(data.Result.Block, &block); err != nil {
-		panic(err)
-	}
+	block := utils.ConvertBlockHeaderToTMHeader(data.Result.Block)
 
 	return &block, nil
-}
-
-func CreateBlockGetterOffline() BlockGetter {
-	return func(height interface{}) (*types.Block, error) {
-		return nil, nil
-	}
-}
-
-func forceString(val interface{}) string {
-	if s, ok := val.(string); ok {
-		return s
-	} else {
-		return fmt.Sprintf("%s", val)
-	}
 }
