@@ -4,10 +4,12 @@ import (
 	"fmt"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/state"
+	tmtypes "github.com/tendermint/tendermint/types"
 	TerraApp "github.com/terra-project/core/app"
 	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle-sdk/app/mantlemint"
 	"github.com/terra-project/mantle-sdk/app/middlewares"
+	"github.com/terra-project/mantle-sdk/utils"
 	"log"
 	"reflect"
 	"time"
@@ -23,7 +25,6 @@ import (
 	reg "github.com/terra-project/mantle-sdk/registry"
 	"github.com/terra-project/mantle-sdk/subscriber"
 	"github.com/terra-project/mantle-sdk/types"
-	"github.com/terra-project/mantle-sdk/utils"
 )
 
 type Mantle struct {
@@ -49,7 +50,7 @@ var (
 
 func NewMantle(
 	db db.DB,
-	genesis *utils.GenesisDoc,
+	genesis *tmtypes.GenesisDoc,
 	indexers ...types.IndexerRegisterer,
 ) (mantleApp *Mantle) {
 	// create new terra app with postgres-patched KVStore
@@ -130,7 +131,7 @@ func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
 		ResponseBeginBlock: *responses.BeginBlock,
 		ResponseEndBlock:   *responses.EndBlock,
 		ResponseDeliverTx:  deliverTxsCopy,
-		Block:              *block,
+		Block:              utils.ConvertBlockToRawBlock(block),
 	}
 
 	// set BlockState in depsResolver
@@ -168,6 +169,7 @@ func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
 }
 
 func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
+	log.Println("Local blockchain is behind, syncing previous blocks...")
 	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block", configuration.TendermintEndpoint))
 
 	if err != nil {
@@ -184,13 +186,16 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 			for {
 			}
 		}
+
 		remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block?height=%d", configuration.TendermintEndpoint, syncingBlockHeight+1))
 		if err != nil {
 			panic(fmt.Errorf("error during mantle sync: remote block(%d) fetch failed", syncingBlockHeight))
 		}
 
 		// run round
-		mantle.Inject(remoteBlock)
+		if _, err := mantle.Inject(remoteBlock); err != nil {
+			panic(err)
+		}
 
 		syncingBlockHeight++
 	}
@@ -212,6 +217,8 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 		case block := <-blockChannel:
 			lastBlockHeight := mantle.app.LastBlockHeight()
 
+			log.Printf("lastBlockHeight=%v, remoteBlockHeight=%v\n", lastBlockHeight, block.Header.Height)
+
 			// stop sync if SyncUntil is given
 			if configuration.SyncUntil != 0 && uint64(lastBlockHeight) == configuration.SyncUntil {
 				for {
@@ -221,7 +228,9 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 			if block.Header.Height-lastBlockHeight != 1 {
 				mantle.QuerySync(configuration, lastBlockHeight)
 			} else {
-				mantle.Inject(&block)
+				if _, err := mantle.Inject(&block); err != nil {
+					panic(err)
+				}
 			}
 		}
 	}
@@ -231,13 +240,8 @@ func (mantle *Mantle) Server(port int) {
 	go mantle.gqlInstance.ServeHTTP(port)
 }
 
-func (mantle *Mantle) Inject(block *types.Block) error {
-	// inject
-	if err := mantle.mantlemint.Inject(block); err != nil {
-		return err
-	}
-
-	return nil
+func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
+	return mantle.mantlemint.Inject(block)
 }
 
 func (mantle *Mantle) ExportStates() map[string]interface{} {
