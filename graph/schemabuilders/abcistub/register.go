@@ -2,6 +2,7 @@ package abcistub
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle-sdk/graph"
 	"reflect"
 
 	"github.com/terra-project/mantle-sdk/graph/generate"
@@ -33,21 +34,23 @@ func RegisterABCIQueriers(clientFunc reflect.Value, clientFuncName string, clien
 		Args: argumentsType,
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			args := utils.GetType(clientFuncType.In(0))
-
-			// map[string]interface{} -> struct (as defined in the handler function)
 			argsStruct := reflect.New(args)
 			for key, value := range p.Args {
 				argsStruct.Elem().FieldByName(key).Set(reflect.ValueOf(value))
 			}
 
-			result := clientFunc.Call([]reflect.Value{argsStruct})
-			ret, err := result[0], result[1]
+			return graph.CreateThunk(func() (interface{}, error) {
+				// map[string]interface{} -> struct (as defined in the handler function)
 
-			if !err.IsNil() {
-				return nil, err.Interface().(error)
-			}
+				result := clientFunc.Call([]reflect.Value{argsStruct})
+				ret, err := result[0], result[1]
 
-			return ret.Elem().FieldByName("Payload").Interface(), nil
+				if !err.IsNil() {
+					return nil, err.Interface().(error)
+				}
+
+				return ret.Elem().FieldByName("Payload").Interface(), nil
+			})
 		},
 	}, nil
 }
