@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/terra-project/mantle-sdk/constants"
 	"github.com/terra-project/mantle-sdk/depsresolver"
+	"github.com/terra-project/mantle-sdk/graph"
 	"github.com/terra-project/mantle-sdk/serdes"
 	"github.com/terra-project/mantle-sdk/types"
 	"reflect"
@@ -97,29 +98,72 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					intersectionSets = append(intersectionSets, keysHashMap)
 				}
 
-				for indexKey, indexParam := range FilterArgs(args, ReservedArgKeys) {
-					queryResolver, err := q.Build(entityName, indexKey, indexParam)
-					if err != nil {
-						return nil, err
-					}
+				// run them in thunk
+				filteredArgs := FilterArgs(args, ReservedArgKeys)
+				pctx := graph.CreateParallel(len(filteredArgs))
 
-					it, err := queryResolver.Resolve()
-					if err != nil {
-						return nil, err
-					}
+				for indexKey, indexParam := range filteredArgs {
+					pctx.Run(func() (interface{}, error) {
+						queryResolver, err := q.Build(entityName, indexKey, indexParam)
+						if err != nil {
+							return nil, err
+						}
 
-					// for every key found, mark them found
-					keysHashMap := make(map[string]bool)
+						it, err := queryResolver.Resolve()
+						if err != nil {
+							return nil, err
+						}
 
-					for it.Valid() {
-						keysHashMap[string(it.Key())] = true
-						it.Next()
-					}
+						// for every key found, mark them found
+						keysHashMap := make(map[string]bool)
 
-					it.Close()
+						for it.Valid() {
+							keysHashMap[string(it.Key())] = true
+							it.Next()
+						}
 
-					intersectionSets = append(intersectionSets, keysHashMap)
+						it.Close()
+
+						return keysHashMap, nil
+					})
+					//
+					// queryResolver, err := q.Build(entityName, indexKey, indexParam)
+					// if err != nil {
+					// 	return nil, err
+					// }
+					//
+					// it, err := queryResolver.Resolve()
+					// if err != nil {
+					// 	return nil, err
+					// }
+					//
+					// // for every key found, mark them found
+					// keysHashMap := make(map[string]bool)
+					//
+					// for it.Valid() {
+					// 	keysHashMap[string(it.Key())] = true
+					// 	it.Next()
+					// }
+					//
+					// it.Close()
+					//
+					// intersectionSets = append(intersectionSets, keysHashMap)
 				}
+
+				intersectionSetResults := pctx.Sync()
+
+				// if at least 1 error exists,
+				// cut this resolver and return error
+				if pctx.HasErrors() {
+					for _, r := range intersectionSetResults {
+						return nil, r.Error
+					}
+				}
+
+				for _, r := range intersectionSetResults {
+					intersectionSets = append(intersectionSets, r.Result.(map[string]bool))
+				}
+
 
 				// if intersectionSets was never populated,
 				// we couldn't find anything. return nil

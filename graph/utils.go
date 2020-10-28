@@ -29,7 +29,7 @@ type ThunkResult struct {
 	data interface{}
 	err error
 }
-func CreateThunk(thunk Thunk) (Thunk, error) {
+func CreateThunk(thunk Thunk) (func() (interface{}, error), error) {
 	ch := make(chan *ThunkResult, 1)
 
 	go func() {
