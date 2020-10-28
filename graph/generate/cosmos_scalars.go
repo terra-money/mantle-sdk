@@ -3,7 +3,6 @@ package generate
 import (
 	"encoding/json"
 	"github.com/cosmos/cosmos-sdk/types"
-	"math/big"
 	"reflect"
 	"time"
 
@@ -34,28 +33,30 @@ type ScalarGeneratorPair struct {
 
 var lists = []ScalarGeneratorPair{
 	// bigint
-	{
-		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
-			t := reflect.TypeOf((*interface{ BigInt() *big.Int })(nil)).Elem()
-			if target.Implements(t) {
-				return true
-			}
-			return false
-		},
-		Scalar: graphql.NewScalar(graphql.ScalarConfig{
-			Name:        "BigInt",
-			Description: "BigInt scalar type represents cosmos-sdk specific big int implementation",
-			Serialize: func(value interface{}) interface{} {
-				return value
-			},
-			ParseValue: func(value interface{}) interface{} {
-				return value
-			},
-			ParseLiteral: func(valueAST ast.Value) interface{} {
-				return valueAST.GetValue()
-			},
-		}),
-	},
+	// {
+	// 	Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
+	// 		if target == reflect.TypeOf((*types.Int)(nil)).Elem() {
+	// 			return true
+	// 		} else {
+	// 			return false
+	// 		}
+	// 	},
+	// 	Scalar: graphql.NewScalar(graphql.ScalarConfig{
+	// 		Name:        "BigInt",
+	// 		Description: "BigInt scalar type represents cosmos-sdk specific big int implementation",
+	// 		Serialize: func(value interface{}) interface{} {
+	// 			return value
+	// 		},
+	// 		ParseValue: func(value interface{}) interface{} {
+	// 			return value
+	// 		},
+	// 		ParseLiteral: func(valueAST ast.Value) interface{} {
+	// 			return valueAST.GetValue()
+	// 		},
+	// 	}),
+	// },
+
+
 
 	// StdTx/Msg
 	{
