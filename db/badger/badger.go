@@ -3,6 +3,7 @@ package badger
 import (
 	"fmt"
 	bd "github.com/dgraph-io/badger/v2"
+	bdOptions "github.com/dgraph-io/badger/v2/options"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
 	"github.com/terra-project/mantle-sdk/db"
@@ -23,7 +24,8 @@ func NewBadgerDB(path string) db.DB {
 	// TODO: tweak me
 	options := bd.
 		DefaultOptions(path).
-		WithInMemory(inMemory)
+		WithInMemory(inMemory).
+		WithCompression(bdOptions.Snappy)
 
 	db, err := bd.Open(options)
 	if err != nil {
