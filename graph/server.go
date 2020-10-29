@@ -46,6 +46,10 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 		Playground: true,
 	})
 
+	http.Handle("/status", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("OK"))
+	}))
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
 			server.prepareResolverContext(nil, true),
