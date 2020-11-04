@@ -11,6 +11,7 @@ import (
 	terra "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
 	"github.com/terra-project/mantle-sdk/types"
+	"log"
 )
 
 var (
@@ -71,11 +72,16 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	// run genesis
 
 	if mm.lastState.IsEmpty() {
+		log.Print("initializing mantle from genesis")
+
 		// create default state from genesis
 		var genesisState, err = state.MakeGenesisState(genesis)
 		if err != nil {
 			return err
 		}
+
+		log.Printf("genesisTime=%v, chainId=%v", genesis.GenesisTime, genesis.ChainID)
+		log.Printf("appHash=%v, appState=%v", genesis.AppHash, genesis.AppState)
 
 		validators := make([]*tmtypes.Validator, len(genesis.Validators))
 		for i, val := range genesis.Validators {
@@ -94,6 +100,10 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 		}
 
 		res, err := mm.conn.InitChainSync(req)
+
+		log.Printf("initChain finished")
+		log.Printf("validators: %v", res.Validators)
+		log.Printf("consensusParams: %v", res.ConsensusParams)
 
 		if err != nil {
 			return err
@@ -118,6 +128,8 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 
 		// state needs to be saved
 		state.SaveState(mm.db, genesisState)
+
+		log.Print("genesis saved to db")
 
 		mm.lastState = genesisState
 		mm.lastHeight = 0
