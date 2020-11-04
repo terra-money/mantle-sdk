@@ -71,6 +71,8 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	// meaning chain was never initialized
 	// run genesis
 
+	log.Printf("genesisTime=%v, chainId=%v", genesis.GenesisTime, genesis.ChainID)
+
 	if mm.lastState.IsEmpty() {
 		log.Print("initializing mantle from genesis")
 
@@ -80,8 +82,8 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 			return err
 		}
 
-		log.Printf("genesisTime=%v, chainId=%v", genesis.GenesisTime, genesis.ChainID)
-		log.Printf("appHash=%v, appState=%v", genesis.AppHash, genesis.AppState)
+		log.Printf("\tgenesisTime=%v, chainId=%v", genesis.GenesisTime, genesis.ChainID)
+		log.Printf("\tappHash=%v, appState=%v", genesis.AppHash, genesis.AppState)
 
 		validators := make([]*tmtypes.Validator, len(genesis.Validators))
 		for i, val := range genesis.Validators {
@@ -102,8 +104,8 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 		res, err := mm.conn.InitChainSync(req)
 
 		log.Printf("initChain finished")
-		log.Printf("validators: %v", res.Validators)
-		log.Printf("consensusParams: %v", res.ConsensusParams)
+		log.Printf("\tvalidators: %v", res.Validators)
+		log.Printf("\tconsensusParams: %v", res.ConsensusParams)
 
 		if err != nil {
 			return err
