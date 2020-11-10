@@ -74,7 +74,8 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				// for byte comparison purposes, string is fine
 				intersectionSets := make([]map[string]bool, 0)
 
-				if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) {
+				// only do sequential indexer when no specific arguments is given
+				if len(filteredArgs) == 0 {
 					queryResolver, err := q.Build(entityName, "", nil)
 					if err != nil {
 						return nil, err
@@ -89,6 +90,11 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 					keysHashMap := make(map[string]bool)
 
 					for it.Valid() {
+						// stop before limit is filled
+						if len(keysHashMap) >= limit {
+							break
+						}
+
 						keysHashMap[string(it.Key())] = true
 						it.Next()
 					}
@@ -99,7 +105,6 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				}
 
 				// run them in thunk
-				filteredArgs := FilterArgs(args, ReservedArgKeys)
 				pctx := graph.CreateParallel(len(filteredArgs))
 
 				for indexKey, indexParam := range filteredArgs {
@@ -163,7 +168,6 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				for _, r := range intersectionSetResults {
 					intersectionSets = append(intersectionSets, r.Result.(map[string]bool))
 				}
-
 
 				// if intersectionSets was never populated,
 				// we couldn't find anything. return nil
