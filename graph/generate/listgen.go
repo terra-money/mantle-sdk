@@ -76,7 +76,10 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 
 				// only do sequential indexer when no specific arguments is given
 				if len(filteredArgs) == 0 {
-					queryResolver, err := q.Build(entityName, "", nil)
+					// treat order specially here
+					var currentSortOrder = constants.GetOrder(args)
+
+					queryResolver, err := q.Build(entityName, "", currentSortOrder)
 					if err != nil {
 						return nil, err
 					}

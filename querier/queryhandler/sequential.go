@@ -1,6 +1,7 @@
 package queryhandler
 
 import (
+	"github.com/terra-project/mantle-sdk/constants"
 	"github.com/terra-project/mantle-sdk/utils"
 	"math"
 
@@ -23,7 +24,7 @@ func NewSequentialResolver(
 	kvIndex *kvindex.KVIndex,
 	entityName,
 	_ string,
-	_ interface{},
+	order interface{},
 ) (QueryHandler, error) {
 	// iterate over document keys
 	// note that because of this nature, list intersection calculation neeeds attention
@@ -31,11 +32,16 @@ func NewSequentialResolver(
 		return nil, nil
 	}
 
+	reverse := false
+	if order.(int) == constants.DESC {
+		reverse = true
+	}
+
 	return SequentialResolver{
 		db:             db,
 		entityName:     entityName,
 		isPrimaryModel: kvIndex.IsPrimaryKeyedModel(),
-		reverse:        true,
+		reverse:        reverse,
 	}, nil
 }
 
