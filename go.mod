@@ -26,8 +26,8 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/tendermint/tendermint v0.33.7
 	github.com/tendermint/tm-db v0.5.1
-	github.com/terra-project/core v0.4.0-rc.4
-	github.com/terra-project/mantle-compatibility v1.2.1-tequila-rc4
+	github.com/terra-project/core v0.4.0
+	github.com/terra-project/mantle-compatibility v1.3.3-columbus-4
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
@@ -36,4 +36,4 @@ require (
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
 
-replace github.com/CosmWasm/go-cosmwasm => github.com/terra-project/go-cosmwasm v0.10.1-terra
+replace github.com/CosmWasm/go-cosmwasm => github.com/terra-project/go-cosmwasm v0.10.2
