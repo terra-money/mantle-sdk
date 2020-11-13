@@ -216,11 +216,27 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	// subscribe to NewBlock event
-	rpcSubscription := subscriber.NewRpcSubscription(
+	rpcSubscription, connRefused := subscriber.NewRpcSubscription(
 		fmt.Sprintf("ws://%s/websocket", configuration.TendermintEndpoint),
 		configuration.OnWSError,
 	)
-	blockChannel := rpcSubscription.Subscribe()
+
+	// connRefused here is most likely triggered by ECONNREFUSED
+	// in case reconnect flag is set, try reestablish the connection after 5 seconds.
+	if connRefused != nil {
+		if configuration.Reconnect {
+			select {
+				case <-time.NewTimer(5 * time.Second).C:
+					mantle.Sync(configuration)
+			}
+			return
+
+		} else {
+			panic(connRefused)
+		}
+	}
+
+	blockChannel := rpcSubscription.Subscribe(configuration.Reconnect)
 
 	for {
 		select {
