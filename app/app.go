@@ -42,6 +42,9 @@ type Mantle struct {
 type SyncConfiguration struct {
 	TendermintEndpoint string
 	SyncUntil          uint64
+	Reconnect          bool
+	OnWSError          func(err error)
+	OnInjectError      func(err error)
 }
 
 var (
@@ -194,7 +197,11 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 
 		// run round
 		if _, err := mantle.Inject(remoteBlock); err != nil {
-			panic(err)
+			if configuration.OnInjectError != nil {
+				configuration.OnInjectError(err)
+			} else {
+				panic(err)
+			}
 		}
 
 		syncingBlockHeight++
@@ -209,7 +216,10 @@ func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHei
 
 func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	// subscribe to NewBlock event
-	rpcSubscription := subscriber.NewRpcSubscription(fmt.Sprintf("ws://%s/websocket", configuration.TendermintEndpoint))
+	rpcSubscription := subscriber.NewRpcSubscription(
+		fmt.Sprintf("ws://%s/websocket", configuration.TendermintEndpoint),
+		configuration.OnWSError,
+	)
 	blockChannel := rpcSubscription.Subscribe()
 
 	for {
@@ -229,7 +239,13 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 				mantle.QuerySync(configuration, lastBlockHeight)
 			} else {
 				if _, err := mantle.Inject(&block); err != nil {
-					panic(err)
+					// if OnInjectError is set,
+					// relay injection error to the caller
+					if configuration.OnInjectError != nil {
+						configuration.OnInjectError(err)
+					} else {
+						panic(err)
+					}
 				}
 			}
 		}

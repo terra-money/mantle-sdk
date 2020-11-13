@@ -14,6 +14,7 @@ type (
 		ws          *websocket.Conn
 		id          int
 		initialized bool
+		onWsError   OnWsError
 	}
 	Request struct {
 		JSONRPC string                    `json:"jsonrpc"`
@@ -24,9 +25,10 @@ type (
 	SubscriptionJsonRpcParams struct {
 		Query string `json:"query"`
 	}
+	OnWsError func(error)
 )
 
-func NewRpcSubscription(endpoint string) *RPCSubscription {
+func NewRpcSubscription(endpoint string, onWsError func(err error)) *RPCSubscription {
 	log.Print("Opening websocket...")
 	ws, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 
@@ -35,8 +37,11 @@ func NewRpcSubscription(endpoint string) *RPCSubscription {
 		panic(err)
 	}
 
+	ws.SetCloseHandler()
+
 	return &RPCSubscription{
 		ws:          ws,
+		onWsError:   onWsError,
 		id:          0,
 		initialized: false,
 	}
@@ -100,7 +105,11 @@ func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
 		_, message, err := c.ws.ReadMessage()
 
 		if err != nil {
-			panic(err)
+			if c.onWsError != nil {
+				c.onWsError(err)
+			} else {
+				panic(err)
+			}
 		}
 
 		data := new(struct {
