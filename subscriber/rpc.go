@@ -2,18 +2,22 @@ package subscriber
 
 import (
 	"encoding/json"
-	"github.com/terra-project/mantle-sdk/utils"
-	"log"
-
+	"fmt"
 	websocket "github.com/gorilla/websocket"
 	types "github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-project/mantle-sdk/utils"
+	"log"
+	"time"
 )
 
 type (
 	RPCSubscription struct {
 		ws          *websocket.Conn
+		endpoint string
 		id          int
 		initialized bool
+		onWsError   OnWsError
+		outputChannel chan types.Block // use a single channel across reconnections
 	}
 	Request struct {
 		JSONRPC string                    `json:"jsonrpc"`
@@ -24,30 +28,41 @@ type (
 	SubscriptionJsonRpcParams struct {
 		Query string `json:"query"`
 	}
+	OnWsError func(error)
 )
 
-func NewRpcSubscription(endpoint string) *RPCSubscription {
+var (
+	outputChannel = make(chan types.Block)
+)
+
+func NewRpcSubscription(
+	endpoint string,
+	onWsError func(err error),
+) (*RPCSubscription, error) {
 	log.Print("Opening websocket...")
 	ws, _, err := websocket.DefaultDialer.Dial(endpoint, nil)
 
 	// panic as this should not fail
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &RPCSubscription{
 		ws:          ws,
+		endpoint:	endpoint,
+		onWsError:   onWsError,
 		id:          0,
 		initialized: false,
-	}
+		outputChannel: outputChannel,
+	}, nil
 }
 
 func (c *RPCSubscription) Close() error {
 	return c.ws.Close()
 }
 
-// Subscribe starts listening to tendermint RPC. It **must** be run as goroutine.
-func (c *RPCSubscription) Subscribe() chan types.Block {
+// Subscribe starts listening to tendermint RPC.
+func (c *RPCSubscription) Subscribe(reconnect bool) chan types.Block {
 	var request = &Request{
 		JSONRPC: "2.0",
 		Method:  "subscribe",
@@ -72,13 +87,10 @@ func (c *RPCSubscription) Subscribe() chan types.Block {
 
 	log.Print("Subscription and the first handshake done. Receiving blocks...")
 
-	// make channel for receiving block events
-	channel := make(chan types.Block)
-
 	// run event receiver
-	go c.receiveBlockEvents(channel)
+	go c.receiveBlockEvents(reconnect)
 
-	return channel
+	return c.outputChannel
 }
 
 // tendermint rpc sends the "subscription ok" for the intiail response
@@ -95,12 +107,59 @@ func (c *RPCSubscription) handleInitialHandhake() error {
 }
 
 // TODO: handle errors here
-func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
+func (c *RPCSubscription) receiveBlockEvents(autoReconnect bool) {
+
+	if autoReconnect {
+		defer c.tryReconnect()
+	}
+
 	for {
 		_, message, err := c.ws.ReadMessage()
 
+		// if read message failed,
+		// scrap the whole ws thing
 		if err != nil {
-			panic(err)
+			fmt.Println("here??")
+
+			closeErr := c.Close()
+			if closeErr != nil {
+				log.Print("websocket close failed, but it seems the underlying websocket is already closed")
+			}
+
+			if c.onWsError != nil {
+				c.onWsError(err)
+				return
+			} else {
+				panic(err)
+			}
+		}
+
+		var unmarshalErr error
+
+		// check error
+		errorMessage := new(struct {
+			Error struct {
+				Code int `json:"code"`
+				Message string `json:"message"`
+				Data string `json:"data"`
+			} `json:"error"`
+		})
+
+		if unmarshalErr = json.Unmarshal(message, errorMessage); unmarshalErr != nil {
+			panic(unmarshalErr)
+		}
+
+		// tendermint has sent error message,
+		// close ws
+		if errorMessage.Error.Code != 0 {
+			log.Printf(
+				"tendermint RPC error, code=%d, message=%s, data=%s",
+				errorMessage.Error.Code,
+				errorMessage.Error.Message,
+				errorMessage.Error.Data,
+			)
+			c.Close()
+			return
 		}
 
 		data := new(struct {
@@ -120,8 +179,27 @@ func (c *RPCSubscription) receiveBlockEvents(onBlock chan types.Block) {
 		block := utils.ConvertBlockHeaderToTMHeader(data.Result.Data.Value.Block)
 
 		// send!
-		onBlock <- block
+		c.outputChannel <- block
 	}
 }
 
-// TODO: get specific block
+func (c *RPCSubscription) tryReconnect() {
+	log.Print("reconnecting to tendermint RPC...")
+	previousEndpoint := c.endpoint
+	previousWsErrorHandler := c.onWsError
+
+	go func() {
+		timer := time.NewTimer(5 * time.Second)
+		select {
+		case <-timer.C:
+			nextRpc, connRefused := NewRpcSubscription(previousEndpoint, previousWsErrorHandler)
+
+			if connRefused != nil {
+				c.tryReconnect()
+				return
+			}
+
+			nextRpc.Subscribe(true)
+		}
+	}()
+}
