@@ -112,6 +112,16 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 		}
 	}
 
+	// commit LastSyncedHeight
+	payload, err := serdes.Serialize(reflect.TypeOf(height), height)
+	if err != nil {
+		return err
+	}
+	batchErr := writeBatch.Set([]byte("LastSyncedHeight"), payload)
+	if batchErr != nil {
+		return err
+	}
+
 	transaction = true
 
 	defer func() {

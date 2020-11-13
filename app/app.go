@@ -70,6 +70,7 @@ func NewMantle(
 		depsResolverInstance,
 		querierInstance,
 		schemabuilders.CreateABCIStubSchemaBuilder(terraApp),
+		schemabuilders.CreateMantleStateSchemaBuilder(nil, nil),
 		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BlockState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.KVIndexMap, registry.Models...),
 	)
