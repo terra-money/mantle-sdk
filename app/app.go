@@ -274,7 +274,7 @@ func (mantle *Mantle) Server(port int) {
 }
 
 func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
-	if block.Header.Height % 100 == 0 {
+	if block.Header.Height % 1000 == 0 {
 		mantle.db.Compact()
 	}
 	return mantle.mantlemint.Inject(block)

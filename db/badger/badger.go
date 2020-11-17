@@ -1,9 +1,7 @@
 package badger
 
 import (
-	"fmt"
 	bd "github.com/dgraph-io/badger/v2"
-	bdOptions "github.com/dgraph-io/badger/v2/options"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
 	"github.com/terra-project/mantle-sdk/db"
@@ -12,11 +10,23 @@ import (
 
 type BadgerDB struct {
 	db *bd.DB
+	path string
+	cosmosdb *compatbadger.BadgerCosmosAdapter
 }
 
 var maxPKRange = []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 func NewBadgerDB(path string) db.DB {
+	dbInstance := &BadgerDB{
+		path: path,
+	}
+
+	dbInstance.db = dbInstance.open(path)
+
+	return dbInstance
+}
+
+func (bdb *BadgerDB) open(path string) *bd.DB {
 	var inMemory bool
 	if path == "" {
 		inMemory = true
@@ -24,30 +34,35 @@ func NewBadgerDB(path string) db.DB {
 	// TODO: tweak me
 	options := bd.
 		LSMOnlyOptions(path).
-		WithInMemory(inMemory).
-		WithCompression(bdOptions.Snappy)
+		WithInMemory(inMemory)
+		// WithCompression(bdOptions.Snappy)
 
 	db, err := bd.Open(options)
 	if err != nil {
 		panic(err)
 	}
 
-	return &BadgerDB{
-		db: db,
-	}
+	return db
 }
 
 func (bdb *BadgerDB) Compact() error {
-	bdb.db.Flatten(8)
-	if err := bdb.db.RunValueLogGC(0.1); err == bd.ErrNoRewrite {
-		fmt.Println("nothing to compact!")
-	}
+	// close & reopen db
+	bdb.db.Close()
+	bdb.db = bdb.open(bdb.path)
+	bdb.cosmosdb.SetDB(bdb.db)
+
+	// bdb.db.Flatten(1)
+	// if err := bdb.db.RunValueLogGC(0.1); err == bd.ErrNoRewrite {
+	// 	fmt.Println("nothing to compact!")
+	// }
 
 	return nil
 }
 
 func (bdb *BadgerDB) GetCosmosAdapter() tmdb.DB {
-	return compatbadger.NewBadgerCosmosAdapter(bdb.db)
+	cosmosdb := compatbadger.NewBadgerCosmosAdapter(bdb.db)
+	bdb.cosmosdb = cosmosdb
+	return cosmosdb
 }
 
 func (bdb *BadgerDB) GetDB() *bd.DB {
