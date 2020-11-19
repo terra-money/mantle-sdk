@@ -24,8 +24,9 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
+	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/tendermint v0.33.7
-	github.com/tendermint/tm-db v0.5.1
+	github.com/tendermint/tm-db v0.5.2
 	github.com/terra-project/core v0.4.0
 	github.com/terra-project/mantle-compatibility v1.4.0-columbus-4
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
