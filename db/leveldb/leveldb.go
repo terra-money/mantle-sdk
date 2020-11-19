@@ -18,14 +18,14 @@ type LevelDB struct {
 
 var maxPKRange = []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
-func NewLevelDB(path string) db.DB {
+func NewLevelDB(path string) db.DBwithGlobalTransaction {
 	dbInstance := &LevelDB{
 		path: path,
 	}
 
 	dbInstance.db = dbInstance.open(path)
 
-	return dbInstance
+	return db.WithGlobalTransactionManager(dbInstance)
 }
 
 func (ldb *LevelDB) open(path string) *leveldb.DB {

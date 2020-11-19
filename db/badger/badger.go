@@ -1,43 +1,43 @@
 package badger
 
 import (
-	bd "github.com/dgraph-io/badger/v2"
+	"github.com/terra-project/mantle-sdk/db"
+	badger "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
-	"github.com/terra-project/mantle-sdk/db"
 	"github.com/terra-project/mantle-sdk/utils"
 )
 
 type BadgerDB struct {
-	db *bd.DB
+	db *badger.DB
 	path string
 	cosmosdb *compatbadger.BadgerCosmosAdapter
 }
 
 var maxPKRange = []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
-func NewBadgerDB(path string) db.DB {
+func NewBadgerDB(path string) db.DBwithGlobalTransaction {
 	dbInstance := &BadgerDB{
 		path: path,
 	}
 
 	dbInstance.db = dbInstance.open(path)
 
-	return dbInstance
+	return db.WithGlobalTransactionManager(dbInstance)
 }
 
-func (bdb *BadgerDB) open(path string) *bd.DB {
+func (bdb *BadgerDB) open(path string) *badger.DB {
 	var inMemory bool
 	if path == "" {
 		inMemory = true
 	}
 	// TODO: tweak me
-	options := bd.
+	options := badger.
 		LSMOnlyOptions(path).
 		WithInMemory(inMemory)
 		// WithCompression(bdOptions.Snappy)
 
-	db, err := bd.Open(options)
+	db, err := badger.Open(options)
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func (bdb *BadgerDB) Compact() error {
 	bdb.cosmosdb.SetDB(bdb.db)
 
 	// bdb.db.Flatten(1)
-	// if err := bdb.db.RunValueLogGC(0.1); err == bd.ErrNoRewrite {
+	// if err := bdb.db.RunValueLogGC(0.1); err == badger.ErrNoRewrite {
 	// 	fmt.Println("nothing to compact!")
 	// }
 
@@ -65,7 +65,7 @@ func (bdb *BadgerDB) GetCosmosAdapter() tmdb.DB {
 	return cosmosdb
 }
 
-func (bdb *BadgerDB) GetDB() *bd.DB {
+func (bdb *BadgerDB) GetDB() *badger.DB {
 	return bdb.db
 }
 
@@ -117,8 +117,8 @@ func (bdb *BadgerDB) Close() error {
 }
 
 type BadgerIterator struct {
-	it             *bd.Iterator
-	txn            *bd.Txn
+	it             *badger.Iterator
+	txn            *badger.Txn
 	start          []byte
 	indexKeyLength int
 	reverse        bool
@@ -129,7 +129,7 @@ func (bdb *BadgerDB) Iterator(
 	reverse bool,
 ) db.Iterator {
 	txn := bdb.db.NewTransaction(false)
-	itOpts := bd.DefaultIteratorOptions
+	itOpts := badger.DefaultIteratorOptions
 	itOpts.PrefetchValues = true
 	itOpts.Reverse = reverse
 	it := txn.NewIterator(itOpts)
@@ -156,7 +156,7 @@ func (bdb *BadgerDB) IndexIterator(
 	reverse bool,
 ) db.Iterator {
 	txn := bdb.db.NewTransaction(false)
-	itOpts := bd.DefaultIteratorOptions
+	itOpts := badger.DefaultIteratorOptions
 	itOpts.PrefetchValues = false
 	itOpts.Reverse = reverse
 	it := txn.NewIterator(itOpts)
@@ -211,7 +211,7 @@ func (it *BadgerIterator) DocumentKey() []byte {
 }
 
 type BadgerBatch struct {
-	batch *bd.WriteBatch
+	batch *badger.WriteBatch
 }
 
 func (bdb *BadgerDB) Batch() db.Batch {

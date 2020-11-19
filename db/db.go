@@ -17,6 +17,12 @@ type DB interface {
 	Compact() error
 }
 
+type DBwithGlobalTransaction interface {
+	DB
+	SetGlobalTransactionBoundary()
+	FlushGlobalTransactionBoundary() error
+}
+
 type Iterator interface {
 	Close()
 	Valid(prefix []byte) bool
