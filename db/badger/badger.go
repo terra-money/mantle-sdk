@@ -1,10 +1,10 @@
 package badger
 
 import (
-	"github.com/terra-project/mantle-sdk/db"
 	badger "github.com/dgraph-io/badger/v2"
 	tmdb "github.com/tendermint/tm-db"
 	compatbadger "github.com/terra-project/mantle-compatibility/badger"
+	"github.com/terra-project/mantle-sdk/db"
 	"github.com/terra-project/mantle-sdk/utils"
 )
 
@@ -16,14 +16,14 @@ type BadgerDB struct {
 
 var maxPKRange = []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
-func NewBadgerDB(path string) db.DBwithGlobalTransaction {
+func NewBadgerDB(path string) db.DB {
 	dbInstance := &BadgerDB{
 		path: path,
 	}
 
 	dbInstance.db = dbInstance.open(path)
 
-	return db.WithGlobalTransactionManager(dbInstance)
+	return dbInstance
 }
 
 func (bdb *BadgerDB) open(path string) *badger.DB {

@@ -1,8 +1,12 @@
-package db
+package force_transaction
+
+import (
+	"github.com/terra-project/mantle-sdk/db"
+)
 
 type GlobalTransactionManager struct {
-	DB
-	session Batch
+	db.DB
+	session db.Batch
 }
 
 // WithGlobalTransactionManager wraps around db,
@@ -10,7 +14,7 @@ type GlobalTransactionManager struct {
 //
 // This is only possible because mantle uses a single db for
 // tendermint, cosmos and indexer outputs.
-func WithGlobalTransactionManager(db DB) DBwithGlobalTransaction {
+func WithGlobalTransactionManager(db db.DB) db.DBwithGlobalTransaction {
 	return &GlobalTransactionManager{
 		DB: db,
 	}
@@ -38,7 +42,7 @@ func (ft *GlobalTransactionManager) Set(key []byte, data []byte) error {
 }
 
 // Batch() always returns the currently set batch
-func (ft *GlobalTransactionManager) Batch() Batch {
+func (ft *GlobalTransactionManager) Batch() db.Batch {
 	if ft.session != nil {
 		return ft.session
 	} else {
