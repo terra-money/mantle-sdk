@@ -9,6 +9,7 @@ import (
 	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle-sdk/app/mantlemint"
 	"github.com/terra-project/mantle-sdk/app/middlewares"
+	"github.com/terra-project/mantle-sdk/db/force_transaction"
 	"github.com/terra-project/mantle-sdk/utils"
 	"log"
 	"reflect"
@@ -52,12 +53,15 @@ var (
 )
 
 func NewMantle(
-	db db.DBwithGlobalTransaction,
+	db db.DB,
 	genesis *tmtypes.GenesisDoc,
 	indexers ...types.IndexerRegisterer,
 ) (mantleApp *Mantle) {
+	// wrap db w/ force transaction manager
+	dbWithTransaction := force_transaction.WithGlobalTransactionManager(db)
+
 	// create new terra app with postgres-patched KVStore
-	tmdb := db.GetCosmosAdapter()
+	tmdb := dbWithTransaction.GetCosmosAdapter()
 	terraApp := compatapp.NewTerraApp(tmdb)
 	GlobalTerraApp = terraApp
 
@@ -108,7 +112,7 @@ func NewMantle(
 		depsResolverInstance: depsResolverInstance,
 		committerInstance:    committerInstance,
 		indexerInstance:      indexerInstance,
-		db:                   db,
+		db:                   dbWithTransaction,
 	}
 
 	// initialize chain
