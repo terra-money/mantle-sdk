@@ -36,7 +36,7 @@ type Mantle struct {
 	depsResolverInstance depsresolver.DepsResolver
 	committerInstance    committer.Committer
 	indexerInstance      *indexer.IndexerBaseInstance
-	db                   db.DB
+	db                   db.DBwithGlobalTransaction
 }
 
 type SyncConfiguration struct {
@@ -52,7 +52,7 @@ var (
 )
 
 func NewMantle(
-	db db.DB,
+	db db.DBwithGlobalTransaction,
 	genesis *tmtypes.GenesisDoc,
 	indexers ...types.IndexerRegisterer,
 ) (mantleApp *Mantle) {
@@ -123,8 +123,6 @@ func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
 	var block = mantle.mantlemint.GetCurrentBlock()
 	var height = block.Header.Height
 
-	tStart := time.Now()
-
 	// create blockState
 	var deliverTxsCopy = make([]abci.ResponseDeliverTx, len(responses.DeliverTxs))
 	for i, deliverTx := range responses.DeliverTxs {
@@ -162,14 +160,6 @@ func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
 	if commitErr := mantle.committerInstance.Commit(uint64(height), commitTargets...); commitErr != nil {
 		panic(commitErr)
 	}
-
-	tEnd := time.Now()
-
-	log.Printf(
-		"[mantle] Indexing finished for block(%d), processed in %dms",
-		height,
-		tEnd.Sub(tStart).Milliseconds(),
-	)
 }
 
 func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
@@ -244,8 +234,6 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 		case block := <-blockChannel:
 			lastBlockHeight := mantle.app.LastBlockHeight()
 
-			log.Printf("lastBlockHeight=%v, remoteBlockHeight=%v\n", lastBlockHeight, block.Header.Height)
-
 			// stop sync if SyncUntil is given
 			if configuration.SyncUntil != 0 && uint64(lastBlockHeight) == configuration.SyncUntil {
 				for {
@@ -253,6 +241,7 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 			}
 
 			if block.Header.Height-lastBlockHeight != 1 {
+				log.Printf("lastBlockHeight=%v, remoteBlockHeight=%v\n", lastBlockHeight, block.Header.Height)
 				mantle.QuerySync(configuration, lastBlockHeight)
 			} else {
 				if _, err := mantle.Inject(&block); err != nil {
@@ -275,9 +264,42 @@ func (mantle *Mantle) Server(port int) {
 
 func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 	if block.Header.Height % 1000 == 0 {
-		mantle.db.Compact()
+		log.Printf("[mantle] db compaction started")
+		if compactionErr := mantle.db.Compact(); compactionErr != nil {
+			panic(compactionErr)
+		}
+		log.Printf("[mantle] db compaction done")
 	}
-	return mantle.mantlemint.Inject(block)
+
+	tStart := time.Now()
+
+	// set global transaction boundary for
+	// tendermint, cosmos, mantle
+	mantle.db.SetGlobalTransactionBoundary()
+
+	// inject this block
+	blockState, injectErr := mantle.mantlemint.Inject(block)
+
+	// if injection was successful,
+	// flush all to disk
+	if injectErr != nil {
+		return blockState, injectErr
+	}
+
+	// flush everything to db
+	if flushErr := mantle.db.FlushGlobalTransactionBoundary(); flushErr != nil {
+		panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
+	}
+
+	tEnd := time.Now()
+
+	log.Printf(
+		"[mantle] Indexing finished for block(%d), processed in %dms",
+		block.Header.Height,
+		tEnd.Sub(tStart).Milliseconds(),
+	)
+
+	return blockState, injectErr
 }
 
 func (mantle *Mantle) ExportStates() map[string]interface{} {
