@@ -62,12 +62,15 @@ func (resolver *DepsResolverInstance) Emit(entity interface{}) error {
 
 func (resolver *DepsResolverInstance) GetState() map[string]interface{} {
 	state := map[string]interface{}{}
+	resolver.rmux.RLock()
 	for key, entity := range resolver.published {
 		if isEntityZero(entity) {
 			continue
 		}
 		state[key.Name()] = entity
 	}
+
+	resolver.rmux.RUnlock()
 
 	return state
 }
@@ -85,7 +88,6 @@ func (resolver *DepsResolverInstance) Resolve(event reflect.Type) interface{} {
 
 	// otherwise start polling on the event channel
 	subchannel := make(chan interface{})
-
 	resolver.mux.Lock()
 	resolver.channels[event] = append(resolver.channels[event], subchannel)
 	resolver.mux.Unlock()
