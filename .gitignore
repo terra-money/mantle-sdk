@@ -3,3 +3,4 @@ core
 .DS_Store
 .idea
 .vscode
+test_fixtures

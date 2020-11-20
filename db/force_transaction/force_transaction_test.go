@@ -9,7 +9,7 @@ import (
 )
 
 func TestForceTransaction(t *testing.T) {
-	testdb := WithGlobalTransactionManager(leveldb.NewLevelDB("test"))
+	testdb := WithGlobalTransactionManager(leveldb.NewLevelDB("../../test_fixtures/force_compaction_db"))
 
 	// set transaction boundary
 	testdb.SetGlobalTransactionBoundary()
