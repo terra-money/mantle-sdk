@@ -9,10 +9,14 @@ import (
 	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle-sdk/app/mantlemint"
 	"github.com/terra-project/mantle-sdk/app/middlewares"
-	"github.com/terra-project/mantle-sdk/db/force_transaction"
 	"github.com/terra-project/mantle-sdk/utils"
 	"log"
+	"os"
+	"os/signal"
 	"reflect"
+	"runtime/debug"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/terra-project/mantle-sdk/committer"
@@ -29,7 +33,6 @@ import (
 )
 
 type Mantle struct {
-	isSynced             bool
 	app                  *TerraApp.TerraApp
 	registry             *reg.Registry
 	mantlemint           mantlemint.Mantlemint
@@ -37,7 +40,10 @@ type Mantle struct {
 	depsResolverInstance depsresolver.DepsResolver
 	committerInstance    committer.Committer
 	indexerInstance      *indexer.IndexerBaseInstance
-	db                   db.DBwithGlobalTransaction
+	db                   db.DB
+
+	// state related
+	syncMutex			sync.Mutex
 }
 
 type SyncConfiguration struct {
@@ -57,11 +63,10 @@ func NewMantle(
 	genesis *tmtypes.GenesisDoc,
 	indexers ...types.IndexerRegisterer,
 ) (mantleApp *Mantle) {
-	// wrap db w/ force transaction manager
-	dbWithTransaction := force_transaction.WithGlobalTransactionManager(db)
+	// wrap db w/ force global_transaction manager
 
 	// create new terra app with postgres-patched KVStore
-	tmdb := dbWithTransaction.GetCosmosAdapter()
+	tmdb := db.GetCosmosAdapter()
 	terraApp := compatapp.NewTerraApp(tmdb)
 	GlobalTerraApp = terraApp
 
@@ -94,7 +99,6 @@ func NewMantle(
 	)
 
 	mantleApp = &Mantle{
-		isSynced: false,
 		app:      terraApp,
 		registry: nil,
 		mantlemint: mantlemint.NewMantlemint(
@@ -112,12 +116,37 @@ func NewMantle(
 		depsResolverInstance: depsResolverInstance,
 		committerInstance:    committerInstance,
 		indexerInstance:      indexerInstance,
-		db:                   dbWithTransaction,
+		db:                   db,
 	}
+
+	// create a signal handler
+	sigChannel := make(chan os.Signal, 1)
+	mantleApp.gracefulShutdownOnSignal(
+		sigChannel,
+		func() { db.Purge(false) },
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+	mantleApp.gracefulShutdownOnSignal(
+		sigChannel,
+		func() { db.Purge(true) },
+		syscall.SIGILL,
+		syscall.SIGABRT,
+		syscall.SIGKILL,
+		syscall.SIGHUP,
+	)
+
+	// initialize within transaction boundary
+	mantleApp.db.SetCriticalZone()
 
 	// initialize chain
 	if initErr := mantleApp.mantlemint.Init(genesis); initErr != nil {
 		panic(initErr)
+	}
+
+	if releaseErr := mantleApp.db.ReleaseCriticalZone(); releaseErr != nil {
+		panic(releaseErr)
 	}
 
 	return mantleApp
@@ -267,19 +296,26 @@ func (mantle *Mantle) Server(port int) {
 }
 
 func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
-	if block.Header.Height % 1000 == 0 {
-		log.Printf("[mantle] db compaction started")
-		if compactionErr := mantle.db.Compact(); compactionErr != nil {
-			panic(compactionErr)
+	// handle any inevitable panic
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("!! mantle panicked w/ message: %s", r)
+			debug.PrintStack()
+			log.Print("[mantle] panic during inject, attempting graceful shutdown")
+			mantle.db.Purge(true)
+			log.Print("[mantle] shutdown done")
+			os.Exit(0)
 		}
-		log.Printf("[mantle] db compaction done")
-	}
+	}()
+
+
+	mantle.syncMutex.Lock()
 
 	tStart := time.Now()
 
-	// set global transaction boundary for
+	// set global global_transaction boundary for
 	// tendermint, cosmos, mantle
-	mantle.db.SetGlobalTransactionBoundary()
+	mantle.db.SetCriticalZone()
 
 	// inject this block
 	blockState, injectErr := mantle.mantlemint.Inject(block)
@@ -291,9 +327,10 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 	}
 
 	// flush everything to db
-	if flushErr := mantle.db.FlushGlobalTransactionBoundary(); flushErr != nil {
+	if flushErr := mantle.db.ReleaseCriticalZone(); flushErr != nil {
 		panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
 	}
+	defer mantle.syncMutex.Unlock()
 
 	tEnd := time.Now()
 
@@ -308,4 +345,29 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 
 func (mantle *Mantle) ExportStates() map[string]interface{} {
 	return mantle.depsResolverInstance.GetState()
+}
+
+func (mantle *Mantle) gracefulShutdownOnSignal(
+	sig chan os.Signal,
+	callback func(),
+	signalTypes ...os.Signal,
+) {
+	// handle
+	signal.Notify(
+		sig,
+		signalTypes...,
+	)
+
+	go func() {
+		received := <- sig
+		log.Printf("[mantle] received %v, cleanup...", received.String())
+
+		// wait until inject is cleared
+		log.Printf("[mantle] waiting for any remaining injection to finish...")
+		mantle.syncMutex.Lock()
+		log.Printf("[mantle] attempting graceful shutdown...")
+		callback()
+		log.Printf("[mantle] shutdown done")
+		os.Exit(0)
+	}()
 }
