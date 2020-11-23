@@ -2,7 +2,7 @@ package app
 
 import (
 	compattypes "github.com/terra-project/mantle-compatibility/types"
-	"github.com/terra-project/mantle-sdk/db/badger"
+	"github.com/terra-project/mantle-sdk/db/leveldb"
 	"github.com/terra-project/mantle-sdk/types"
 )
 
@@ -17,7 +17,7 @@ type (
 
 func NewSimMantle(genesis *compattypes.GenesisDoc, indexers ...types.IndexerRegisterer) *Mantle {
 	return NewMantle(
-		badger.NewBadgerDB(""),
+		leveldb.NewLevelDB(""),
 		genesis,
 		indexers...,
 	)

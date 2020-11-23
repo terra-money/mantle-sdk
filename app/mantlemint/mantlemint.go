@@ -157,7 +157,7 @@ func (mm *MantlemintInstance) Inject(block *types.Block) (*types.BlockState, err
 
 	// patch AppHash of lastState to the current block's last app hash
 	// because we still want to use fauxMerkleTree for speed (way faster this way!)
-	// currentState.AppHash = block.AppHash
+	currentState.AppHash = block.AppHash
 
 	// set new event listener for this round
 	// note that we create new event collector for every block,

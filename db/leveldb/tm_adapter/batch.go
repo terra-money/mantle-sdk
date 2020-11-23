@@ -1,22 +1,21 @@
 package tm_adapter
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 	tmdb "github.com/tendermint/tm-db"
+	"github.com/terra-project/mantle-sdk/db"
 )
 
 type goLevelDBBatch struct {
-	db    *GoLevelDB
-	batch *leveldb.Batch
+	db db.DB
+	batch db.Batch
 }
 
 var _ tmdb.Batch = (*goLevelDBBatch)(nil)
 
-func newGoLevelDBBatch(db *GoLevelDB) *goLevelDBBatch {
+func newGoLevelDBBatch(ldb db.DB) *goLevelDBBatch {
 	return &goLevelDBBatch{
-		db:    db,
-		batch: new(leveldb.Batch),
+		db:    ldb,
+		batch: ldb.Batch(),
 	}
 }
 
@@ -29,7 +28,7 @@ func (b *goLevelDBBatch) assertOpen() {
 // Set implements Batch.
 func (b *goLevelDBBatch) Set(key, value []byte) {
 	b.assertOpen()
-	b.batch.Put(key, value)
+	b.batch.Set(key, value)
 }
 
 // Delete implements Batch.
@@ -49,20 +48,11 @@ func (b *goLevelDBBatch) WriteSync() error {
 }
 
 func (b *goLevelDBBatch) write(sync bool) error {
-	b.assertOpen()
-	err := b.db.db.Write(b.batch, &opt.WriteOptions{Sync: sync})
-	if err != nil {
-		return err
-	}
-	// Make sure batch cannot be used afterwards. Callers should still call Close(), for errors.
-	b.Close()
+	// noop; should be handled by driver global transaction
 	return nil
 }
 
 // Close implements Batch.
 func (b *goLevelDBBatch) Close() {
-	if b.batch != nil {
-		b.batch.Reset()
-		b.batch = nil
-	}
+	// noop; should be handled by driver global transaction
 }

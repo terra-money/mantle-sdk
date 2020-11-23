@@ -4,23 +4,23 @@ import (
 	"bytes"
 	"github.com/syndtr/goleveldb/leveldb"
 	leveldbIterator "github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	tmdb "github.com/tendermint/tm-db"
 	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/db/leveldb/tm_adapter"
+	tmadapter "github.com/terra-project/mantle-sdk/db/leveldb/tm_adapter"
 )
 
 type LevelDB struct {
 	db *leveldb.DB
 	path string
-	cosmosdb *tm_adapter.GoLevelDB
+	gt db.Batch
 }
-
-var maxPKRange = []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 func NewLevelDB(path string) db.DB {
 	dbInstance := &LevelDB{
 		path: path,
+		gt: nil,
 	}
 
 	dbInstance.db = dbInstance.open(path)
@@ -37,19 +37,33 @@ func (ldb *LevelDB) open(path string) *leveldb.DB {
 	return db
 }
 
-func (ldb *LevelDB) Compact() error {
-	// close & reopen db
-	ldb.db.Close()
-	ldb.db = ldb.open(ldb.path)
-	ldb.cosmosdb.SetDB(ldb.db)
+func (ldb *LevelDB) DB() interface{} {
+	return ldb.db
+}
 
-	return nil
+func (ldb *LevelDB) SetCriticalZone() {
+	ldb.gt = ldb.Batch()
+}
+
+func (ldb *LevelDB) ReleaseCriticalZone() error {
+	defer func() {
+		ldb.gt = nil
+	}()
+
+	return ldb.gt.FlushGT()
+}
+
+// Purge safely closes db, ignoring any uncommitted transactions
+func (ldb *LevelDB) Purge(purgeTransaction bool) {
+	if purgeTransaction {
+		ldb.gt.Purge()
+		ldb.ReleaseCriticalZone()
+	}
+	ldb.Close()
 }
 
 func (ldb *LevelDB) GetCosmosAdapter() tmdb.DB {
-	cosmosdb := tm_adapter.NewLevelDBCosmosAdapter(ldb.db)
-	ldb.cosmosdb = cosmosdb
-	return cosmosdb
+	return tmadapter.NewCosmosAdapter(ldb)
 }
 
 func (ldb *LevelDB) GetDB() *leveldb.DB{
@@ -57,15 +71,27 @@ func (ldb *LevelDB) GetDB() *leveldb.DB{
 }
 
 func (ldb *LevelDB) Get(key []byte) ([]byte, error) {
-	return ldb.db.Get(key, nil)
+	if ldb.gt != nil {
+		return ldb.db.Get(key, nil)
+	} else {
+		return ldb.db.Get(key, nil)
+	}
 }
 
 func (ldb *LevelDB) Set(key, data []byte) error {
-	return ldb.db.Put(key, data, nil)
+	if ldb.gt != nil {
+		return ldb.gt.Set(key, data)
+	} else {
+		return ldb.db.Put(key, data, nil)
+	}
 }
 
 func (ldb *LevelDB) Delete(key []byte) error {
-	return ldb.db.Delete(key, nil)
+	if ldb.gt != nil {
+		return ldb.gt.Delete(key)
+	} else {
+		return ldb.db.Delete(key, nil)
+	}
 }
 
 func (ldb *LevelDB) GetSequence(key []byte, bandwidth uint64) (db.Sequence, error) {
@@ -151,9 +177,13 @@ type Batch struct {
 }
 
 func (ldb *LevelDB) Batch() db.Batch {
-	return &Batch{
-		batch: new(leveldb.Batch),
-		db: ldb.db,
+	if ldb.gt != nil {
+		return ldb.gt
+	} else {
+		return &Batch{
+			batch: new(leveldb.Batch),
+			db: ldb.db,
+		}
 	}
 }
 
@@ -168,10 +198,23 @@ func (batch *Batch) Delete(key []byte) error {
 }
 
 func (batch *Batch) Flush() error {
-	return batch.db.Write(batch.batch, nil)
+	// noop; all Flush() calls should be later called with FlushGT
+	return nil
+}
+
+func (batch *Batch) Purge() {
+	batch.batch.Reset()
+}
+
+func (batch *Batch) FlushGT() error {
+	defer batch.batch.Reset()
+	return batch.db.Write(batch.batch, &opt.WriteOptions{
+		NoWriteMerge: false,
+		Sync:         true,
+	})
 }
 
 func (batch *Batch) Close() {
-	// noop
-	// batch.batch.Dump()
+	// noop, batch should never be closed on its own
 }
+

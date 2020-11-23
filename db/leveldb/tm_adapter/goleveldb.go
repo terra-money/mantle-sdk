@@ -1,13 +1,11 @@
 package tm_adapter
 
 import (
-	"fmt"
-	tmdb "github.com/tendermint/tm-db"
-
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	tmdb "github.com/tendermint/tm-db"
+	"github.com/terra-project/mantle-sdk/db"
 )
 
 
@@ -23,17 +21,17 @@ var (
 )
 
 type GoLevelDB struct {
-	db *leveldb.DB
+	db db.DB
 }
 
 var _ tmdb.DB = (*GoLevelDB)(nil)
 
-func NewLevelDBCosmosAdapter(db *leveldb.DB) (*GoLevelDB) {
+func NewCosmosAdapter(db db.DB) *GoLevelDB {
+	_, ok := db.DB().(*leveldb.DB)
+	if !ok {
+		panic("underlying db engine mismatch. expected leveldb.")
+	}
 	return &GoLevelDB{db: db}
-}
-
-func (db *GoLevelDB) SetDB(ldb *leveldb.DB) {
-	db.db = ldb
 }
 
 // Get implements DB.
@@ -41,7 +39,7 @@ func (db *GoLevelDB) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return nil, errKeyEmpty
 	}
-	res, err := db.db.Get(key, nil)
+	res, err := db.db.Get(key)
 	if err != nil {
 		if err == errors.ErrNotFound {
 			return nil, nil
@@ -68,7 +66,7 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 	if value == nil {
 		return errValueNil
 	}
-	if err := db.db.Put(key, value, nil); err != nil {
+	if err := db.db.Set(key, value); err != nil {
 		return err
 	}
 	return nil
@@ -76,16 +74,7 @@ func (db *GoLevelDB) Set(key []byte, value []byte) error {
 
 // SetSync implements DB.
 func (db *GoLevelDB) SetSync(key []byte, value []byte) error {
-	if len(key) == 0 {
-		return errKeyEmpty
-	}
-	if value == nil {
-		return errValueNil
-	}
-	if err := db.db.Put(key, value, &opt.WriteOptions{Sync: true}); err != nil {
-		return err
-	}
-	return nil
+	return db.db.Set(key, value)
 }
 
 // Delete implements DB.
@@ -93,7 +82,7 @@ func (db *GoLevelDB) Delete(key []byte) error {
 	if len(key) == 0 {
 		return errKeyEmpty
 	}
-	if err := db.db.Delete(key, nil); err != nil {
+	if err := db.db.Delete(key); err != nil {
 		return err
 	}
 	return nil
@@ -101,18 +90,7 @@ func (db *GoLevelDB) Delete(key []byte) error {
 
 // DeleteSync implements DB.
 func (db *GoLevelDB) DeleteSync(key []byte) error {
-	if len(key) == 0 {
-		return errKeyEmpty
-	}
-	err := db.db.Delete(key, &opt.WriteOptions{Sync: true})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (db *GoLevelDB) DB() *leveldb.DB {
-	return db.db
+	return db.db.Delete(key)
 }
 
 // Close implements DB.
@@ -125,47 +103,17 @@ func (db *GoLevelDB) Close() error {
 
 // Print implements DB.
 func (db *GoLevelDB) Print() error {
-	str, err := db.db.GetProperty("leveldb.stats")
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%v\n", str)
-
-	itr := db.db.NewIterator(nil, nil)
-	for itr.Next() {
-		key := itr.Key()
-		value := itr.Value()
-		fmt.Printf("[%X]:\t[%X]\n", key, value)
-	}
 	return nil
 }
 
 // Stats implements DB.
 func (db *GoLevelDB) Stats() map[string]string {
-	keys := []string{
-		"leveldb.num-files-at-level{n}",
-		"leveldb.stats",
-		"leveldb.sstables",
-		"leveldb.blockpool",
-		"leveldb.cachedblock",
-		"leveldb.openedtables",
-		"leveldb.alivesnaps",
-		"leveldb.aliveiters",
-	}
-
-	stats := make(map[string]string)
-	for _, key := range keys {
-		str, err := db.db.GetProperty(key)
-		if err == nil {
-			stats[key] = str
-		}
-	}
-	return stats
+	return nil
 }
 
 // NewBatch implements DB.
 func (db *GoLevelDB) NewBatch() tmdb.Batch {
-	return newGoLevelDBBatch(db)
+	return newGoLevelDBBatch(db.db)
 }
 
 // Iterator implements DB.
@@ -173,7 +121,7 @@ func (db *GoLevelDB) Iterator(start, end []byte) (tmdb.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
+	itr := db.db.DB().(*leveldb.DB).NewIterator(&util.Range{Start: start, Limit: end}, nil)
 	return newGoLevelDBIterator(itr, start, end, false), nil
 }
 
@@ -182,6 +130,6 @@ func (db *GoLevelDB) ReverseIterator(start, end []byte) (tmdb.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	itr := db.db.NewIterator(&util.Range{Start: start, Limit: end}, nil)
+	itr := db.db.DB().(*leveldb.DB).NewIterator(&util.Range{Start: start, Limit: end}, nil)
 	return newGoLevelDBIterator(itr, start, end, true), nil
 }

@@ -14,13 +14,12 @@ type DB interface {
 	Batch() Batch
 	GetCosmosAdapter() tmdb.DB
 	GetSequence(key []byte, bandwidth uint64) (Sequence, error)
-	Compact() error
-}
+	Purge(bool)
+	DB() interface{}
 
-type DBwithGlobalTransaction interface {
-	DB
-	SetGlobalTransactionBoundary()
-	FlushGlobalTransactionBoundary() error
+	// Global Transaction
+	SetCriticalZone()
+	ReleaseCriticalZone() error
 }
 
 type Iterator interface {
@@ -36,7 +35,13 @@ type Batch interface {
 	Set(key, data []byte) error
 	Delete(key []byte) error
 	Flush() error
+	FlushGT() error
 	Close()
+	Purge()
+}
+
+type Cache interface {
+	SetInCache(key, data []byte)
 }
 
 type Sequence interface {
