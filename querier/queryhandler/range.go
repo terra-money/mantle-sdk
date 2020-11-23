@@ -87,11 +87,11 @@ func (resolver RangeResolver) Resolve() (QueryHandlerIterator, error) {
 	}
 
 	it := db.IndexIterator(
-		utils.GetReverseSeekKeyFromIndexGroupPrefix(utils.BuildIndexIteratorPrefix(
+		utils.BuildIndexIteratorPrefix(
 			[]byte(entityName),
 			[]byte(indexName),
 			seekKey,
-		)),
+		),
 		resolver.reverse,
 	)
 

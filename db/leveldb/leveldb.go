@@ -8,6 +8,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 	"github.com/terra-project/mantle-sdk/db"
 	"github.com/terra-project/mantle-sdk/db/leveldb/tm_adapter"
+	"github.com/terra-project/mantle-sdk/utils"
 )
 
 type LevelDB struct {
@@ -91,7 +92,8 @@ func (ldb *LevelDB) Iterator(
 
 	// if iterator goes backwards, so start needs to be the biggest of that index start range
 	if reverse {
-		it = ldb.db.NewIterator(&util.Range{Start: nil, Limit: start}, nil)
+		limit := utils.GetReverseSeekKeyFromIndexGroupPrefix(start)
+		it = ldb.db.NewIterator(&util.Range{Start: nil, Limit: limit}, nil)
 		it.Last()
 	} else {
 		it = ldb.db.NewIterator(&util.Range{Start: start, Limit: nil}, nil)
