@@ -1,10 +1,9 @@
 module github.com/terra-project/mantle-sdk
 
-go 1.13
+go 1.15
 
 require (
 	github.com/cosmos/cosmos-sdk v0.39.1
-	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/go-openapi/errors v0.19.6
@@ -27,8 +26,8 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/tendermint v0.33.7
 	github.com/tendermint/tm-db v0.5.2
-	github.com/terra-project/core v0.4.0
-	github.com/terra-project/mantle-compatibility v1.4.0-columbus-4
+	github.com/terra-project/core v0.4.1
+	github.com/terra-project/mantle-compatibility v1.5.2-columbus-4
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
@@ -37,4 +36,4 @@ require (
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
 
-replace github.com/CosmWasm/go-cosmwasm => github.com/terra-project/go-cosmwasm v0.10.2
+replace github.com/CosmWasm/go-cosmwasm => github.com/terra-project/go-cosmwasm v0.10.3

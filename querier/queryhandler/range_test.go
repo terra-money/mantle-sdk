@@ -3,8 +3,8 @@ package queryhandler
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/terra-project/mantle-sdk/committer"
-	"github.com/terra-project/mantle-sdk/db/badger"
 	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-project/mantle-sdk/db/leveldb"
 	"github.com/terra-project/mantle-sdk/utils"
 	"reflect"
 	"testing"
@@ -16,8 +16,8 @@ func TestRangeResolver(t *testing.T) {
 		Bar uint64 `mantle:"index"`
 	}
 
-	db := badger.NewBadgerDB("")
-	kvIndex := kvindex.NewKVIndex(reflect.TypeOf((*TestEntity)(nil)))
+	db := leveldb.NewLevelDB("../test_fixtures")
+	kvIndex, _ := kvindex.NewKVIndex(reflect.TypeOf((*TestEntity)(nil)))
 	entityName := reflect.TypeOf((*TestEntity)(nil)).Elem().Name()
 
 	// range resolver is not created when
