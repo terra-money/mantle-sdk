@@ -90,9 +90,11 @@ func NewSeekResolverIterator(entityName, prefix []byte, it db.Iterator) QueryHan
 func (resolver *SeekResolverIterator) Valid() bool {
 	return resolver.it.Valid(resolver.prefix)
 }
+
 func (resolver *SeekResolverIterator) Next() {
 	resolver.it.Next()
 }
+
 func (resolver *SeekResolverIterator) Key() []byte {
 	return utils.BuildDocumentKey(
 		resolver.entityName,

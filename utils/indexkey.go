@@ -32,9 +32,10 @@ func BuildIndexGroupPrefix(entityName, indexName []byte) []byte {
 }
 
 func GetReverseSeekKeyFromIndexGroupPrefix(key []byte) []byte {
-	copy := key
-	copy[len(copy)-1] = copy[len(copy)-1] + 1
-	return copy
+	s := make([]byte, len(key))
+	copy(s, key)
+	s[len(s)-1] = s[len(s)-1] + 1
+	return s
 }
 
 func BuildIndexIteratorPrefix(entityName, indexName, indexKey []byte) []byte {
