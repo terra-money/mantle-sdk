@@ -104,7 +104,7 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 		res, err := mm.conn.InitChainSync(req)
 
 		log.Printf("initChain finished")
-		log.Printf("\tvalidators: %v", res.Validators)
+		log.Printf("\tvalidators: %v", len(res.Validators))
 		log.Printf("\tconsensusParams: %v", res.ConsensusParams)
 
 		if err != nil {
