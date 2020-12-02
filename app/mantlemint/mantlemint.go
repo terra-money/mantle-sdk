@@ -83,7 +83,7 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 		}
 
 		log.Printf("\tgenesisTime=%v, chainId=%v", genesis.GenesisTime, genesis.ChainID)
-		log.Printf("\tappHash=%v, appState=%v", genesis.AppHash, genesis.AppState)
+		log.Printf("\tappHash=%v", genesis.AppHash)
 
 		validators := make([]*tmtypes.Validator, len(genesis.Validators))
 		for i, val := range genesis.Validators {
