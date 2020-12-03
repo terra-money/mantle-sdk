@@ -64,6 +64,10 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 			var limit = constants.DefaultLimit
 			if customLimit, customLimitExists := args["Limit"]; customLimitExists {
 				limit = customLimit.(int)
+
+				if limit > 500 {
+					limit = 500
+				}
 			}
 
 			if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) || args != nil && len(filteredArgs) > 0 {
