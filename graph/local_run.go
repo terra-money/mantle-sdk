@@ -8,7 +8,13 @@ import (
 	"github.com/graphql-go/graphql/language/source"
 	"github.com/terra-project/mantle-sdk/serdes"
 	"github.com/terra-project/mantle-sdk/types"
+	"sync"
 )
+
+type InternalRunResult struct {
+	Data interface{}
+	Err error
+}
 
 // skip all internal fields
 // msgpack will take care of them..
@@ -26,104 +32,107 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 		for _, e := range validationResult.Errors {
 			errors = append(errors, fmt.Errorf(e.Error()))
 		}
-		return InternalResultInvariant(errors)
+		return internalResultInvariant(errors)
 	}
 
 	fields := p.Schema.QueryType().Fields()
-	resultMap := make(map[string][]byte)
+	gqlRunResult := types.GraphQLInternalResult{
+		Data: make(map[string][]byte),
+		Errors: nil,
+	}
 
-	//
+	// parse out root
 	querySelections := AST.Definitions[0].(*ast.OperationDefinition).SelectionSet.Selections
 
+	// prepare for a parallel resolve
+	// some resolvers might return a thunk, and we need to
+	// wait for them in goroutines to avoid congestion
+	wg := sync.WaitGroup{}
+	wg.Add(len(querySelections))
+
+	//
+	sync := sync.RWMutex{}
+
+	// go
 	for _, selection := range querySelections {
-		switch selection := selection.(type) {
-		case *ast.Field:
-			fieldName := selection.Name
-			fieldConfig := fields[fieldName.Value]
+		go func() {
+			defer wg.Done()
 
-			var variables = make(map[string]interface{})
+			switch selection := selection.(type) {
+			case *ast.Field:
+				fieldName := selection.Name
+				fieldConfig := fields[fieldName.Value]
 
-			// map arguments to query arguments
-			if len(selection.Arguments) > 0 {
-				for _, argument := range selection.Arguments {
-					argumentName := argument.Name.Value
-					switch argumentValue := argument.Value.GetValue().(type) {
-					case ast.Variable:
-						variables[argumentName] = p.VariableValues[argumentValue.Name.Value]
-					default:
-						variables[argumentName] = argumentValue
+				var variables = make(map[string]interface{})
+
+				// map arguments to query arguments
+				if len(selection.Arguments) > 0 {
+					for _, argument := range selection.Arguments {
+						argumentName := argument.Name.Value
+						switch argumentValue := argument.Value.GetValue().(type) {
+						case *ast.Name:
+							variables[argumentName] = p.VariableValues[argumentValue.Value]
+						case ast.Variable:
+							variables[argumentName] = p.VariableValues[argumentValue.Name.Value]
+						default:
+							variables[argumentName] = argumentValue
+						}
 					}
 				}
+
+				rp := graphql.ResolveParams{
+					Source:  source,
+					Args:    variables,
+					Info:    graphql.ResolveInfo{},
+					Context: p.Context,
+				}
+
+				// mutex control
+				sync.Lock()
+				defer sync.Unlock()
+
+				result, err := unthunkResult(fieldConfig.Resolve(rp))
+
+				if err != nil {
+					gqlRunResult.Errors = []error{err}
+					return
+				}
+
+				pack, packErr := serdes.Serialize(nil, result)
+				if packErr != nil {
+					gqlRunResult.Errors = []error{err}
+					return
+				}
+
+				// save
+				gqlRunResult.Data[fieldName.Value] = pack
+				return
+
+			case *ast.FragmentDefinition:
+				// noop yet
 			}
-
-			//args := getArgumentValues(fieldDef.Args, fieldAST.Arguments, eCtx.VariableValues)
-
-			rp := graphql.ResolveParams{
-				Source:  source,
-				Args:    variables,
-				Info:    graphql.ResolveInfo{},
-				Context: p.Context,
-			}
-
-			result, err := fieldConfig.Resolve(rp)
-			if err != nil {
-				return InternalResultInvariant([]error{
-					err,
-				})
-			}
-
-			pack, packErr := serdes.Serialize(nil, result)
-			if packErr != nil {
-				return InternalResultInvariant([]error{
-					packErr,
-				})
-			}
-
-			resultMap[fieldName.Value] = pack
-		case *ast.FragmentDefinition:
-			// noop yet
-		}
+		}()
 	}
 
-	return &types.GraphQLInternalResult{
-		Data: resultMap,
-	}
+	wg.Wait()
+
+	return &gqlRunResult
 }
 
-func InternalResultInvariant(errors []error) *types.GraphQLInternalResult {
+func unthunkResult(result interface{}, err error) (interface{}, error) {
+	thunkFunc, isThunk := result.(func() (interface{}, error))
+
+	// resolved data might be a thunk, run this thunk and wait for the result
+	// in this way, thunk resolve becomes series but that's fine for internal indexing mechanism
+	if !isThunk {
+		return result, err
+	}
+
+	return thunkFunc()
+}
+
+func internalResultInvariant(errors []error) *types.GraphQLInternalResult {
 	return &types.GraphQLInternalResult{
 		Errors: errors,
 	}
 }
-
-//
-//// Prepares an object map of argument values given a list of argument
-//// definitions and list of argument AST nodes.
-//func getArgumentValues(
-//	argDefs []*graphql.Argument, argASTs []*ast.Argument,
-//	variableValues map[string]interface{}) map[string]interface{} {
-//
-//	argASTMap := map[string]*ast.Argument{}
-//	for _, argAST := range argASTs {
-//		if argAST.Name != nil {
-//			argASTMap[argAST.Name.Value] = argAST
-//		}
-//	}
-//	results := map[string]interface{}{}
-//	for _, argDef := range argDefs {
-//		var (
-//			tmp   interface{}
-//			value ast.Value
-//		)
-//		if tmpValue, ok := argASTMap[argDef.PrivateName]; ok {
-//			value = tmpValue.Value
-//		}
-//		if tmp = valueFromAST(value, argDef.Type, variableValues); isNullish(tmp) {
-//			tmp = argDef.DefaultValue
-//		}
-//		if !isNullish(tmp) {
-//			results[argDef.PrivateName] = tmp
-//		}
-//	}
-//	return results
-//}
