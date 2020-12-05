@@ -15,7 +15,6 @@ import (
 	"os/signal"
 	"reflect"
 	"runtime/debug"
-	"sync"
 	"syscall"
 	"time"
 
@@ -41,9 +40,6 @@ type Mantle struct {
 	committerInstance    committer.Committer
 	indexerInstance      *indexer.IndexerBaseInstance
 	db                   db.DB
-
-	// state related
-	syncMutex			sync.Mutex
 }
 
 type SyncConfiguration struct {
@@ -56,6 +52,8 @@ type SyncConfiguration struct {
 
 var (
 	GlobalTerraApp *TerraApp.TerraApp
+	errInvalidBlock = fmt.Errorf("invalid block")
+
 )
 
 func NewMantle(
@@ -308,14 +306,28 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 		}
 	}()
 
-
-	mantle.syncMutex.Lock()
-
-	tStart := time.Now()
+	// check LastResultsHash before we inject block to mantlemint,
+	// this must happen before committing block-1.
+	// - only flush batch for the previous block once this passes
+	// - if validateBasic() fails, mantle inject should return errInvalidBlock,
+	//   triggering force resync from block-1, then resume sync over websocket
+	if validateErr := mantle.mantlemint.ValidateBlock(block); validateErr != nil {
+		log.Printf("!!! block validation failed (%v) -- unwinding block and retry", validateErr)
+		mantle.db.Purge(true)
+		return nil, errInvalidBlock
+	} else {
+		// flush everything to db
+		if flushErr := mantle.db.ReleaseCriticalZone(); flushErr != nil {
+			panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
+		}
+	}
 
 	// set global global_transaction boundary for
 	// tendermint, cosmos, mantle
 	mantle.db.SetCriticalZone()
+
+	// time
+	tStart := time.Now()
 
 	// inject this block
 	blockState, injectErr := mantle.mantlemint.Inject(block)
@@ -326,12 +338,7 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 		return blockState, injectErr
 	}
 
-	// flush everything to db
-	if flushErr := mantle.db.ReleaseCriticalZone(); flushErr != nil {
-		panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
-	}
-	defer mantle.syncMutex.Unlock()
-
+	// time end
 	tEnd := time.Now()
 
 	log.Printf(
@@ -363,8 +370,6 @@ func (mantle *Mantle) gracefulShutdownOnSignal(
 		log.Printf("[mantle] received %v, cleanup...", received.String())
 
 		// wait until inject is cleared
-		log.Printf("[mantle] waiting for any remaining injection to finish...")
-		mantle.syncMutex.Lock()
 		log.Printf("[mantle] attempting graceful shutdown...")
 		callback()
 		log.Printf("[mantle] shutdown done")

@@ -140,6 +140,12 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	return nil
 }
 
+func (mm *MantlemintInstance) ValidateBlock(block *types.Block) error {
+	tempState := mm.lastState.Copy()
+	tempState.AppHash = block.Header.AppHash
+	return mm.executer.ValidateBlock(tempState, block)
+}
+
 func (mm *MantlemintInstance) Inject(block *types.Block) (*types.BlockState, error) {
 	var currentState = mm.lastState
 	var blockID = tmtypes.BlockID{
