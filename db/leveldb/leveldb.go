@@ -51,6 +51,10 @@ func (ldb *LevelDB) ReleaseCriticalZone() error {
 		ldb.gt = nil
 	}()
 
+	if ldb.gt == nil {
+		return nil
+	}
+
 	return ldb.gt.FlushGT()
 }
 
@@ -205,6 +209,7 @@ func (batch *Batch) Flush() error {
 }
 
 func (batch *Batch) Purge() {
+	if batch.batch == nil { return }
 	batch.batch.Reset()
 }
 
