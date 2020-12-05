@@ -2,7 +2,6 @@ package abcistub
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle-sdk/graph"
 	"reflect"
 
 	"github.com/terra-project/mantle-sdk/graph/generate"
@@ -39,18 +38,14 @@ func RegisterABCIQueriers(clientFunc reflect.Value, clientFuncName string, clien
 				argsStruct.Elem().FieldByName(key).Set(reflect.ValueOf(value))
 			}
 
-			return graph.CreateThunk(func() (interface{}, error) {
-				// map[string]interface{} -> struct (as defined in the handler function)
+			result := clientFunc.Call([]reflect.Value{argsStruct})
+			ret, err := result[0], result[1]
 
-				result := clientFunc.Call([]reflect.Value{argsStruct})
-				ret, err := result[0], result[1]
+			if !err.IsNil() {
+				return nil, err.Interface().(error)
+			}
 
-				if !err.IsNil() {
-					return nil, err.Interface().(error)
-				}
-
-				return ret.Elem().FieldByName("Payload").Interface(), nil
-			})
+			return ret.Elem().FieldByName("Payload").Interface(), nil
 		},
 	}, nil
 }
