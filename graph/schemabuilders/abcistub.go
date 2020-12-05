@@ -2,6 +2,7 @@ package schemabuilders
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/graphql-go/graphql"
@@ -13,8 +14,11 @@ import (
 )
 
 func CreateABCIStubSchemaBuilder(app *terra.TerraApp) graph.SchemaBuilder {
+
+	globalQueryMutex := new(sync.Mutex)
+
 	return func(fields *graphql.Fields) error {
-		localClient := compatlocalclient.NewLocalClient(app)
+		localClient := compatlocalclient.NewLocalClient(app, globalQueryMutex)
 		stubTransport, err := abcistub.NewABCIStubTransport(localClient)
 		if err != nil {
 			return err

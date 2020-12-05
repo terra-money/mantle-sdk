@@ -61,7 +61,7 @@ func (tx *TestkitTx) ToTx(signer TestAccount) Tx {
 	)
 	emptyTx.Signatures = []auth.StdSignature{}
 
-	localClient := compatlocalclient.NewLocalClient(app.GlobalTerraApp)
+	localClient := compatlocalclient.NewLocalClient(app.GlobalTerraApp, nil)
 	ctx := context.NewCLIContext().WithClient(localClient).WithCodec(codec)
 	fees, gas, gaserr := authutilsterra.ComputeFeesWithStdTx(
 		ctx,

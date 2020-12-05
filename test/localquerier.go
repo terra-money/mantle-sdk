@@ -11,7 +11,7 @@ type LocalQuerier struct {
 }
 
 func NewLocalQuerier() auth.NodeQuerier {
-	return &LocalQuerier{lc: localclient.NewLocalClient(app.GlobalTerraApp)}
+	return &LocalQuerier{lc: localclient.NewLocalClient(app.GlobalTerraApp, nil)}
 }
 
 func (lc *LocalQuerier) QueryWithData(path string, data []byte) ([]byte, int64, error) {
