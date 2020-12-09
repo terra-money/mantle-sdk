@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"reflect"
 	"runtime/debug"
+	"sync"
 	"syscall"
 	"time"
 
@@ -40,6 +41,7 @@ type Mantle struct {
 	committerInstance    committer.Committer
 	indexerInstance      *indexer.IndexerBaseInstance
 	db                   db.DB
+	m                    *sync.Mutex
 }
 
 type SyncConfiguration struct {
@@ -51,9 +53,8 @@ type SyncConfiguration struct {
 }
 
 var (
-	GlobalTerraApp *TerraApp.TerraApp
+	GlobalTerraApp  *TerraApp.TerraApp
 	errInvalidBlock = fmt.Errorf("invalid block")
-
 )
 
 func NewMantle(
@@ -115,6 +116,7 @@ func NewMantle(
 		committerInstance:    committerInstance,
 		indexerInstance:      indexerInstance,
 		db:                   db,
+		m:                    new(sync.Mutex),
 	}
 
 	// create a signal handler
@@ -248,8 +250,8 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	if connRefused != nil {
 		if configuration.Reconnect {
 			select {
-				case <-time.NewTimer(5 * time.Second).C:
-					mantle.Sync(configuration)
+			case <-time.NewTimer(5 * time.Second).C:
+				mantle.Sync(configuration)
 			}
 			return
 
@@ -300,27 +302,19 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 			log.Printf("!! mantle panicked w/ message: %s", r)
 			debug.PrintStack()
 			log.Print("[mantle] panic during inject, attempting graceful shutdown")
+
+			// if mantle reaches this point, there was a panic during injection.
+			// in such case db access is all gone, it is safe to NOT get a lock.
+			// but doing it, just in case :)
+			mantle.m.Lock() // never unlock
 			mantle.db.Purge(true)
 			log.Print("[mantle] shutdown done")
 			os.Exit(0)
 		}
 	}()
 
-	// check LastResultsHash before we inject block to mantlemint,
-	// this must happen before committing block-1.
-	// - only flush batch for the previous block once this passes
-	// - if validateBasic() fails, mantle inject should return errInvalidBlock,
-	//   triggering force resync from block-1, then resume sync over websocket
-	if validateErr := mantle.mantlemint.ValidateBlock(block); validateErr != nil {
-		log.Printf("!!! block validation failed (%v) -- unwinding block and retry", validateErr)
-		mantle.db.Purge(true)
-		return nil, errInvalidBlock
-	} else {
-		// flush everything to db
-		if flushErr := mantle.db.ReleaseCriticalZone(); flushErr != nil {
-			panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
-		}
-	}
+	mantle.m.Lock()
+	defer mantle.m.Unlock()
 
 	// set global global_transaction boundary for
 	// tendermint, cosmos, mantle
@@ -331,6 +325,10 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 
 	// inject this block
 	blockState, injectErr := mantle.mantlemint.Inject(block)
+
+	// flush to db after injection is done
+	// never call this in defer, as in panic cases we need to be able to revert this commit
+	mantle.db.ReleaseCriticalZone()
 
 	// if injection was successful,
 	// flush all to disk
@@ -366,11 +364,11 @@ func (mantle *Mantle) gracefulShutdownOnSignal(
 	)
 
 	go func() {
-		received := <- sig
+		received := <-sig
 		log.Printf("[mantle] received %v, cleanup...", received.String())
-
 		// wait until inject is cleared
 		log.Printf("[mantle] attempting graceful shutdown...")
+		mantle.m.Lock() // never unlock
 		callback()
 		log.Printf("[mantle] shutdown done")
 		os.Exit(0)
