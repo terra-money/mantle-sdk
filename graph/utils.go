@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"encoding/json"
 	"github.com/terra-project/mantle-sdk/serdes"
 	"github.com/terra-project/mantle-sdk/types"
 	"reflect"
@@ -14,11 +15,18 @@ func UnmarshalInternalQueryResult(result *types.GraphQLInternalResult, target in
 		targetField := targetValue.FieldByName(key)
 		targetCache := reflect.New(targetField.Type())
 
-		if unpackErr := serdes.Deserialize(targetField.Type(), packBytes, targetCache.Interface()); unpackErr != nil {
-			return unpackErr
+		if packBytes[0] == 196 {
+			if err := json.Unmarshal(packBytes[2:], targetCache.Interface()); err != nil {
+				return err
+			}
+		} else {
+			if unpackErr := serdes.Deserialize(targetField.Type(), packBytes, targetCache.Interface()); unpackErr != nil {
+				return unpackErr
+			}
 		}
 
 		targetField.Set(targetCache.Elem())
+
 	}
 
 	return nil
@@ -27,8 +35,9 @@ func UnmarshalInternalQueryResult(result *types.GraphQLInternalResult, target in
 type Thunk func() (interface{}, error)
 type ThunkResult struct {
 	data interface{}
-	err error
+	err  error
 }
+
 func CreateThunk(thunk Thunk) (func() (interface{}, error), error) {
 	ch := make(chan *ThunkResult, 1)
 
@@ -48,7 +57,6 @@ func CreateThunk(thunk Thunk) (func() (interface{}, error), error) {
 	}, nil
 }
 
-
 func CreateParallel(len int) *parallelExecutionContext {
 	wg := &sync.WaitGroup{}
 	wg.Add(len)
@@ -62,17 +70,17 @@ func CreateParallel(len int) *parallelExecutionContext {
 
 type parallelExecutionContext struct {
 	sync.RWMutex
-	idx int64
-	wg *sync.WaitGroup
-	result []ParallelExecutionResult
+	idx         int64
+	wg          *sync.WaitGroup
+	result      []ParallelExecutionResult
 	errorExists bool
-	done bool
+	done        bool
 }
 
 type ParallelExecutionFunc func() (interface{}, error)
 type ParallelExecutionResult struct {
 	Result interface{}
-	Error error
+	Error  error
 }
 
 func (pec *parallelExecutionContext) Run(f ParallelExecutionFunc) {
@@ -92,10 +100,10 @@ func (pec *parallelExecutionContext) Run(f ParallelExecutionFunc) {
 		pec.RWMutex.Lock()
 		var result ParallelExecutionResult
 		if e != nil {
-			result = ParallelExecutionResult{ Error: e }
+			result = ParallelExecutionResult{Error: e}
 			pec.errorExists = true
 		} else {
-			result = ParallelExecutionResult{ Result: r }
+			result = ParallelExecutionResult{Result: r}
 		}
 
 		pec.result[i] = result
