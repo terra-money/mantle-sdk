@@ -2,7 +2,6 @@ package subscriber
 
 import (
 	"encoding/json"
-	"fmt"
 	websocket "github.com/gorilla/websocket"
 	types "github.com/terra-project/mantle-sdk/types"
 	"github.com/terra-project/mantle-sdk/utils"
@@ -119,8 +118,6 @@ func (c *RPCSubscription) receiveBlockEvents(autoReconnect bool) {
 		// if read message failed,
 		// scrap the whole ws thing
 		if err != nil {
-			fmt.Println("here??")
-
 			closeErr := c.Close()
 			if closeErr != nil {
 				log.Print("websocket close failed, but it seems the underlying websocket is already closed")
