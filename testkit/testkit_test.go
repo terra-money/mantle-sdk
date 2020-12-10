@@ -5,6 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/terra-project/core/x/bank"
 	"github.com/terra-project/mantle-sdk/app"
+	"github.com/terra-project/mantle-sdk/app/mantlemint"
 	"github.com/terra-project/mantle-sdk/db/leveldb"
 	"github.com/terra-project/mantle-sdk/types"
 	"testing"
@@ -32,6 +33,8 @@ func TestTeskit(t *testing.T) {
 	db := leveldb.NewLevelDB("test")
 	mantle := app.NewMantle(db, gendoc)
 
+	mantle.SetBlockExecutor(mantlemint.NewSimBlockExecutor(db.GetCosmosAdapter(), mantle.GetApp()))
+
 	//
 	tk := NewTestkitContext(
 		mantle,
@@ -43,6 +46,86 @@ func TestTeskit(t *testing.T) {
 	var blockState *types.BlockState
 	var err error
 	tk.Inject(tk.PickProposerByIndex(0))
+
+	// add to testkit mempool
+	tk.AddToMempool(NewSignedTx(
+		[]sdk.Msg{bank.NewMsgSend(
+			a1.GetAddress(),
+			a2.GetAddress(),
+			sdk.NewCoins(sdk.NewCoin("uluna", sdk.NewInt(10000000))),
+		)},
+		tg.GetKeybase(),
+		"test1",
+		"testkit",
+		mantle.GetApp(),
+	))
+
+	//
+	blockState, err = tk.Inject(tk.PickProposerByIndex(0))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(blockState)
+
+	// add to testkit mempool
+	tk.AddToMempool(NewSignedTx(
+		[]sdk.Msg{bank.NewMsgSend(
+			a1.GetAddress(),
+			a2.GetAddress(),
+			sdk.NewCoins(sdk.NewCoin("uluna", sdk.NewInt(10000000))),
+		)},
+		tg.GetKeybase(),
+		"test1",
+		"testkit",
+		mantle.GetApp(),
+	))
+
+	//
+	blockState, err = tk.Inject(tk.PickProposerByIndex(0))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(blockState)
+
+	// add to testkit mempool
+	tk.AddToMempool(NewSignedTx(
+		[]sdk.Msg{bank.NewMsgSend(
+			a1.GetAddress(),
+			a2.GetAddress(),
+			sdk.NewCoins(sdk.NewCoin("uluna", sdk.NewInt(10000000))),
+		)},
+		tg.GetKeybase(),
+		"test1",
+		"testkit",
+		mantle.GetApp(),
+	))
+
+	//
+	blockState, err = tk.Inject(tk.PickProposerByIndex(0))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(blockState)
+
+	// add to testkit mempool
+	tk.AddToMempool(NewSignedTx(
+		[]sdk.Msg{bank.NewMsgSend(
+			a1.GetAddress(),
+			a2.GetAddress(),
+			sdk.NewCoins(sdk.NewCoin("uluna", sdk.NewInt(10000000))),
+		)},
+		tg.GetKeybase(),
+		"test1",
+		"testkit",
+		mantle.GetApp(),
+	))
+
+	//
+	blockState, err = tk.Inject(tk.PickProposerByIndex(0))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(blockState)
 
 	// add to testkit mempool
 	tk.AddToMempool(NewSignedTx(
