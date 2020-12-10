@@ -9,6 +9,7 @@ import (
 	compatapp "github.com/terra-project/mantle-compatibility/app"
 	"github.com/terra-project/mantle-sdk/app/mantlemint"
 	"github.com/terra-project/mantle-sdk/app/middlewares"
+	"github.com/terra-project/mantle-sdk/graph/generate"
 	"github.com/terra-project/mantle-sdk/utils"
 	"log"
 	"os"
@@ -51,9 +52,7 @@ type SyncConfiguration struct {
 }
 
 var (
-	GlobalTerraApp *TerraApp.TerraApp
 	errInvalidBlock = fmt.Errorf("invalid block")
-
 )
 
 func NewMantle(
@@ -66,7 +65,6 @@ func NewMantle(
 	// create new terra app with postgres-patched KVStore
 	tmdb := db.GetCosmosAdapter()
 	terraApp := compatapp.NewTerraApp(tmdb)
-	GlobalTerraApp = terraApp
 
 	// gather outputs of indexer registry
 	registry := reg.NewRegistry(indexers)
@@ -150,6 +148,14 @@ func NewMantle(
 	return mantleApp
 }
 
+func (mantle *Mantle) GetApp() *TerraApp.TerraApp {
+	return mantle.app
+}
+
+func (mantle *Mantle) SetBlockExecutor(be mantlemint.MantlemintExecutor) {
+	mantle.mantlemint.SetBlockExecutor(be)
+}
+
 func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
 	var block = mantle.mantlemint.GetCurrentBlock()
 	var height = block.Header.Height
@@ -193,7 +199,7 @@ func (mantle *Mantle) indexerLifecycle(responses state.ABCIResponses) {
 	}
 }
 
-func (mantle *Mantle) QuerySync(configuration SyncConfiguration, currentBlockHeight int64) {
+func (mantle *Mantle) querySync(configuration SyncConfiguration, currentBlockHeight int64) {
 	log.Println("Local blockchain is behind, syncing previous blocks...")
 	remoteBlock, err := subscriber.GetBlock(fmt.Sprintf("http://%s/block", configuration.TendermintEndpoint))
 
@@ -248,8 +254,8 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 	if connRefused != nil {
 		if configuration.Reconnect {
 			select {
-				case <-time.NewTimer(5 * time.Second).C:
-					mantle.Sync(configuration)
+			case <-time.NewTimer(5 * time.Second).C:
+				mantle.Sync(configuration)
 			}
 			return
 
@@ -273,7 +279,7 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 
 			if block.Header.Height-lastBlockHeight != 1 {
 				log.Printf("lastBlockHeight=%v, remoteBlockHeight=%v\n", lastBlockHeight, block.Header.Height)
-				mantle.QuerySync(configuration, lastBlockHeight)
+				mantle.querySync(configuration, lastBlockHeight)
 			} else {
 				if _, err := mantle.Inject(&block); err != nil {
 					// if OnInjectError is set,
@@ -305,22 +311,22 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 			os.Exit(0)
 		}
 	}()
-
-	// check LastResultsHash before we inject block to mantlemint,
-	// this must happen before committing block-1.
-	// - only flush batch for the previous block once this passes
-	// - if validateBasic() fails, mantle inject should return errInvalidBlock,
-	//   triggering force resync from block-1, then resume sync over websocket
-	if validateErr := mantle.mantlemint.ValidateBlock(block); validateErr != nil {
-		log.Printf("!!! block validation failed (%v) -- unwinding block and retry", validateErr)
-		mantle.db.Purge(true)
-		return nil, errInvalidBlock
-	} else {
-		// flush everything to db
-		if flushErr := mantle.db.ReleaseCriticalZone(); flushErr != nil {
-			panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
-		}
-	}
+	//
+	// // check LastResultsHash before we inject block to mantlemint,
+	// // this must happen before committing block-1.
+	// // - only flush batch for the previous block once this passes
+	// // - if validateBasic() fails, mantle inject should return errInvalidBlock,
+	// //   triggering force resync from block-1, then resume sync over websocket
+	// if validateErr := mantle.mantlemint.ValidateBlock(block); validateErr != nil {
+	// 	log.Printf("!!! block validation failed (%v) -- unwinding block and retry", validateErr)
+	// 	mantle.db.Purge(true)
+	// 	return nil, errInvalidBlock
+	// } else {
+	// 	// flush everything to db
+	// 	if flushErr := mantle.db.ReleaseCriticalZone(); flushErr != nil {
+	// 		panic(fmt.Errorf("mantle could not commit to db, error=%v", flushErr))
+	// 	}
+	// }
 
 	// set global global_transaction boundary for
 	// tendermint, cosmos, mantle
@@ -338,6 +344,8 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 		return blockState, injectErr
 	}
 
+	mantle.db.ReleaseCriticalZone()
+
 	// time end
 	tEnd := time.Now()
 
@@ -350,8 +358,36 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 	return blockState, injectErr
 }
 
+func (mantle *Mantle) LocalQuery(query interface{}, variables types.GraphQLParams) error {
+	qs := generate.GenerateQuery(query, variables)
+	res := mantle.gqlInstance.QueryInternal(
+		qs,
+		variables,
+		nil,
+	)
+
+	resCasted, ok := res.(*types.GraphQLInternalResult)
+	if !ok {
+		return fmt.Errorf("wrong type")
+	}
+
+	return graph.UnmarshalInternalQueryResult(resCasted, query)
+}
+
 func (mantle *Mantle) ExportStates() map[string]interface{} {
 	return mantle.depsResolverInstance.GetState()
+}
+
+func (mantle *Mantle) GetLastState() state.State {
+	return mantle.mantlemint.GetCurrentState()
+}
+
+func (mantle *Mantle) GetLastHeight() int64 {
+	return mantle.mantlemint.GetCurrentHeight()
+}
+
+func (mantle *Mantle) GetLastBlock() *types.Block {
+	return mantle.mantlemint.GetCurrentBlock()
 }
 
 func (mantle *Mantle) gracefulShutdownOnSignal(
@@ -366,7 +402,7 @@ func (mantle *Mantle) gracefulShutdownOnSignal(
 	)
 
 	go func() {
-		received := <- sig
+		received := <-sig
 		log.Printf("[mantle] received %v, cleanup...", received.String())
 
 		// wait until inject is cleared
