@@ -14,6 +14,8 @@ import (
 	"log"
 )
 
+var _ Mantlemint = (*MantlemintInstance)(nil)
+
 var (
 	errNoBlock = "block is never injected"
 )
@@ -23,7 +25,7 @@ type MantlemintInstance struct {
 	lastState  state.State
 	lastHeight int64
 	lastBlock  *types.Block
-	executer   *state.BlockExecutor
+	executor   MantlemintExecutor
 	conn       abcicli.Client
 	db         tmdb.DB
 }
@@ -43,7 +45,7 @@ func NewMantlemint(
 	// here we go!
 	return &MantlemintInstance{
 		// subsystem
-		executer: NewMantlemintExecuter(db, conn),
+		executor: NewMantlemintExecutor(db, conn),
 		db:       db,
 		conn:     conn,
 
@@ -70,7 +72,6 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	// loaded state has LastBlockHeight 0,
 	// meaning chain was never initialized
 	// run genesis
-
 	log.Printf("genesisTime=%v, chainId=%v", genesis.GenesisTime, genesis.ChainID)
 
 	if mm.lastState.IsEmpty() {
@@ -140,12 +141,6 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	return nil
 }
 
-func (mm *MantlemintInstance) ValidateBlock(block *types.Block) error {
-	tempState := mm.lastState.Copy()
-	tempState.AppHash = block.Header.AppHash
-	return mm.executer.ValidateBlock(tempState, block)
-}
-
 func (mm *MantlemintInstance) Inject(block *types.Block) (*types.BlockState, error) {
 	var currentState = mm.lastState
 	var blockID = tmtypes.BlockID{
@@ -169,10 +164,10 @@ func (mm *MantlemintInstance) Inject(block *types.Block) (*types.BlockState, err
 	// note that we create new event collector for every block,
 	// however this operation is quite cheap.
 	ev := NewMantlemintEventCollector()
-	mm.executer.SetEventBus(ev)
+	mm.executor.SetEventBus(ev)
 
 	// process blocks
-	if nextState, retainHeight, err = mm.executer.ApplyBlock(currentState, blockID, block); err != nil {
+	if nextState, retainHeight, err = mm.executor.ApplyBlock(currentState, blockID, block); err != nil {
 		return nil, err
 	}
 
@@ -194,4 +189,12 @@ func (mm *MantlemintInstance) GetCurrentBlock() *types.Block {
 	}
 
 	return mm.lastBlock
+}
+
+func (mm *MantlemintInstance) GetCurrentState() state.State {
+	return mm.lastState
+}
+
+func (mm *MantlemintInstance) SetBlockExecutor(nextBlockExecutor MantlemintExecutor) {
+	mm.executor = nextBlockExecutor
 }

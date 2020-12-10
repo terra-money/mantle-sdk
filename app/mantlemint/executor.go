@@ -11,7 +11,20 @@ import (
 	"sync"
 )
 
-func NewMantlemintExecuter(
+func NewMantlemintExecutor(
+	db tmdb.DB,
+	AppConn abcicli.Client,
+) *state.BlockExecutor {
+	return state.NewBlockExecutor(
+		db,
+		log.NewTMLogger(ioutil.Discard),
+		AppConn,
+		mock.Mempool{},           // no mempool
+		state.MockEvidencePool{}, // no evidence pool
+	)
+}
+
+func NewMantlemintSimulationExecutor(
 	db tmdb.DB,
 	AppConn abcicli.Client,
 ) *state.BlockExecutor {

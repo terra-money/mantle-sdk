@@ -22,6 +22,7 @@ func (ev *EventCollector) GetBlockState() *types.BlockState {
 func (ev *EventCollector) PublishEventNewBlock(
 	block tmtypes.EventDataNewBlock,
 ) error {
+	ev.blockState.Height = block.Block.Height
 	ev.blockState.Block = utils.ConvertBlockToRawBlock(block.Block)
 	ev.blockState.ResponseBeginBlock = block.ResultBeginBlock
 	ev.blockState.ResponseEndBlock = block.ResultEndBlock
