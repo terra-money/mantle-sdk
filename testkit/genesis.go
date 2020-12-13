@@ -69,6 +69,12 @@ func (tg *TestkitGenesis) AddAccount(accountName string) (info keys.Info, seed s
 	if tg.isSealed {
 		panic("genesis sealed")
 	}
+
+	_, err := tg.kb.Get(accountName)
+	if err == nil {
+		panic(fmt.Errorf("can't re-add account %s", accountName))
+	}
+
 	i, seed, err := tg.kb.CreateMnemonic(
 		accountName,
 		keys.English,
@@ -221,8 +227,21 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 	return gendoc
 }
 
+func (tg *TestkitGenesis) GetAccounts() []TestkitAccount {
+	return tg.accounts
+}
+
 func (tg *TestkitGenesis) GetValidators() []TestkitGenesisAccountToPrivValMap {
 	return tg.validatorMap
+}
+
+func (tg *TestkitGenesis) GetValidatorAddrs() []sdk.ValAddress {
+	addrs := make([]sdk.ValAddress, len(tg.validatorMap))
+	for i, v := range tg.validatorMap {
+		addrs[i] = v.Account
+	}
+
+	return addrs
 }
 
 func (tg *TestkitGenesis) GetKeybase() keys.Keybase {

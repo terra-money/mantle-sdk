@@ -1,7 +1,6 @@
 package testkit
 
 import (
-	"fmt"
 	"github.com/tendermint/tendermint/state"
 	tm "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/mantle-sdk/types"
@@ -97,8 +96,6 @@ func (vc *ValidatorContext) Propose(
 		block.LastCommitHash = block.LastCommit.Hash()
 		block.LastBlockID = state.LastBlockID
 	}
-
-	fmt.Println(string(codec.MustMarshalJSON(block)))
 
 	vc.lastCommitSigs = signatures
 
