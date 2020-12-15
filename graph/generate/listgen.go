@@ -115,8 +115,10 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				pctx := graph.CreateParallel(len(filteredArgs))
 
 				for indexKey, indexParam := range filteredArgs {
+					k := indexKey
+					v := indexParam
 					pctx.Run(func() (interface{}, error) {
-						queryResolver, err := q.Build(entityName, indexKey, indexParam)
+						queryResolver, err := q.Build(entityName, k, v)
 						if err != nil {
 							return nil, err
 						}
