@@ -155,7 +155,7 @@ func (mantle *Mantle) GetApp() *TerraApp.TerraApp {
 	return mantle.app
 }
 
-func (mantle *Mantle) SetBlockExecutor(be mantlemint.MantlemintExecutor) {
+func (mantle *Mantle) SetBlockExecutor(be mantlemint.MantlemintExecutorCreator) {
 	mantle.mantlemint.SetBlockExecutor(be)
 }
 

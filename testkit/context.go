@@ -65,6 +65,8 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 	// prep block for injection
 	blockToInject := nextBlock.Finalize()
 
+	ctx.db.SetCriticalZone()
+
 	// propose block
 	proposedBlock := ctx.vc.Propose(proposer, ctx.mantle.GetLastState(), blockToInject)
 

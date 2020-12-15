@@ -45,8 +45,7 @@ func (middleware *IndexerMiddleware) BeginBlockAsync(req abci.RequestBeginBlock)
 }
 
 func (middleware *IndexerMiddleware) DeliverTxSync(req abci.RequestDeliverTx) (*abci.ResponseDeliverTx, error) {
-	invariant()
-	return nil, nil
+	return middleware.Client.DeliverTxSync(req)
 }
 
 func (middleware *IndexerMiddleware) DeliverTxAsync(req abci.RequestDeliverTx) *abcicli.ReqRes {

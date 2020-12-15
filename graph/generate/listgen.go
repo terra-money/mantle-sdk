@@ -70,6 +70,8 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 				}
 			}
 
+			fmt.Println(filteredArgs)
+
 			if p.Context.Value(utils.ImmediateResolveFlagKey).(bool) || args != nil && len(filteredArgs) > 0 {
 				// query
 				q := p.Context.Value(utils.QuerierKey).(querier.Querier)

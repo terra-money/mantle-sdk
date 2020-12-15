@@ -33,7 +33,7 @@ func TestTeskit(t *testing.T) {
 	db := leveldb.NewLevelDB("test")
 	mantle := app.NewMantle(db, gendoc)
 
-	mantle.SetBlockExecutor(mantlemint.NewSimBlockExecutor(db.GetCosmosAdapter(), mantle.GetApp()))
+	mantle.SetBlockExecutor(mantlemint.NewSimBlockExecutor)
 
 	//
 	tk := NewTestkitContext(

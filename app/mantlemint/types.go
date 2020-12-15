@@ -4,6 +4,7 @@ import (
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	"github.com/tendermint/tendermint/state"
 	tmtypes "github.com/tendermint/tendermint/types"
+	db "github.com/tendermint/tm-db"
 	"github.com/terra-project/mantle-sdk/types"
 )
 
@@ -13,12 +14,14 @@ type Mantlemint interface {
 	GetCurrentHeight() int64
 	GetCurrentBlock() *types.Block
 	GetCurrentState() state.State
-	SetBlockExecutor(executor MantlemintExecutor)
+	SetBlockExecutor(executorCreator MantlemintExecutorCreator)
 }
 
 type MantlemintExecutor interface {
 	ApplyBlock(state.State, tmtypes.BlockID, *types.Block) (state.State, int64, error)
 	SetEventBus(publisher tmtypes.BlockEventPublisher)
 }
+
+type MantlemintExecutorCreator func(db db.DB, app abcicli.Client) MantlemintExecutor
 
 type Middleware func(conn abcicli.Client) abcicli.Client

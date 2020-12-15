@@ -169,7 +169,7 @@ func handleSeal(ctx *TestkitRPCContext, router *mux.Router) http.HandlerFunc {
 		)
 
 		// setup for simulation
-		mantle.SetBlockExecutor(mantlemint.NewSimBlockExecutor(db.GetCosmosAdapter(), mantle.GetApp()))
+		mantle.SetBlockExecutor(mantlemint.NewSimBlockExecutor)
 		mantle.Server(1337)
 
 		// create local client for lcd works
