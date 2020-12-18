@@ -13,8 +13,9 @@ var localQuerier auth.NodeQuerier
 // only use this for fixed testing, there is no fee estimation going on
 func NewSignedTx(
 	msgs []sdk.Msg,
-	keybase keys.Keybase,
+	fee auth.StdFee,
 	signerAccountName string,
+	keybase keys.Keybase,
 	chainId string,
 	terraApp *TerraApp.TerraApp,
 ) auth.StdTx {
@@ -34,7 +35,7 @@ func NewSignedTx(
 		false,
 		chainId,
 		"",
-		sdk.NewCoins(sdk.NewCoin("uluna", sdk.NewInt(1000000))),
+		fee.Amount,
 		nil,
 	).WithKeybase(keybase)
 
@@ -43,7 +44,7 @@ func NewSignedTx(
 		defaultPassphrase,
 		auth.NewStdTx(
 			msgs,
-			auth.NewStdFee(10000000, sdk.NewCoins(sdk.NewCoin("uluna", sdk.NewInt(1000000)))),
+			fee,
 			nil,
 			"",
 		),

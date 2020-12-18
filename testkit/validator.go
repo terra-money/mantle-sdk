@@ -91,7 +91,6 @@ func (vc *ValidatorContext) Propose(
 	}
 
 	// make signatures for them
-
 	if block.Height > 1 {
 		block.LastCommitHash = block.LastCommit.Hash()
 		block.LastBlockID = state.LastBlockID

@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	rpc.StartRPCServer(11317, new(rpc.TestkitRPCContext))
+	rpc.StartRPCServer(11317, rpc.NewTestkitRPCContext())
 }

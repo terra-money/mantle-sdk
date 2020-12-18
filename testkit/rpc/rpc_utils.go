@@ -3,10 +3,14 @@ package rpc
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
+	"math/rand"
 	"net/http"
+	"runtime/debug"
 	"sync"
+	"time"
 )
 
 func MustMarshalJSON(v interface{}) json.RawMessage {
@@ -39,6 +43,9 @@ func PanicToErrorMiddleware() mux.MiddlewareFunc {
 					})
 					response.Error = err.Error()
 
+					debug.PrintStack()
+					fmt.Println(response.Error)
+
 					http.Error(w, string(MustMarshalJSON(response)), http.StatusBadRequest)
 				}
 			}()
@@ -60,30 +67,17 @@ func CreateMutexMiddleware(m *sync.Mutex) mux.MiddlewareFunc {
 	}
 }
 
-func FailIfGenesisNotInitializedMiddleware(ctx *TestkitRPCContext) mux.MiddlewareFunc {
+func MonitorIncomingRequestsMiddleware() mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if ctx.tg == nil {
-				response := new(struct {
-					Error string `json:"error"`
-				})
-
-				response.Error = "genesis not initialized yet"
-				http.Error(w, string(MustMarshalJSON(response)), http.StatusBadRequest)
-				return
-			}
+			log.Printf("[mantle/testkit-rpc] incoming requests %s %s\n", r.Method, r.RequestURI)
 
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-func MonitorIncomingRequestsMiddleware() mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("[mantle/testkit-rpc] incoming requests %s\n", r.RequestURI)
-
-			next.ServeHTTP(w, r)
-		})
-	}
+func GenerateTestkitIdentifier(chainId string) string {
+	rand.Seed(time.Now().Unix())
+	return fmt.Sprintf("%s_%d", chainId, rand.Intn(int(time.Now().Unix())))
 }

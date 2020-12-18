@@ -6,16 +6,18 @@ import (
 	"github.com/gorilla/mux"
 	tm "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/core/x/auth"
+	"github.com/terra-project/mantle-sdk/testkit"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
 func handleTxInject(ctx *TestkitRPCContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if ctx.tc == nil {
-			panic("testkit is not started yet")
-			return
+		vars := mux.Vars(r)
+		ctxId, ok := vars["ctxId"]
+
+		if !ok {
+			panic("invalid ctxId")
 		}
 
 		var req struct {
@@ -35,18 +37,38 @@ func handleTxInject(ctx *TestkitRPCContext) http.HandlerFunc {
 			return
 		}
 
-		ctx.tc.AddToMempool(req.Tx)
-
-		response := new(struct {
-			Height string `json:'height'`
-			TxHash string `json:"txhash"`
-		})
-
+		// log
 		txHash := tm.Tx(codec.MustMarshalBinaryLengthPrefixed(req.Tx)).Hash()
-		log.Printf("[mantle/testkit-rpc/tx] mempool tx (%X)\n", txHash)
 
+		blockState, injectionErr := ctx.GetContext(ctxId).AddToMempool(req.Tx)
+
+		if injectionErr != nil {
+			panic(injectionErr)
+		}
+
+		txResult := blockState.ResponseDeliverTx[0]
+		response := new(struct {
+			Height    string              `json:"height"`
+			TxHash    string              `json:"txhash"`
+			RawLog    string              `json:"raw_log"`
+			Log       sdk.ABCIMessageLogs `json:"logs"`
+			GasWanted int64               `json:"string,gas_wanted"`
+			GasUsed   int64               `json:"string,gas_used"`
+			Code      uint32              `json:"code"`
+			Codespace string              `json:"codespace"`
+			Tx        auth.StdTx          `json:"tx"`
+		})
 		response.TxHash = fmt.Sprintf("%X", txHash)
-		response.Height = fmt.Sprintf("%d", ctx.mantle.GetLastState().LastBlockHeight+1)
+		response.Height = fmt.Sprintf("%d", ctx.GetContext(ctxId).GetMantle().GetLastState().LastBlockHeight+1)
+		response.RawLog = txResult.GetLog()
+		response.GasWanted = txResult.GetGasWanted()
+		response.GasUsed = txResult.GetGasUsed()
+		response.Code = txResult.GetCode()
+		response.Codespace = txResult.GetCodespace()
+		response.Tx = req.Tx
+
+		parsedLogs, _ := sdk.ParseABCILogs(txResult.Log)
+		response.Log = parsedLogs
 
 		w.WriteHeader(http.StatusOK)
 		w.Write(MustMarshalJSON(response))
@@ -56,12 +78,13 @@ func handleTxInject(ctx *TestkitRPCContext) http.HandlerFunc {
 
 func handleBlockPropose(ctx *TestkitRPCContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if ctx.tc == nil {
-			panic("testkit is not started yet")
-			return
+		vars := mux.Vars(r)
+		ctxId, ok := vars["ctxId"]
+
+		if !ok {
+			panic("invalid ctxId")
 		}
 
-		vars := mux.Vars(r)
 		valAddr, ok := vars["validatorAddress"]
 		if !ok {
 			panic("validatorAddress not given")
@@ -73,10 +96,10 @@ func handleBlockPropose(ctx *TestkitRPCContext) http.HandlerFunc {
 			panic("invalid validator address")
 		}
 
-		validatorPriv := ctx.tc.PickProposerByAddress(val)
+		validatorPriv := ctx.GetContext(ctxId).PickProposerByAddress(val)
 
 		// inject!
-		blockState, injectErr := ctx.tc.Inject(validatorPriv)
+		blockState, injectErr := ctx.GetContext(ctxId).Inject(validatorPriv)
 		if injectErr != nil {
 			panic(injectErr.Error())
 			return
@@ -87,5 +110,36 @@ func handleBlockPropose(ctx *TestkitRPCContext) http.HandlerFunc {
 		w.Write(response)
 
 		return
+	}
+}
+
+func handleAutoTxRegister(ctx *TestkitRPCContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		ctxId, _ := vars["ctxId"]
+
+		// read body
+		autoTxRequest := AutomaticTxRequest{}
+		bz, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			panic(err)
+		}
+		if err := codec.UnmarshalJSON(bz, &autoTxRequest); err != nil {
+			panic(err)
+		}
+
+		entry := testkit.NewAutomaticTxEntry(
+			autoTxRequest.AccountName,
+			autoTxRequest.Fee,
+			autoTxRequest.Msgs,
+			autoTxRequest.Period,
+		)
+
+		tctx := ctx.GetContext(ctxId)
+		tctx.AddAutomaticTxEntry(entry)
+
+		w.WriteHeader(200)
+		w.Write(MustMarshalJSON(entry))
 	}
 }

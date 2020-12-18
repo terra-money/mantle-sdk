@@ -1,6 +1,7 @@
 package testkit
 
 import (
+	"encoding/json"
 	"fmt"
 	ckeys "github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
@@ -33,10 +34,11 @@ type TestkitGenesis struct {
 	genesis           *tm.GenesisDoc
 	isSealed          bool
 	accounts          []TestkitAccount
-	genesisAccounts   []cauth.GenesisAccount
 	genesisValidators []auth.StdTx
 	validatorMap      []TestkitGenesisAccountToPrivValMap
 	kb                keys.Keybase
+
+	hdAccount uint64
 }
 
 var ZeroCommission = types.NewCommissionRates(sdk.NewDec(0), sdk.NewDec(1), sdk.NewDec(1))
@@ -54,10 +56,10 @@ func NewTestkitGenesis(chainId string) *TestkitGenesis {
 		genesis:           nil,
 		isSealed:          false,
 		accounts:          make([]TestkitAccount, 0),
-		genesisAccounts:   []cauth.GenesisAccount{},
 		genesisValidators: []auth.StdTx{},
 		validatorMap:      []TestkitGenesisAccountToPrivValMap{},
 		kb:                ckeys.NewInMemoryKeyBase(),
+		hdAccount:         0,
 	}
 }
 
@@ -65,7 +67,8 @@ func (tg *TestkitGenesis) IsSealed() bool {
 	return tg.isSealed
 }
 
-func (tg *TestkitGenesis) AddAccount(accountName string) (info keys.Info, seed string) {
+// AddAccount creates new account from aan account name
+func (tg *TestkitGenesis) AddAccount(accountName string) (keys.Info, string) {
 	if tg.isSealed {
 		panic("genesis sealed")
 	}
@@ -90,9 +93,34 @@ func (tg *TestkitGenesis) AddAccount(accountName string) (info keys.Info, seed s
 		Address:  i.GetAddress().String(),
 		Mnemonic: seed,
 	})
-	tg.genesisAccounts = append(tg.genesisAccounts)
 
 	return i, seed
+}
+
+// ImportAccount imports account from provided account name and mnemonic
+func (tg *TestkitGenesis) ImportAccount(accountName string, seed string) (keys.Info, string) {
+	if tg.isSealed {
+		panic("genesis sealed")
+	}
+
+	info, err := tg.kb.CreateAccount(
+		accountName,
+		seed,
+		keys.DefaultBIP39Passphrase,
+		defaultPassphrase,
+		keys.CreateHDPath(0, 0).String(),
+		keys.Secp256k1,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	tg.accounts = append(tg.accounts, TestkitAccount{
+		Address:  info.GetAddress().String(),
+		Mnemonic: seed,
+	})
+
+	return info, seed
 }
 
 func (tg *TestkitGenesis) CreateValidator(
@@ -176,8 +204,18 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 	if tg.isSealed {
 		panic("genesis sealed")
 	}
-	// create default genesis
-	genesis := app.ModuleBasics.DefaultGenesis()
+
+	// create default genesis if TestkitGenesis is not created from
+	// NewGenesisFromFile.
+	// else reuse appstate from existing genesis
+	var appState map[string]json.RawMessage
+	if tg.genesis == nil {
+		appState = app.ModuleBasics.DefaultGenesis()
+	} else {
+		tempAppState := make(map[string]json.RawMessage)
+		json.Unmarshal(tg.genesis.AppState, &tempAppState)
+		appState = tempAppState
+	}
 
 	// turn accounts into genesis accounts
 	genesisAccounts := make([]cauth.GenesisAccount, len(tg.accounts))
@@ -187,9 +225,6 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 		acc.Coins = sdk.NewCoins(
 			sdk.NewCoin("uluna", sdk.NewInt(100000000000000)),
 			sdk.NewCoin("uusd", sdk.NewInt(100000000000000)),
-			sdk.NewCoin("ukrw", sdk.NewInt(100000000000000)),
-			sdk.NewCoin("umnt", sdk.NewInt(100000000000000)),
-			sdk.NewCoin("usdr", sdk.NewInt(100000000000000)),
 		)
 
 		genesisAccounts[gi] = &acc
@@ -197,14 +232,14 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 
 	authDefaultState := cauthtypes.DefaultGenesisState()
 	authDefaultState.Accounts = genesisAccounts
-	genesis["auth"] = codec.MustMarshalJSON(authDefaultState)
+	appState["auth"] = codec.MustMarshalJSON(authDefaultState)
 
 	// genutil
 	genutilDefaultState := genutil.NewGenesisStateFromStdTx(tg.genesisValidators)
-	genesis["genutil"] = codec.MustMarshalJSON(genutilDefaultState)
+	appState["genutil"] = codec.MustMarshalJSON(genutilDefaultState)
 
 	// json marshal the whole thing
-	genesisState, err := codec.MarshalJSON(genesis)
+	genesisState, err := codec.MarshalJSON(appState)
 
 	if err != nil {
 		panic(err)
@@ -224,7 +259,16 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 		panic(gendocErr)
 	}
 
+	tg.genesis = gendoc
+
 	return gendoc
+}
+
+func (tg *TestkitGenesis) GetGenesisDoc() *tm.GenesisDoc {
+	if !tg.isSealed {
+		panic("genesis cannot be fetched before seal")
+	}
+	return tg.genesis
 }
 
 func (tg *TestkitGenesis) GetAccounts() []TestkitAccount {
