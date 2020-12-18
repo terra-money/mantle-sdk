@@ -1,7 +1,6 @@
 package testkit
 
 import (
-	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tm "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/core/x/auth"
@@ -113,7 +112,6 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 		atxCopy := atx
 
 		go func() {
-			fmt.Println("wtf?????", index, atxCopy.Msgs)
 			txs[index] = NewSignedTx(
 				atxCopy.Msgs,
 				atxCopy.Fee,
@@ -143,8 +141,6 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 
 	// let mantle inject; return blockState
 	blockState, err := ctx.mantle.Inject(proposedBlock)
-
-	fmt.Println(string(codec.MustMarshalJSON(blockState)))
 
 	ctx.ClearMempool()
 
