@@ -134,6 +134,8 @@ func handleAutoTxRegister(ctx *TestkitRPCContext) http.HandlerFunc {
 			autoTxRequest.Fee,
 			autoTxRequest.Msgs,
 			autoTxRequest.Period,
+			autoTxRequest.Offset,
+			autoTxRequest.StartAt,
 		)
 
 		tctx := ctx.GetContext(ctxId)

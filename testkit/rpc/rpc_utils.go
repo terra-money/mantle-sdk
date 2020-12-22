@@ -70,7 +70,7 @@ func CreateMutexMiddleware(m *sync.Mutex) mux.MiddlewareFunc {
 func MonitorIncomingRequestsMiddleware() mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("[mantle/testkit-rpc] incoming requests %s %s\n", r.Method, r.RequestURI)
+			log.Printf("[mantle/testkit-rpc] incoming request %s %s\n", r.Method, r.RequestURI)
 
 			next.ServeHTTP(w, r)
 		})

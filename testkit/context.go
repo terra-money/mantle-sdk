@@ -1,6 +1,7 @@
 package testkit
 
 import (
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tm "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/core/x/auth"
@@ -80,7 +81,7 @@ func (ctx *TestkitContext) AddToMempool(tx types.StdTx) (*types.BlockState, erro
 	ctx.mempool = append(ctx.mempool, tx)
 	ctx.m.Unlock()
 
-	// if auto injection is enabled, to injection as well
+	// if auto injection is enabled, run injection as well
 	if ctx.autoInjection.isEnabled {
 		proposer := ctx.autoInjection.NextProposer()
 		return ctx.Inject(ctx.PickProposerByAddress(proposer))
@@ -108,6 +109,16 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 
 	txs := make([]auth.StdTx, len(ctx.autoTxs))
 	for i, atx := range ctx.autoTxs {
+		// skip if atx period is not met
+		currentHeight := nextBlock.nextBlock.Header.Height
+		atxStartedAt := atx.StartedAt
+
+		if (currentHeight-atxStartedAt)%int64(atx.Period) != 0 {
+			m.Done()
+			continue
+		}
+
+		// otherwise lets go
 		index := i
 		atxCopy := atx
 
@@ -128,6 +139,9 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 	m.Wait()
 
 	for _, tx := range txs {
+		if len(tx.Msgs) == 0 {
+			continue
+		}
 		nextBlock.WithTx(tx)
 	}
 
@@ -141,6 +155,8 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 
 	// let mantle inject; return blockState
 	blockState, err := ctx.mantle.Inject(proposedBlock)
+
+	fmt.Println(string(codec.MustMarshalJSON(blockState)))
 
 	ctx.ClearMempool()
 

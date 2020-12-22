@@ -34,6 +34,8 @@ type AutomaticTxRequest struct {
 	Period      int         `json:"period"`
 	Msgs        []sdk.Msg   `json:"msgs"`
 	Fee         auth.StdFee `json:"fee"`
+	Offset      int64       `json:"offset"`
+	StartAt     int64       `json:"start_at"`
 }
 
 type AutomaticInjectRequest struct {
@@ -122,6 +124,8 @@ func initTestkit(ctx *TestkitRPCContext, req Request, router *mux.Router) Respon
 			autoTxRequest.Fee,
 			autoTxRequest.Msgs,
 			autoTxRequest.Period,
+			autoTxRequest.Offset,
+			autoTxRequest.StartAt,
 		)
 
 		tctx.AddAutomaticTxEntry(entry)

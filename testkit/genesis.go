@@ -225,6 +225,9 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 		acc.Coins = sdk.NewCoins(
 			sdk.NewCoin("uluna", sdk.NewInt(100000000000000)),
 			sdk.NewCoin("uusd", sdk.NewInt(100000000000000)),
+			sdk.NewCoin("ukrw", sdk.NewInt(100000000000000)),
+			sdk.NewCoin("usdr", sdk.NewInt(100000000000000)),
+			sdk.NewCoin("umnt", sdk.NewInt(100000000000000)),
 		)
 
 		genesisAccounts[gi] = &acc
