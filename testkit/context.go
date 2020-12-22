@@ -1,13 +1,13 @@
 package testkit
 
 import (
-	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tm "github.com/tendermint/tendermint/types"
 	"github.com/terra-project/core/x/auth"
 	"github.com/terra-project/mantle-sdk/app"
 	"github.com/terra-project/mantle-sdk/db"
 	"github.com/terra-project/mantle-sdk/types"
+	"log"
 	"sync"
 )
 
@@ -113,6 +113,13 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 		currentHeight := nextBlock.nextBlock.Header.Height
 		atxStartedAt := atx.StartedAt
 
+		// skip if startedAt is not met
+		if currentHeight < atxStartedAt {
+			m.Done()
+			continue
+		}
+
+		// period check
 		if (currentHeight-atxStartedAt)%int64(atx.Period) != 0 {
 			m.Done()
 			continue
@@ -148,6 +155,8 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 	// prep block for injection
 	blockToInject := nextBlock.Finalize()
 
+	log.Printf("[mantle/testkit/context] injecting block %d with %d txs", blockToInject.Height, len(blockToInject.Txs))
+
 	ctx.db.SetCriticalZone()
 
 	// propose block
@@ -155,8 +164,6 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 
 	// let mantle inject; return blockState
 	blockState, err := ctx.mantle.Inject(proposedBlock)
-
-	fmt.Println(string(codec.MustMarshalJSON(blockState)))
 
 	ctx.ClearMempool()
 
