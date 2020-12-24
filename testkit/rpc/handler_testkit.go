@@ -145,3 +145,31 @@ func handleAutoTxRegister(ctx *TestkitRPCContext) http.HandlerFunc {
 		w.Write(MustMarshalJSON(entry))
 	}
 }
+
+func handleAutoTxPauseRegister(ctx *TestkitRPCContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		ctxId, _ := vars["ctxId"]
+
+		// read body
+		req := AutomaticTxPauseRequest{}
+		bz, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			panic(err)
+		}
+		if err := codec.UnmarshalJSON(bz, &req); err != nil {
+			panic(err)
+		}
+
+		entry := testkit.NewAutomaticTxPauseEntry(
+			req.AccountName,
+		)
+
+		tctx := ctx.GetContext(ctxId)
+		tctx.AddAutomaticTxPauseEntry(entry)
+
+		w.WriteHeader(200)
+		w.Write(MustMarshalJSON(entry))
+	}
+}

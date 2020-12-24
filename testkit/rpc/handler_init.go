@@ -38,6 +38,10 @@ type AutomaticTxRequest struct {
 	StartAt     int64       `json:"start_at"`
 }
 
+type AutomaticTxPauseRequest struct {
+	AccountName string `json:"account_name"`
+}
+
 type AutomaticInjectRequest struct {
 	ValidatorRounds []string `json:"validator_rounds"`
 }

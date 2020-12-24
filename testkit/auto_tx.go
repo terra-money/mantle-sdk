@@ -31,3 +31,15 @@ func NewAutomaticTxEntry(
 		StartedAt:   startAt,
 	}
 }
+
+type AutomaticTxPauseEntry struct {
+	AccountName string
+}
+
+func NewAutomaticTxPauseEntry(
+	accountName string,
+) AutomaticTxPauseEntry {
+	return AutomaticTxPauseEntry{
+		AccountName: accountName,
+	}
+}

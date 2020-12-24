@@ -17,4 +17,5 @@ func RegisterTestkitRPC(
 	// manual injection
 	r.HandleFunc("/{ctxId}/inject/{validatorAddress}", handleBlockPropose(ctx)).Methods("POST")
 	r.HandleFunc("/{ctxId}/register_auto_tx", handleAutoTxRegister(ctx)).Methods("POST")
+	r.HandleFunc("/{ctxId}/register_auto_tx_pause", handleAutoTxPauseRegister(ctx)).Methods("POST")
 }

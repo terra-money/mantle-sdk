@@ -22,6 +22,7 @@ type TestkitContext struct {
 	db         db.DB
 
 	autoTxs       []AutomaticTxEntry
+	autoTxPauses  []*AutomaticTxPauseEntry
 	autoInjection *AutomaticInjection
 }
 
@@ -108,7 +109,22 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 	m.Add(len(ctx.autoTxs))
 
 	txs := make([]auth.StdTx, len(ctx.autoTxs))
+
 	for i, atx := range ctx.autoTxs {
+		// skip if pause entry is present
+		var skipAtx = false
+		for _, atpx := range ctx.autoTxPauses {
+			if atpx.AccountName == atx.AccountName {
+				skipAtx = true
+			}
+		}
+
+		if skipAtx {
+			log.Printf("[mantle/testkit/context] skipping atx for accountName %s\n", atx.AccountName)
+			m.Done()
+			continue
+		}
+
 		// skip if atx period is not met
 		currentHeight := nextBlock.nextBlock.Header.Height
 		atxStartedAt := atx.StartedAt
@@ -140,8 +156,10 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 			)
 			m.Done()
 		}()
-
 	}
+
+	// remove atxPause entries
+	ctx.autoTxPauses = make([]*AutomaticTxPauseEntry, 0)
 
 	m.Wait()
 
