@@ -14,12 +14,7 @@ import (
 )
 
 func MustMarshalJSON(v interface{}) json.RawMessage {
-	r, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-
-	return r
+	return codec.MustMarshalJSON(v)
 }
 
 func PanicToErrorMiddleware() mux.MiddlewareFunc {

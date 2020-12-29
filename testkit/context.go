@@ -22,7 +22,6 @@ type TestkitContext struct {
 	db         db.DB
 
 	autoTxs       []AutomaticTxEntry
-	autoTxPauses  []*AutomaticTxPauseEntry
 	autoInjection *AutomaticInjection
 }
 
@@ -84,15 +83,15 @@ func (ctx *TestkitContext) AddToMempool(tx types.StdTx) (*types.BlockState, erro
 
 	// if auto injection is enabled, run injection as well
 	if ctx.autoInjection.isEnabled {
-		proposer := ctx.autoInjection.NextProposer()
-		return ctx.Inject(ctx.PickProposerByAddress(proposer))
+		return ctx.Inject()
 	}
 
 	// if manual mode, return nil
 	return nil, nil
 }
 
-func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState, error) {
+func (ctx *TestkitContext) Inject() (*types.BlockState, error) {
+	proposer := ctx.PickProposerByAddress(ctx.autoInjection.NextProposer())
 	lastState := ctx.mantle.GetLastState()
 
 	// create block according to the last block
@@ -103,63 +102,61 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 		nextBlock = nextBlock.WithTx(tx)
 	}
 
-	// any auto tx? put them in block
-	// run them in parallel
-	m := new(sync.WaitGroup)
-	m.Add(len(ctx.autoTxs))
+	// create txbldrs
+	txbldrs := make([]auth.TxBuilder, len(ctx.autoTxs))
+	asa := NewAccountSequenceAdjuster(ctx.GetMantle().GetApp())
+	defer asa.Purge()
 
-	txs := make([]auth.StdTx, len(ctx.autoTxs))
-
+	// create txbuilders according to atx
 	for i, atx := range ctx.autoTxs {
-		// skip if pause entry is present
-		var skipAtx = false
-		for _, atpx := range ctx.autoTxPauses {
-			if atpx.AccountName == atx.AccountName {
-				skipAtx = true
-			}
-		}
-
-		if skipAtx {
-			log.Printf("[mantle/testkit/context] skipping atx for accountName %s\n", atx.AccountName)
-			m.Done()
-			continue
-		}
-
 		// skip if atx period is not met
 		currentHeight := nextBlock.nextBlock.Header.Height
 		atxStartedAt := atx.StartedAt
 
 		// skip if startedAt is not met
 		if currentHeight < atxStartedAt {
-			m.Done()
 			continue
 		}
 
 		// period check
 		if (currentHeight-atxStartedAt)%int64(atx.Period) != 0 {
-			m.Done()
 			continue
 		}
 
 		// otherwise lets go
+		signerKey, err := ctx.tg.GetKeybase().Get(atx.AccountName)
+		if err != nil {
+			panic(err)
+		}
+		nextAcc := asa.GetNextSequence(signerKey.GetAddress())
+
+		txbldrs[i] = NewTxBldr(
+			atx.Fee,
+			ctx.tg.GetKeybase(),
+			ctx.tg.chainId,
+			nextAcc,
+		)
+	}
+
+	// sign all txbuilders in parallel
+	m := new(sync.WaitGroup)
+	m.Add(len(ctx.autoTxs))
+	txs := make([]auth.StdTx, len(ctx.autoTxs))
+	for i, txbldr := range txbldrs {
 		index := i
-		atxCopy := atx
+		atx := ctx.autoTxs[index]
+		txbldrCopy := txbldr
+
+		if txbldrCopy.ChainID() == "" {
+			m.Done()
+			continue
+		}
 
 		go func() {
-			txs[index] = NewSignedTx(
-				atxCopy.Msgs,
-				atxCopy.Fee,
-				atxCopy.AccountName,
-				ctx.tg.GetKeybase(),
-				ctx.tg.chainId,
-				ctx.mantle.GetApp(),
-			)
+			txs[index] = SignTxBldr(txbldrCopy, atx.AccountName, atx.Msgs, atx.Fee)
 			m.Done()
 		}()
 	}
-
-	// remove atxPause entries
-	ctx.autoTxPauses = make([]*AutomaticTxPauseEntry, 0)
 
 	m.Wait()
 
@@ -174,6 +171,7 @@ func (ctx *TestkitContext) Inject(proposer tm.PrivValidator) (*types.BlockState,
 	blockToInject := nextBlock.Finalize()
 
 	log.Printf("[mantle/testkit/context] injecting block %d with %d txs", blockToInject.Height, len(blockToInject.Txs))
+	log.Printf("[mantle/testkit/context]\twith %d automatic txs\n", len(txs))
 
 	ctx.db.SetCriticalZone()
 

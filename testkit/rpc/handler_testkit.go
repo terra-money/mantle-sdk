@@ -85,31 +85,15 @@ func handleBlockPropose(ctx *TestkitRPCContext) http.HandlerFunc {
 			panic("invalid ctxId")
 		}
 
-		valAddr, ok := vars["validatorAddress"]
-		if !ok {
-			panic("validatorAddress not given")
-			return
-		}
-
-		val, err := sdk.ValAddressFromBech32(valAddr)
-		if err != nil {
-			panic("invalid validator address")
-		}
-
-		validatorPriv := ctx.GetContext(ctxId).PickProposerByAddress(val)
-
 		// inject!
-		blockState, injectErr := ctx.GetContext(ctxId).Inject(validatorPriv)
+		blockState, injectErr := ctx.GetContext(ctxId).Inject()
 		if injectErr != nil {
 			panic(injectErr.Error())
 			return
 		}
 
-		response := codec.MustMarshalJSON(blockState)
 		w.WriteHeader(http.StatusOK)
-		w.Write(response)
-
-		return
+		w.Write(codec.MustMarshalJSON(blockState))
 	}
 }
 
@@ -142,34 +126,46 @@ func handleAutoTxRegister(ctx *TestkitRPCContext) http.HandlerFunc {
 		tctx.AddAutomaticTxEntry(entry)
 
 		w.WriteHeader(200)
-		w.Write(MustMarshalJSON(entry))
+		w.Write(codec.MustMarshalJSON(entry))
 	}
 }
 
-func handleAutoTxPauseRegister(ctx *TestkitRPCContext) http.HandlerFunc {
+func handleAutoTxGet(ctx *TestkitRPCContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		ctxId, _ := vars["ctxId"]
 
-		// read body
-		req := AutomaticTxPauseRequest{}
-		bz, err := ioutil.ReadAll(r.Body)
-
-		if err != nil {
-			panic(err)
-		}
-		if err := codec.UnmarshalJSON(bz, &req); err != nil {
-			panic(err)
-		}
-
-		entry := testkit.NewAutomaticTxPauseEntry(
-			req.AccountName,
-		)
-
-		tctx := ctx.GetContext(ctxId)
-		tctx.AddAutomaticTxPauseEntry(entry)
+		entries := ctx.GetContext(ctxId).GetAutomaticTxEntries()
 
 		w.WriteHeader(200)
-		w.Write(MustMarshalJSON(entry))
+		w.Write(codec.MustMarshalJSON(entries))
+	}
+}
+
+func handleAutoTxClearAll(ctx *TestkitRPCContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		ctxId, _ := vars["ctxId"]
+
+		ctx.GetContext(ctxId).ClearAllAutomaticTxEntries()
+
+		w.WriteHeader(200)
+	}
+}
+
+func handleAutoTxClear(ctx *TestkitRPCContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		ctxId, _ := vars["ctxId"]
+		atxId, ok := vars["atxId"]
+
+		if !ok {
+			fmt.Println("wtf??")
+			panic("automatic tx id is not provided")
+		}
+
+		ctx.GetContext(ctxId).ClearAutomaticTxEntry(atxId)
+
+		w.WriteHeader(200)
 	}
 }

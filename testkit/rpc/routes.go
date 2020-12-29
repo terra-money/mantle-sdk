@@ -15,7 +15,9 @@ func RegisterTestkitRPC(
 	r.HandleFunc("/{ctxId}/txs", handleTxInject(ctx)).Methods("POST")
 
 	// manual injection
-	r.HandleFunc("/{ctxId}/inject/{validatorAddress}", handleBlockPropose(ctx)).Methods("POST")
-	r.HandleFunc("/{ctxId}/register_auto_tx", handleAutoTxRegister(ctx)).Methods("POST")
-	r.HandleFunc("/{ctxId}/register_auto_tx_pause", handleAutoTxPauseRegister(ctx)).Methods("POST")
+	r.HandleFunc("/{ctxId}/inject", handleBlockPropose(ctx)).Methods("POST")
+	r.HandleFunc("/{ctxId}/automatic_tx", handleAutoTxGet(ctx)).Methods("GET")
+	r.HandleFunc("/{ctxId}/automatic_tx", handleAutoTxRegister(ctx)).Methods("POST")
+	r.HandleFunc("/{ctxId}/automatic_tx", handleAutoTxClearAll(ctx)).Methods("DELETE")      // register
+	r.HandleFunc("/{ctxId}/automatic_tx/{atxId}", handleAutoTxClear(ctx)).Methods("DELETE") // delete
 }
