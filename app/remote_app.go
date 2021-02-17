@@ -44,7 +44,7 @@ func NewRemoteMantle(
 ) (mantleApp *RemoteMantle) {
 
 	registry := reg.NewRegistry(indexers)
-	remoteDepsResolver := depsresolver.NewRemoteDepsResolver()
+	remoteDepsResolver := depsresolver.NewDepsResolver()
 
 	querierInstance := querier.NewQuerier(db, registry.KVIndexMap)
 
