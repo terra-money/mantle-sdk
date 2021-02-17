@@ -3,7 +3,7 @@ package generate
 import (
 	"bytes"
 	"fmt"
-	"github.com/terra-project/mantle-sdk/graph/scalars"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 	"io"
 	"reflect"
 	"sort"
@@ -95,7 +95,7 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 		writeQuery(w, t.Elem(), false)
 	case reflect.Struct:
 		// do not expand cosmos sdk scalar types
-		_, isScalar := scalars.IsCosmosScalar(t)
+		_, isScalar := graph_types.IsCosmosScalar(t)
 		if isScalar {
 			return
 		}

@@ -1,4 +1,4 @@
-package scalars
+package graph_types
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 
 var scalars = make(map[reflect.Type]ScalarGeneratorPair)
 
-// here defined are the list of known cosmos-sdk scalars.
+// here defined are the list of known cosmos-sdk graph_types.
 // when generating gql query or schema, we need to check if each
 // leaf value implements these interfaces,
 // and if so, the returned gql scalar type __must__ be used.

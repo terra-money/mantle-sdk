@@ -3,15 +3,15 @@ package proxy_resolver
 import (
 	"fmt"
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle-sdk/graph/scalars"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 )
 
 func GetGraphQLOutputType(outputType Type, definitions Definitions) graphql.Output {
 	switch outputType.Kind {
-	// graphql-native scalars + custom scalars
+	// graphql-native graph_types + custom graph_types
 	case "SCALAR":
 		switch outputType.Name {
-		// take care of all graphql-native scalars
+		// take care of all graphql-native graph_types
 		case "Int":
 			return graphql.Int
 		case "Float":
@@ -32,7 +32,7 @@ func GetGraphQLOutputType(outputType Type, definitions Definitions) graphql.Outp
 			if !ok {
 				panic(errNoName(outputType.Name))
 			}
-			cosmosScalar := scalars.GetCosmosScalarByName(outputName)
+			cosmosScalar := graph_types.GetCosmosScalarByName(outputName)
 
 			// if name is unknown, mantle can't handle it. panic here
 			if cosmosScalar == nil {

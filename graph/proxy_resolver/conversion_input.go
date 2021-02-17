@@ -3,16 +3,16 @@ package proxy_resolver
 import (
 	"fmt"
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle-sdk/graph/scalars"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 )
 
 func GetGraphQLInputType(argType *Input, definitions Definitions) graphql.Input {
 
 	switch argType.Kind {
-	// graphql-native scalars + custom scalars
+	// graphql-native graph_types + custom graph_types
 	case "SCALAR":
 		switch argType.Name {
-		// take care of all graphql-native scalars
+		// take care of all graphql-native graph_types
 		case "Int":
 			return graphql.Int
 		case "Float":
@@ -27,7 +27,7 @@ func GetGraphQLInputType(argType *Input, definitions Definitions) graphql.Input 
 			return graphql.DateTime
 		// check cosmos-scalar map
 		default:
-			cosmosScalar := scalars.GetCosmosScalarByName(argType.Name)
+			cosmosScalar := graph_types.GetCosmosScalarByName(argType.Name)
 
 			// if name is unknown, mantle can't handle it. panic here
 			if cosmosScalar == nil {
@@ -47,6 +47,11 @@ func GetGraphQLInputType(argType *Input, definitions Definitions) graphql.Input 
 
 	case "ENUM":
 		underlyingType := mustGetUnderlyingInputType(argType, definitions)
+
+		if pervasive := graph_types.GetMantlePervasiveByName(underlyingType.Name); pervasive != nil {
+			return pervasive
+		}
+
 		enumValues := underlyingType.EnumValues
 		enumValueConfigMap := graphql.EnumValueConfigMap{}
 
