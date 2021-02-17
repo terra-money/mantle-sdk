@@ -63,8 +63,8 @@ func (server *RemoteGraphQLInstance) QueryInternal(
 	gqlQuery string,
 	variables types.GraphQLParams,
 	dependencies []types.Model,
-) types.GraphQLResult {
-	log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
+) *graphql.Result {
+	log.Printf("[graphql] InternalQuery\tq=%s,v=%v", gqlQuery, variables)
 	params := graphql.Params{
 		Schema:         server.schema,
 		RequestString:  gqlQuery,
@@ -78,6 +78,5 @@ func (server *RemoteGraphQLInstance) QueryInternal(
 			ToContext(),
 	}
 
-	// unresolved dependency are to be handled in resolver functions
-	return InternalGQLRun(params)
+	return graphql.Do(params)
 }

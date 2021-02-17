@@ -68,8 +68,6 @@ func CreateRemoteModelSchemaBuilder(baseMantleEndpoint string) graph.SchemaBuild
 						return nil, errInvalidContext
 					}
 
-					fmt.Println(p.Info.Path, p.Info.Operation)
-
 					selection, isSelectionOk := p.Info.Path.Key.(string)
 					if !isSelectionOk {
 						selection = name

@@ -3,9 +3,10 @@ package graph
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/graphql-go/graphql"
+	"github.com/mitchellh/mapstructure"
 	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,24 +14,38 @@ import (
 	"sync"
 )
 
-func UnmarshalInternalQueryResult(result *types.GraphQLInternalResult, target interface{}) error {
+// TODO: remove me
+func UnmarshalInternalQueryResult(result *graphql.Result, target interface{}) error {
 	targetValue := reflect.Indirect(reflect.ValueOf(target))
+	data, isDataMap := result.Data.(map[string]interface{})
+	if !isDataMap {
+		return fmt.Errorf("internal gql resulted in non-map data")
+	}
 
-	for key, packBytes := range result.Data {
+	for key, pb := range data {
 		targetField := targetValue.FieldByName(key)
 		targetCache := reflect.New(targetField.Type())
 
-		if packBytes[0] == 196 {
-			if err := json.Unmarshal(packBytes[2:], targetCache.Interface()); err != nil {
-				return err
+		switch d := pb.(type) {
+		case []byte:
+			// amino or serdes bytes
+			if d[0] == 196 {
+				if err := json.Unmarshal(d[2:], targetCache.Interface()); err != nil {
+					return err
+				}
+			} else {
+				if unpackErr := serdes.Deserialize(targetField.Type(), d, targetCache.Interface()); unpackErr != nil {
+					return unpackErr
+				}
 			}
-		} else {
-			if unpackErr := serdes.Deserialize(targetField.Type(), packBytes, targetCache.Interface()); unpackErr != nil {
-				return unpackErr
-			}
-		}
+			targetField.Set(targetCache.Elem())
 
-		targetField.Set(targetCache.Elem())
+		default:
+			// TODO: FIX ME
+			// map -> struct
+			mapstructure.Decode(d, targetCache.Interface())
+			targetField.Set(targetCache.Elem())
+		}
 	}
 
 	return nil

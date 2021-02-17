@@ -68,7 +68,7 @@ func (server *GraphQLInstance) QueryInternal(
 	gqlQuery string,
 	variables types.GraphQLParams,
 	dependencies []types.Model,
-) types.GraphQLResult {
+) *graphql.Result {
 	log.Printf("[graphql] Query\tq=%s,v=%v", gqlQuery, variables)
 	params := graphql.Params{
 		Schema:         server.schema,
