@@ -21,7 +21,6 @@ import (
 	"github.com/terra-project/mantle-sdk/lcd/client/slashing"
 	"github.com/terra-project/mantle-sdk/lcd/client/staking"
 	"github.com/terra-project/mantle-sdk/lcd/client/supply"
-	"github.com/terra-project/mantle-sdk/lcd/client/tendermint_rpc"
 	"github.com/terra-project/mantle-sdk/lcd/client/transactions"
 	"github.com/terra-project/mantle-sdk/lcd/client/treasury"
 	"github.com/terra-project/mantle-sdk/lcd/client/wasm"
@@ -80,7 +79,6 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Client {
 	cli.Slashing = slashing.New(transport, formats)
 	cli.Staking = staking.New(transport, formats)
 	cli.Supply = supply.New(transport, formats)
-	cli.TendermintRPC = tendermint_rpc.New(transport, formats)
 	cli.Transactions = transactions.New(transport, formats)
 	cli.Treasury = treasury.New(transport, formats)
 	cli.Wasm = wasm.New(transport, formats)
@@ -150,8 +148,6 @@ type Client struct {
 
 	Supply supply.ClientService
 
-	TendermintRPC tendermint_rpc.ClientService
-
 	Transactions transactions.ClientService
 
 	Treasury treasury.ClientService
@@ -175,7 +171,6 @@ func (c *Client) SetTransport(transport runtime.ClientTransport) {
 	c.Slashing.SetTransport(transport)
 	c.Staking.SetTransport(transport)
 	c.Supply.SetTransport(transport)
-	c.TendermintRPC.SetTransport(transport)
 	c.Transactions.SetTransport(transport)
 	c.Treasury.SetTransport(transport)
 	c.Wasm.SetTransport(transport)
