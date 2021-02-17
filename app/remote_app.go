@@ -13,6 +13,7 @@ import (
 	reg "github.com/terra-project/mantle-sdk/registry"
 	"github.com/terra-project/mantle-sdk/types"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -111,6 +112,9 @@ func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
 			continue
 		}
 
+		// time
+		tStart := time.Now()
+
 		rmantle.indexerInstance.RunIndexerRound()
 		indexerOutputs := rmantle.depsResolverInstance.GetState()
 
@@ -129,6 +133,15 @@ func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
 		if commitErr := rmantle.committerInstance.Commit(currentHeight, commitTargets...); commitErr != nil {
 			panic(commitErr)
 		}
+
+		// time end
+		tEnd := time.Now()
+
+		log.Printf(
+			"[mantle] Indexing finished for block(%d), processed in %dms",
+			currentHeight,
+			tEnd.Sub(tStart).Milliseconds(),
+		)
 
 		// release db lock
 		releaseErr := rmantle.db.ReleaseCriticalZone()
