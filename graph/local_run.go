@@ -13,10 +13,10 @@ import (
 
 type InternalRunResult struct {
 	Data interface{}
-	Err error
+	Err  error
 }
 
-// skip all internal fields
+// skip all proxy_resolver fields
 // msgpack will take care of them..
 func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 	source := source.NewSource(&source.Source{
@@ -37,7 +37,7 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 
 	fields := p.Schema.QueryType().Fields()
 	gqlRunResult := types.GraphQLInternalResult{
-		Data: make(map[string][]byte),
+		Data:   make(map[string][]byte),
 		Errors: nil,
 	}
 
@@ -123,7 +123,7 @@ func unthunkResult(result interface{}, err error) (interface{}, error) {
 	thunkFunc, isThunk := result.(func() (interface{}, error))
 
 	// resolved data might be a thunk, run this thunk and wait for the result
-	// in this way, thunk resolve becomes series but that's fine for internal indexing mechanism
+	// in this way, thunk resolve becomes series but that's fine for proxy_resolver indexing mechanism
 	if !isThunk {
 		return result, err
 	}

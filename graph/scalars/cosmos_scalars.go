@@ -1,4 +1,4 @@
-package generate
+package scalars
 
 import (
 	"encoding/json"
@@ -26,6 +26,18 @@ func IsCosmosScalar(leafType reflect.Type) (*graphql.Scalar, bool) {
 	return nil, false
 }
 
+// GetCosmosScalarByName returns cosmos scalar by name
+func GetCosmosScalarByName(scalarName string) *graphql.Scalar {
+	for _, scalar := range lists {
+		if scalar.Scalar.Name() == scalarName {
+			return scalar.Scalar
+		}
+	}
+
+	// errorneous case where scalar could not be found
+	return nil
+}
+
 type ScalarGeneratorPair struct {
 	Check  func(target reflect.Type, scalar *graphql.Scalar) bool
 	Scalar *graphql.Scalar
@@ -33,31 +45,28 @@ type ScalarGeneratorPair struct {
 
 var lists = []ScalarGeneratorPair{
 	// bigint
-	// {
-	// 	Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
-	// 		if target == reflect.TypeOf((*types.Int)(nil)).Elem() {
-	// 			return true
-	// 		} else {
-	// 			return false
-	// 		}
-	// 	},
-	// 	Scalar: graphql.NewScalar(graphql.ScalarConfig{
-	// 		Name:        "BigInt",
-	// 		Description: "BigInt scalar type represents cosmos-sdk specific big int implementation",
-	// 		Serialize: func(value interface{}) interface{} {
-	// 			return value
-	// 		},
-	// 		ParseValue: func(value interface{}) interface{} {
-	// 			return value
-	// 		},
-	// 		ParseLiteral: func(valueAST ast.Value) interface{} {
-	// 			return valueAST.GetValue()
-	// 		},
-	// 	}),
-	// },
-
-
-
+	{
+		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
+			if target == reflect.TypeOf((*types.Int)(nil)).Elem() {
+				return true
+			} else {
+				return false
+			}
+		},
+		Scalar: graphql.NewScalar(graphql.ScalarConfig{
+			Name:        "BigInt",
+			Description: "BigInt scalar type represents cosmos-sdk specific big int implementation",
+			Serialize: func(value interface{}) interface{} {
+				return value
+			},
+			ParseValue: func(value interface{}) interface{} {
+				return value
+			},
+			ParseLiteral: func(valueAST ast.Value) interface{} {
+				return valueAST.GetValue()
+			},
+		}),
+	},
 	// StdTx/Msg
 	{
 		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
@@ -82,7 +91,6 @@ var lists = []ScalarGeneratorPair{
 			},
 		}),
 	},
-
 	// byte buffer
 	{
 		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
@@ -105,7 +113,6 @@ var lists = []ScalarGeneratorPair{
 			},
 		}),
 	},
-
 	// time.Time
 	{
 		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {

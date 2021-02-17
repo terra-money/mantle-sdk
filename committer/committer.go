@@ -15,10 +15,12 @@ type CommitterInstance struct {
 	kvIndexMap kvindex.KVIndexMap
 }
 
+var _ Committer = (*CommitterInstance)(nil)
+
 func NewCommitter(
 	db db.DB,
 	kvIndexMap kvindex.KVIndexMap,
-) Committer {
+) *CommitterInstance {
 	return &CommitterInstance{
 		db:         db,
 		kvIndexMap: kvIndexMap,
@@ -31,6 +33,10 @@ type (
 )
 
 func (committer *CommitterInstance) Commit(height uint64, entities ...interface{}) error {
+	if len(entities) == 0 {
+		return nil
+	}
+
 	// create a write batch
 	var transaction = false
 	writeBatch := committer.db.Batch()
@@ -43,14 +49,13 @@ func (committer *CommitterInstance) Commit(height uint64, entities ...interface{
 
 		kvIndex, ok := committer.kvIndexMap[entityName]
 		if !ok {
-			return fmt.Errorf("Unknown Entity committed, entityName=%s", t.Name())
+			return fmt.Errorf("unknown Entity committed, entityName=%s", entityName)
 		}
 		kvIndexEntries := kvIndex.Entries()
 
 		// convert some properties to byte beforehand
 		heightInBe := utils.LeToBe(height)
 		var commit CommitFunc = func(key, value []byte) error {
-			//utils.DebugStoreKey(utils.ConcatBytes([]byte(entityName), key))
 			return writeBatch.Set(utils.ConcatBytes([]byte(entityName), key), value)
 		}
 		var getSequence = NewSequenceGenerator(entityName, kvIndex, committer.db)
