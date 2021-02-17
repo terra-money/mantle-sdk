@@ -101,6 +101,7 @@ func (prc *ProxyResolverContext) ResolveRoot() (map[string]interface{}, error) {
 
 	// reconstruct query using prc
 	query := reconstructRootQuery(prc)
+
 	if value, err := prc.responseCb(query.Bytes()); err == nil {
 		prc.value = value
 	} else {
