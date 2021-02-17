@@ -3,40 +3,34 @@ package graph
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"reflect"
-
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 	"github.com/terra-project/mantle-sdk/depsresolver"
 	"github.com/terra-project/mantle-sdk/querier"
 	"github.com/terra-project/mantle-sdk/types"
+	"log"
+	"net/http"
 )
 
-type SchemaBuilder func(fields *graphql.Fields) error
-
-type GraphQLInstance struct {
-	schema             graphql.Schema
-	depsResolver       depsresolver.DepsResolver
-	querier            querier.Querier
+type RemoteGraphQLInstance struct {
+	*GraphQLInstance
 	baseMantleEndpoint string
 }
 
-func NewGraphQLInstance(
+func NewRemoteGraphQLInstance(
 	depsResolver depsresolver.DepsResolver,
 	querier querier.Querier,
+	baseMantleEndpoint string,
 	schemabuilders ...SchemaBuilder,
-) *GraphQLInstance {
-	return &GraphQLInstance{
-		depsResolver: depsResolver,
-		querier:      querier,
-		schema:       buildSchema(schemabuilders...),
+) *RemoteGraphQLInstance {
+	return &RemoteGraphQLInstance{
+		GraphQLInstance:    NewGraphQLInstance(depsResolver, querier, schemabuilders...),
+		baseMantleEndpoint: baseMantleEndpoint,
 	}
 }
 
 // TODO: reimplement me without using graphql-go/handler
-func (server *GraphQLInstance) ServeHTTP(port int) {
+func (server *RemoteGraphQLInstance) ServeHTTP(port int) {
 	h := handler.New(&handler.Config{
 		Schema: &server.schema,
 		RootObjectFn: func(ctx context.Context, r *http.Request) map[string]interface{} {
@@ -53,6 +47,7 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
 			NewGraphContext().
+				WithProxyResolverContext(server.baseMantleEndpoint).
 				WithDepsResolver(server.depsResolver).
 				WithQuerier(server.querier).
 				WithImmediateResolveFlag(true).
@@ -64,7 +59,7 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), nil)
 }
 
-func (server *GraphQLInstance) QueryInternal(
+func (server *RemoteGraphQLInstance) QueryInternal(
 	gqlQuery string,
 	variables types.GraphQLParams,
 	dependencies []types.Model,
@@ -75,6 +70,7 @@ func (server *GraphQLInstance) QueryInternal(
 		RequestString:  gqlQuery,
 		VariableValues: variables,
 		Context: NewGraphContext().
+			WithProxyResolverContext(server.baseMantleEndpoint).
 			WithDepsResolver(server.depsResolver).
 			WithQuerier(server.querier).
 			WithImmediateResolveFlag(false).
@@ -84,18 +80,4 @@ func (server *GraphQLInstance) QueryInternal(
 
 	// unresolved dependency are to be handled in resolver functions
 	return InternalGQLRun(params)
-}
-
-func (server *GraphQLInstance) UpdateState(data interface{}) {
-	t := reflect.TypeOf(data)
-	if t.Kind() != reflect.Struct {
-		panic("Non struct type entity is provided to GraphQLInstance.UpdateState")
-	}
-
-	server.depsResolver.SetPredefinedState(data)
-}
-
-// Commit persists indexer outputs in memory.
-func (server *GraphQLInstance) Commit(entity interface{}) error {
-	return server.depsResolver.Emit(entity)
 }
