@@ -143,6 +143,8 @@ func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
 			tEnd.Sub(tStart).Milliseconds(),
 		)
 
+		lastKnownHeight = currentHeight
+
 		// release db lock
 		releaseErr := rmantle.db.ReleaseCriticalZone()
 		if releaseErr != nil {
