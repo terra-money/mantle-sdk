@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	core "github.com/terra-project/core/types"
 	"github.com/terra-project/mantle-sdk/committer"
 	"github.com/terra-project/mantle-sdk/db"
 	"github.com/terra-project/mantle-sdk/depsresolver"
@@ -43,15 +45,17 @@ func NewRemoteMantle(
 	baseMantleEndpoint string,
 	indexers ...types.IndexerRegisterer,
 ) (mantleApp *RemoteMantle) {
-
+	// create registry of indexers
 	registry := reg.NewRegistry(indexers)
-	remoteDepsResolver := depsresolver.NewDepsResolver()
+
+	// initialize deps resolver -- still required for inter-indexer sync
+	depsResolverInstance := depsresolver.NewDepsResolver()
 
 	querierInstance := querier.NewQuerier(db, registry.KVIndexMap)
 
 	// create gql instance w/ remote deps resolver and only the injected indexers
 	gqlInstance := graph.NewRemoteGraphQLInstance(
-		remoteDepsResolver,
+		depsResolverInstance,
 		querierInstance,
 		baseMantleEndpoint,
 		schemabuilders.CreateRemoteModelSchemaBuilder(baseMantleEndpoint),
@@ -69,8 +73,14 @@ func NewRemoteMantle(
 		gqlInstance.Commit,
 	)
 
-	// initialize deps resolver -- still required for inter-indexer sync
-	depsResolverInstance := depsresolver.NewDepsResolver()
+	// do init here, since we don't have mantlemint nor a core
+	config := sdk.GetConfig()
+	config.SetCoinType(core.CoinType)
+	config.SetFullFundraiserPath(core.FullFundraiserPath)
+	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
+	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
+	config.Seal()
 
 	// create remote mantle
 	mantleApp = &RemoteMantle{
@@ -117,6 +127,9 @@ func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
 
 		rmantle.indexerInstance.RunIndexerRound()
 		indexerOutputs := rmantle.depsResolverInstance.GetState()
+
+		// dispose deps resolver
+		rmantle.depsResolverInstance.Dispose()
 
 		// convert indexer outputs to slice
 		var commitTargets = make([]interface{}, len(indexerOutputs))
