@@ -24,8 +24,6 @@ func GetGraphQLOutputType(outputType Type, definitions Definitions) graphql.Outp
 			return graphql.ID
 		case "DateTime":
 			return graphql.DateTime
-		case "Buffer":
-			return graphql.String
 		// check cosmos-scalar map
 		default:
 			outputName, ok := outputType.Name.(string)
@@ -61,6 +59,7 @@ func GetGraphQLOutputType(outputType Type, definitions Definitions) graphql.Outp
 		for _, selection := range subselections {
 			selectionName := selection.Name
 			selectionType := GetGraphQLOutputType(selection.Type, definitions)
+			scalar, isSelectionScalar := selectionType.(*graphql.Scalar)
 
 			subselectionFields[selectionName] = &graphql.Field{
 				Name: selectionName,
@@ -75,6 +74,10 @@ func GetGraphQLOutputType(outputType Type, definitions Definitions) graphql.Outp
 					alias, isPathString := p.Info.Path.Key.(string)
 					if !isPathString {
 						alias = selectionName
+					}
+
+					if isSelectionScalar {
+						return scalar.ParseValue(source[alias]), nil
 					}
 
 					return source[alias], nil

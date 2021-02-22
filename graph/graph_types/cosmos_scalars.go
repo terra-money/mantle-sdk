@@ -92,27 +92,27 @@ var lists = []ScalarGeneratorPair{
 		}),
 	},
 	// byte buffer
-	{
-		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
-			if target == reflect.TypeOf(([]byte)(nil)) {
-				return true
-			}
-			return false
-		},
-		Scalar: graphql.NewScalar(graphql.ScalarConfig{
-			Name:        "Buffer",
-			Description: "[]byte serialized as string",
-			Serialize: func(value interface{}) interface{} {
-				return string(value.([]byte))
-			},
-			ParseValue: func(value interface{}) interface{} {
-				return value
-			},
-			ParseLiteral: func(valueAST ast.Value) interface{} {
-				return valueAST.GetValue()
-			},
-		}),
-	},
+	// {
+	// 	Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
+	// 		if target == reflect.TypeOf(([]byte)(nil)) {
+	// 			return true
+	// 		}
+	// 		return false
+	// 	},
+	// 	Scalar: graphql.NewScalar(graphql.ScalarConfig{
+	// 		Name:        "Buffer",
+	// 		Description: "[]byte serialized as string",
+	// 		Serialize: func(value interface{}) interface{} {
+	// 			return string(value.([]byte))
+	// 		},
+	// 		ParseValue: func(value interface{}) interface{} {
+	// 			return []byte(value.(string))
+	// 		},
+	// 		ParseLiteral: func(valueAST ast.Value) interface{} {
+	// 			return valueAST.GetValue()
+	// 		},
+	// 	}),
+	// },
 	// time.Time
 	{
 		Check: func(target reflect.Type, scalar *graphql.Scalar) bool {
@@ -128,7 +128,8 @@ var lists = []ScalarGeneratorPair{
 				return value.(time.Time).String()
 			},
 			ParseValue: func(value interface{}) interface{} {
-				return value.(time.Time)
+				t, _ := time.Parse("2006-01-02 15:04:05 +0000 UTC", value.(string))
+				return t
 			},
 			ParseLiteral: func(valueAST ast.Value) interface{} {
 				return valueAST.GetValue()

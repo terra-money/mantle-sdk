@@ -15,7 +15,6 @@ func CreateModelSchemaBuilder(kvindexMap kvindex.KVIndexMap, models ...types.Mod
 		for _, model := range models {
 			model = utils.GetType(model)
 			modelName := model.Name()
-
 			fieldConfig, err := generate.GenerateGraphResolver(model)
 			if err != nil {
 				return err

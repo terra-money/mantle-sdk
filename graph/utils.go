@@ -14,6 +14,17 @@ import (
 	"sync"
 )
 
+func byteArrayToByteArray() mapstructure.DecodeHookFuncKind {
+	return func(
+		f reflect.Kind,
+		t reflect.Kind,
+		data interface{},
+	) (interface{}, error) {
+
+		return data, nil
+	}
+}
+
 // TODO: remove me
 func UnmarshalInternalQueryResult(result *graphql.Result, target interface{}) error {
 	targetValue := reflect.Indirect(reflect.ValueOf(target))
@@ -43,7 +54,24 @@ func UnmarshalInternalQueryResult(result *graphql.Result, target interface{}) er
 		default:
 			// TODO: FIX ME
 			// map -> struct
-			mapstructure.Decode(d, targetCache.Interface())
+			// mapstructure.ComposeDecodeHookFunc(byteArrayToByteArray)
+
+			decoder, decoderErr := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				DecodeHook: mapstructure.ComposeDecodeHookFunc(
+					byteArrayToByteArray(),
+					mapstructure.StringToTimeHookFunc("2006-01-02 15:04:05 +0000 UTC"),
+				),
+				WeaklyTypedInput: false,
+				Result:           targetCache.Interface(),
+				TagName:          "",
+			})
+
+			if decoderErr != nil {
+				return decoderErr
+			}
+			if err := decoder.Decode(d); err != nil {
+				return err
+			}
 			targetField.Set(targetCache.Elem())
 		}
 	}

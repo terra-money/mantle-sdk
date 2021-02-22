@@ -24,7 +24,7 @@ func CreateRemoteModelSchemaBuilder(baseMantleEndpoint string) graph.SchemaBuild
 		schema := NewIntrospection(baseMantleEndpoint)
 
 		// 1. go through all types, and create objects first
-		remoteModelsMap := convertTypesToTypeMap(schema.Types)
+		remoteModelsMap := ConvertTypesToMap(schema.Types)
 
 		// 2. iterate through all FIELDS in RootQuery,
 		//    and map out all things recursively
@@ -33,12 +33,11 @@ func CreateRemoteModelSchemaBuilder(baseMantleEndpoint string) graph.SchemaBuild
 			return fmt.Errorf("remote mantle does not have root query")
 		}
 
-		rootQueryFields := rootQuery.Fields
+		rootQueryFieldsMap := ConvertFieldsToMap(rootQuery.Fields)
 
 		// iterate over queriable field, reconstruct query
-		for _, queriableField := range rootQueryFields {
+		for _, queriableField := range rootQueryFieldsMap {
 			name := queriableField.Name
-
 			// query output object
 			fieldOutput := reconstructFieldConfig(
 				queriableField.Type,
@@ -73,7 +72,7 @@ func CreateRemoteModelSchemaBuilder(baseMantleEndpoint string) graph.SchemaBuild
 						selection = name
 					}
 
-					subgraph := createSubgraph(prc, p.Info.Operation.GetSelectionSet()).WithGraphQLVariables(p.Info.VariableValues)
+					subgraph := createSubgraph(prc, p.Info.Operation.GetSelectionSet(), rootQueryFieldsMap, true).WithGraphQLVariables(p.Info.VariableValues)
 					if source, err := subgraph.ResolveRoot(); err == nil {
 						return source[selection], nil
 					} else {
@@ -87,16 +86,6 @@ func CreateRemoteModelSchemaBuilder(baseMantleEndpoint string) graph.SchemaBuild
 
 		return nil
 	}
-}
-
-func convertTypesToTypeMap(types []TypeDescriptor) Definitions {
-	m := make(map[string]TypeDescriptor)
-
-	for _, t := range types {
-		m[t.Name] = t
-	}
-
-	return m
 }
 
 func reconstructFieldConfig(
@@ -123,7 +112,7 @@ func reconstructFieldArgument(
 	return argumentConfig
 }
 
-func createSubgraph(prc *ProxyResolverContext, selections *ast.SelectionSet) *ProxyResolverContext {
+func createSubgraph(prc *ProxyResolverContext, selections *ast.SelectionSet, rootQueryFieldsMap FieldMap, topLevel bool) *ProxyResolverContext {
 	// skip subgraph creation if no selections
 	if selections == nil {
 		return nil
@@ -132,13 +121,22 @@ func createSubgraph(prc *ProxyResolverContext, selections *ast.SelectionSet) *Pr
 	for _, s := range selections.Selections {
 		switch f := s.(type) {
 		case *ast.Field:
-			subgraphPrc := prc.CreateSubtree(f.Name.Value, astArgumentsToMap(f.Arguments))
+			fieldName := f.Name.Value
+
+			// exclude local queries from subgraph creation
+			if topLevel {
+				if _, isRemote := rootQueryFieldsMap[fieldName]; !isRemote {
+					continue
+				}
+			}
+
+			subgraphPrc := prc.CreateSubtree(fieldName, astArgumentsToMap(f.Arguments))
 
 			if f.Alias != nil {
 				subgraphPrc.WithAlias(f.Alias.Value)
 			}
 
-			createSubgraph(subgraphPrc, f.SelectionSet)
+			createSubgraph(subgraphPrc, f.SelectionSet, rootQueryFieldsMap, false)
 
 			// TODO: implement me
 			// case *ast.FragmentSpread:

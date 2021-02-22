@@ -7,6 +7,7 @@ import (
 
 type (
 	Definitions map[string]TypeDescriptor
+	FieldMap    map[string]Field
 )
 
 var (
@@ -29,4 +30,24 @@ func setTypeInCache(name string, input graphql.Input) {
 		panic(fmt.Errorf("duplicate input cache set: %s", name))
 	}
 	objectCache[name] = input
+}
+
+func ConvertTypesToMap(types []TypeDescriptor) Definitions {
+	m := make(map[string]TypeDescriptor)
+
+	for _, t := range types {
+		m[t.Name] = t
+	}
+
+	return m
+}
+
+func ConvertFieldsToMap(fields []Field) FieldMap {
+	m := make(map[string]Field)
+
+	for _, t := range fields {
+		m[t.Name] = t
+	}
+
+	return m
 }

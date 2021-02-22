@@ -8,7 +8,6 @@ import (
 	"github.com/terra-project/mantle-sdk/depsresolver"
 	"github.com/terra-project/mantle-sdk/querier"
 	"github.com/terra-project/mantle-sdk/types"
-	"log"
 	"net/http"
 )
 
@@ -64,7 +63,7 @@ func (server *RemoteGraphQLInstance) QueryInternal(
 	variables types.GraphQLParams,
 	dependencies []types.Model,
 ) *graphql.Result {
-	log.Printf("[graphql] InternalQuery\tq=%s,v=%v", gqlQuery, variables)
+	// log.Printf("[graphql] InternalQuery\tq=%s,v=%v", gqlQuery, variables)
 	params := graphql.Params{
 		Schema:         server.schema,
 		RequestString:  gqlQuery,
