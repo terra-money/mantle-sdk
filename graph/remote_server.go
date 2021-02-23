@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/rs/cors"
 	"github.com/terra-project/mantle-sdk/depsresolver"
 	"github.com/terra-project/mantle-sdk/querier"
 	"github.com/terra-project/mantle-sdk/types"
@@ -39,11 +40,13 @@ func (server *RemoteGraphQLInstance) ServeHTTP(port int) {
 		Playground: true,
 	})
 
+	c := cors.AllowAll()
+
 	http.Handle("/status", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 	}))
-	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/", c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
 			NewGraphContext().
 				WithProxyResolverContext(server.baseMantleEndpoint).
@@ -54,7 +57,7 @@ func (server *RemoteGraphQLInstance) ServeHTTP(port int) {
 			w,
 			r,
 		)
-	}))
+	})))
 	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), nil)
 }
 
