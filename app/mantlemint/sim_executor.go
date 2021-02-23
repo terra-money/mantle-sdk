@@ -2,30 +2,31 @@ package mantlemint
 
 import (
 	"fmt"
+	abcicli "github.com/tendermint/tendermint/abci/client"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmstate "github.com/tendermint/tendermint/state"
 	tm "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
-	terra "github.com/terra-project/core/app"
 	"github.com/terra-project/mantle-sdk/types"
 )
 
 // type check
 var _ MantlemintExecutor = (*SimBlockExecutor)(nil)
+var _ MantlemintExecutorCreator = NewSimBlockExecutor
 
 type SimBlockExecutor struct {
 	db       tmdb.DB
-	app      *terra.TerraApp
+	conn     abcicli.Client
 	eventBus tm.BlockEventPublisher
 }
 
 func NewSimBlockExecutor(
 	db tmdb.DB,
-	app *terra.TerraApp,
-) *SimBlockExecutor {
+	conn abcicli.Client,
+) MantlemintExecutor {
 	return &SimBlockExecutor{
-		db:  db,
-		app: app,
+		db:   db,
+		conn: conn,
 	}
 }
 
@@ -37,7 +38,7 @@ func (sbe *SimBlockExecutor) ApplyBlock(
 	// closely mock BlockExecutor.ApplyBlock
 
 	// exec block
-	abciResponses, err := execBlockOnProxyApp(sbe.app, block, sbe.db)
+	abciResponses, err := execBlockOnProxyApp(sbe.conn, block, sbe.db)
 	if err != nil {
 		return state, 0, err
 	}
@@ -59,7 +60,10 @@ func (sbe *SimBlockExecutor) ApplyBlock(
 	}
 
 	// commit
-	responseCommit := sbe.app.Commit()
+	responseCommit, commitErr := sbe.conn.CommitSync()
+	if commitErr != nil {
+		return state, 0, commitErr
+	}
 
 	// update app hash (not needed as mantle doesn't care, but just in case)
 	// save state
@@ -104,7 +108,7 @@ func (sbe *SimBlockExecutor) SetEventBus(publisher tm.BlockEventPublisher) {
 }
 
 func execBlockOnProxyApp(
-	app *terra.TerraApp,
+	app abcicli.Client,
 	block *types.Block,
 	db tmdb.DB,
 ) (*tmstate.ABCIResponses, error) {
@@ -114,27 +118,37 @@ func execBlockOnProxyApp(
 	commitInfo, byzVals := getBeginBlockValidatorInfoSim(block, db)
 
 	// begin block
-	beginBlockerResult := app.BeginBlock(abci.RequestBeginBlock{
+	beginBlockerResult, err := app.BeginBlockSync(abci.RequestBeginBlock{
 		Hash:                block.Hash(),
 		Header:              tm.TM2PB.Header(&block.Header),
 		LastCommitInfo:      commitInfo,
 		ByzantineValidators: byzVals,
 	})
-	abciResponses.BeginBlock = &beginBlockerResult
+	if err != nil {
+		return nil, err
+	}
+	abciResponses.BeginBlock = beginBlockerResult
 
 	// deliver txs
 	for txi, tx := range block.Data.Txs {
-		responseDeliverTx := app.DeliverTx(abci.RequestDeliverTx{
+		responseDeliverTx, err := app.DeliverTxSync(abci.RequestDeliverTx{
 			Tx: tx,
 		})
-		abciResponses.DeliverTxs[txi] = &responseDeliverTx
+		if err != nil {
+			return nil, err
+		}
+		abciResponses.DeliverTxs[txi] = responseDeliverTx
 	}
 
 	// endblock
-	responseEndblock := app.EndBlock(abci.RequestEndBlock{
+	responseEndblock, err := app.EndBlockSync(abci.RequestEndBlock{
 		Height: block.Height,
 	})
-	abciResponses.EndBlock = &responseEndblock
+	if err != nil {
+		return nil, err
+	}
+
+	abciResponses.EndBlock = responseEndblock
 
 	return abciResponses, nil
 }

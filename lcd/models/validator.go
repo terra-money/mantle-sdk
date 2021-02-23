@@ -150,21 +150,39 @@ func (m *Validator) UnmarshalBinary(b []byte) error {
 // swagger:model ValidatorCommission
 type ValidatorCommission struct {
 
-	// max change rate
-	MaxChangeRate string `json:"max_change_rate,omitempty"`
-
-	// max rate
-	MaxRate string `json:"max_rate,omitempty"`
-
-	// rate
-	Rate string `json:"rate,omitempty"`
-
-	// update time
-	UpdateTime string `json:"update_time,omitempty"`
+	// commission rates
+	CommissionRates *ValidatorCommissionCommissionRates `json:"commission_rates,omitempty"`
 }
 
 // Validate validates this validator commission
 func (m *ValidatorCommission) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validateCommissionRates(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *ValidatorCommission) validateCommissionRates(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.CommissionRates) { // not required
+		return nil
+	}
+
+	if m.CommissionRates != nil {
+		if err := m.CommissionRates.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("commission" + "." + "commission_rates")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -179,6 +197,47 @@ func (m *ValidatorCommission) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *ValidatorCommission) UnmarshalBinary(b []byte) error {
 	var res ValidatorCommission
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
+	return nil
+}
+
+// ValidatorCommissionCommissionRates validator commission commission rates
+//
+// swagger:model ValidatorCommissionCommissionRates
+type ValidatorCommissionCommissionRates struct {
+
+	// max change rate
+	MaxChangeRate string `json:"max_change_rate,omitempty"`
+
+	// max rate
+	MaxRate string `json:"max_rate,omitempty"`
+
+	// rate
+	Rate string `json:"rate,omitempty"`
+
+	// update time
+	UpdateTime string `json:"update_time,omitempty"`
+}
+
+// Validate validates this validator commission commission rates
+func (m *ValidatorCommissionCommissionRates) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *ValidatorCommissionCommissionRates) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *ValidatorCommissionCommissionRates) UnmarshalBinary(b []byte) error {
+	var res ValidatorCommissionCommissionRates
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

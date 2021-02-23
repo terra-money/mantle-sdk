@@ -17,10 +17,10 @@ func NewBlock(lastState state.State) *Block {
 
 	// if genesis
 	if lastState.LastBlockHeight == 0 {
-		blockTime = lastState.LastBlockTime
+		blockTime = lastState.LastBlockTime.UTC()
 		height = 1
 	} else {
-		blockTime = lastState.LastBlockTime.Add(6 * time.Second)
+		blockTime = lastState.LastBlockTime.Add(6 * time.Second).UTC()
 		height = lastState.LastBlockHeight + 1
 	}
 
