@@ -2,6 +2,7 @@ package generate
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 	"github.com/terra-project/mantle-sdk/serdes"
 	"reflect"
 	"strings"
@@ -132,7 +133,7 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 	}
 
 	// check if this field is scalar
-	if scalar, isScalar := IsCosmosScalar(t); isScalar {
+	if scalar, isScalar := graph_types.IsCosmosScalar(t); isScalar {
 		return scalar
 	}
 

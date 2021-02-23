@@ -3,22 +3,22 @@ package graph
 import (
 	"fmt"
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
 	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
 	"sync"
 )
 
 type InternalRunResult struct {
 	Data interface{}
-	Err error
+	Err  error
 }
 
-// skip all internal fields
+// skip all proxy_resolver fields
 // msgpack will take care of them..
-func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
+func InternalGQLRun(p graphql.Params) *graphql.Result {
 	source := source.NewSource(&source.Source{
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
@@ -36,8 +36,8 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 	}
 
 	fields := p.Schema.QueryType().Fields()
-	gqlRunResult := types.GraphQLInternalResult{
-		Data: make(map[string][]byte),
+	gqlRunResult := graphql.Result{
+		Data:   make(map[string][]byte),
 		Errors: nil,
 	}
 
@@ -94,18 +94,23 @@ func InternalGQLRun(p graphql.Params) *types.GraphQLInternalResult {
 				result, err := unthunkResult(fieldConfig.Resolve(rp))
 
 				if err != nil {
-					gqlRunResult.Errors = []error{err}
+					gqlRunResult.Errors = gqlerrors.FormattedErrors{
+						gqlerrors.FormatError(err),
+					}
 					return
 				}
 
 				pack, packErr := serdes.Serialize(nil, result)
 				if packErr != nil {
-					gqlRunResult.Errors = []error{err}
+					gqlRunResult.Errors = gqlerrors.FormattedErrors{
+						gqlerrors.FormatError(err),
+					}
 					return
 				}
 
 				// save
-				gqlRunResult.Data[fieldName.Value] = pack
+				data := gqlRunResult.Data.(map[string]interface{})
+				data[fieldName.Value] = pack
 				return
 
 			case *ast.FragmentDefinition:
@@ -123,7 +128,7 @@ func unthunkResult(result interface{}, err error) (interface{}, error) {
 	thunkFunc, isThunk := result.(func() (interface{}, error))
 
 	// resolved data might be a thunk, run this thunk and wait for the result
-	// in this way, thunk resolve becomes series but that's fine for internal indexing mechanism
+	// in this way, thunk resolve becomes series but that's fine for proxy_resolver indexing mechanism
 	if !isThunk {
 		return result, err
 	}
@@ -131,8 +136,12 @@ func unthunkResult(result interface{}, err error) (interface{}, error) {
 	return thunkFunc()
 }
 
-func internalResultInvariant(errors []error) *types.GraphQLInternalResult {
-	return &types.GraphQLInternalResult{
-		Errors: errors,
+func internalResultInvariant(errors []error) *graphql.Result {
+	formattedErrors := make(gqlerrors.FormattedErrors, len(errors))
+	for i, err := range errors {
+		formattedErrors[i] = gqlerrors.FormatError(err)
+	}
+	return &graphql.Result{
+		Errors: formattedErrors,
 	}
 }

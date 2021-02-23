@@ -20,9 +20,9 @@ func ConvertBlockHeaderToTMHeader(block json.RawMessage) tmtypes.Block {
 
 func ConvertBlockToRawBlock(block *types.Block) types.RawBlock {
 	return types.RawBlock{
-		Header: block.Header,
-		Data:   block.Data,
-		//Evidence:   block.Evidence,
-		//LastCommit: *block.LastCommit,
+		Header:     block.Header,
+		Data:       block.Data,
+		Evidence:   block.Evidence,
+		LastCommit: *block.LastCommit,
 	}
 }

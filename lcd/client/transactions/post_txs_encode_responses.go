@@ -110,7 +110,7 @@ func NewPostTxsEncodeInternalServerError() *PostTxsEncodeInternalServerError {
 
 /*PostTxsEncodeInternalServerError handles this case with default header values.
 
-Server internal error
+Server proxy_resolver error
 */
 type PostTxsEncodeInternalServerError struct {
 }
