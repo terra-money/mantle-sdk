@@ -10,6 +10,7 @@ import (
 	"github.com/terra-project/mantle-sdk/app/mantlemint"
 	"github.com/terra-project/mantle-sdk/app/middlewares"
 	"github.com/terra-project/mantle-sdk/graph/generate"
+	"github.com/terra-project/mantle-sdk/lcd/server"
 	"github.com/terra-project/mantle-sdk/utils"
 	"log"
 	"os"
@@ -300,6 +301,13 @@ func (mantle *Mantle) Sync(configuration SyncConfiguration) {
 
 func (mantle *Mantle) Server(port int) {
 	go mantle.gqlInstance.ServeHTTP(port)
+}
+
+func (mantle *Mantle) LCDServer(port int) {
+	go func() {
+		lcd := server.NewMantleLCDServer()
+		lcd.Server(port, mantle.app)
+	}()
 }
 
 func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
