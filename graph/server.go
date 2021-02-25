@@ -46,11 +46,12 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 		Playground: true,
 	})
 
-	http.Handle("/status", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.Handle("/status", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 	}))
-	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
 			NewGraphContext().
 				WithDepsResolver(server.depsResolver).
@@ -61,7 +62,8 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 			r,
 		)
 	}))
-	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), nil)
+
+	http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 }
 
 func (server *GraphQLInstance) QueryInternal(
