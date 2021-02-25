@@ -118,7 +118,7 @@ func initTestkit(ctx *TestkitRPCContext, req Request, router *mux.Router) Respon
 
 	// create testkit context
 	db := leveldb.NewLevelDB(identifier)
-	tctx := testkit.NewTestkitContext(tg, db)
+	tctx := testkit.NewTestkitContext(tg, db, ctx.GetNextMantlePort())
 
 	// set automatic tx request
 	autoTxResponse := make([]AutomaticTxEntryResponse, len(req.AutomaticTxRequest))

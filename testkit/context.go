@@ -28,6 +28,7 @@ type TestkitContext struct {
 func NewTestkitContext(
 	tg *TestkitGenesis,
 	db db.DB,
+	port int,
 ) *TestkitContext {
 	if !tg.IsSealed() {
 		panic("cannot create testkit context using unsealed genesis")
@@ -39,7 +40,7 @@ func NewTestkitContext(
 		tg.GetGenesisDoc(),
 	)
 
-	mantle.Server(1337)
+	mantle.Server(port)
 
 	validators := tg.GetValidators()
 
