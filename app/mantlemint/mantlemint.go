@@ -67,7 +67,10 @@ func (mm *MantlemintInstance) Init(genesis *tmtypes.GenesisDoc) error {
 	config.SetBech32PrefixForAccount(core.Bech32PrefixAccAddr, core.Bech32PrefixAccPub)
 	config.SetBech32PrefixForValidator(core.Bech32PrefixValAddr, core.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(core.Bech32PrefixConsAddr, core.Bech32PrefixConsPub)
-	config.Seal()
+
+	// do not seal to support multiple instances
+	// make sure config is NEVER touched anywhere else
+	// config.Seal()
 
 	// loaded state has LastBlockHeight 0,
 	// meaning chain was never initialized
