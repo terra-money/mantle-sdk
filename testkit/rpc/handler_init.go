@@ -58,6 +58,7 @@ type Response struct {
 	Identifier      string                     `json:"identifier"`
 	ChainID         string                     `json:"chain_id"`
 	Genesis         string                     `json:"genesis"`
+	MantlePort      int                        `json:"mantle_port"`
 	Accounts        []AddAccountResponse       `json:"accounts"`
 	Validators      []CreateValidatorResponse  `json:"validators"`
 	AutomaticTx     []AutomaticTxEntryResponse `json:"auto_txs"`
@@ -118,7 +119,8 @@ func initTestkit(ctx *TestkitRPCContext, req Request, router *mux.Router) Respon
 
 	// create testkit context
 	db := leveldb.NewLevelDB(identifier)
-	tctx := testkit.NewTestkitContext(tg, db, ctx.GetNextMantlePort())
+	mantlePort := ctx.GetNextMantlePort()
+	tctx := testkit.NewTestkitContext(tg, db, mantlePort)
 
 	// set automatic tx request
 	autoTxResponse := make([]AutomaticTxEntryResponse, len(req.AutomaticTxRequest))
@@ -175,6 +177,7 @@ func initTestkit(ctx *TestkitRPCContext, req Request, router *mux.Router) Respon
 	// return response
 	return Response{
 		Identifier:      identifier,
+		MantlePort:      mantlePort,
 		ChainID:         gendoc.ChainID,
 		Genesis:         string(gendocJson),
 		Accounts:        accountResponse,
