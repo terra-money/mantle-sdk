@@ -111,7 +111,7 @@ func NewPostTxsEstimateFeeInternalServerError() *PostTxsEstimateFeeInternalServe
 
 /*PostTxsEstimateFeeInternalServerError handles this case with default header values.
 
-Server internal error
+Server proxy_resolver error
 */
 type PostTxsEstimateFeeInternalServerError struct {
 }

@@ -1,39 +1,25 @@
 package types
 
 import (
-	"encoding/json"
 	"github.com/graphql-go/graphql"
 )
 
-type JSONScalar string
-type JSONScalarCustomMarshaler func(originalData interface{}, data []byte) []byte
-
-func NewJSONScalar(data interface{}, customMarshaller JSONScalarCustomMarshaler) JSONScalar {
-	bz, bzErr := json.Marshal(data)
-	if bzErr != nil {
-		panic(bzErr)
-	}
-
-	if customMarshaller != nil {
-		bz = customMarshaller(data, bz)
-	}
-
-	return JSONScalar(bz)
+var MantleScalars = []graphql.Output{
+	Order,
 }
-func (scalar *JSONScalar) IsJsonScalar() {}
 
 var Order = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "Order",
-	Values:      graphql.EnumValueConfigMap{
+	Name: "Order",
+	Values: graphql.EnumValueConfigMap{
 		"ASC": &graphql.EnumValueConfig{
-			Value:             "ASC",
+			Value: "ASC",
 			//DeprecationReason: "",
-			Description:       "Ascending order",
+			Description: "Ascending order",
 		},
 		"DESC": &graphql.EnumValueConfig{
-			Value:             "DESC",
+			Value: "DESC",
 			//DeprecationReason: "",
-			Description:       "Ascending order",
+			Description: "Ascending order",
 		},
 	},
 	Description: "",

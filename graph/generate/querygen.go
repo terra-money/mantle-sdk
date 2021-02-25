@@ -3,8 +3,8 @@ package generate
 import (
 	"bytes"
 	"fmt"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 	"io"
-	"math/big"
 	"reflect"
 	"sort"
 	"strings"
@@ -18,14 +18,6 @@ func GenerateQuery(v interface{}, variables map[string]interface{}) string {
 		return "query(" + queryArguments(variables) + ")" + query
 	}
 	return query
-}
-
-func constructMutation(v interface{}, variables map[string]interface{}) string {
-	query := query(v)
-	if len(variables) > 0 {
-		return "mutation(" + queryArguments(variables) + ")" + query
-	}
-	return "mutation" + query
 }
 
 // queryArguments constructs a minified arguments string for variables.
@@ -103,7 +95,7 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 		writeQuery(w, t.Elem(), false)
 	case reflect.Struct:
 		// do not expand cosmos sdk scalar types
-		_, isScalar := IsCosmosScalar(t)
+		_, isScalar := graph_types.IsCosmosScalar(t)
 		if isScalar {
 			return
 		}
@@ -148,13 +140,3 @@ func writeQuery(w io.Writer, t reflect.Type, inline bool) {
 		}
 	}
 }
-
-// here are defined the types that should not be expanded
-type BigInt interface {
-	BigInt() *big.Int
-}
-
-// var jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
-var cosmosInt = reflect.TypeOf((*interface {
-	BigInt() *big.Int
-})(nil)).Elem()

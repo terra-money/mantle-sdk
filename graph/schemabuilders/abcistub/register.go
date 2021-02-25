@@ -2,9 +2,8 @@ package abcistub
 
 import (
 	"fmt"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 	"reflect"
-
-	"github.com/terra-project/mantle-sdk/graph/generate"
 
 	"github.com/graphql-go/graphql/language/ast"
 
@@ -64,7 +63,7 @@ func buildResponseType(t reflect.Type, tName string, parentName string) graphql.
 			var fieldType graphql.Output
 
 			// see if this field should be implemented as scalar type
-			scalar, isScalar := generate.IsCosmosScalar(field.Type)
+			scalar, isScalar := graph_types.IsCosmosScalar(field.Type)
 			if isScalar {
 				fieldType = scalar
 			} else {

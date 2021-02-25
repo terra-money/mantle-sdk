@@ -195,6 +195,6 @@ func (mm *MantlemintInstance) GetCurrentState() state.State {
 	return mm.lastState
 }
 
-func (mm *MantlemintInstance) SetBlockExecutor(nextBlockExecutor MantlemintExecutor) {
-	mm.executor = nextBlockExecutor
+func (mm *MantlemintInstance) SetBlockExecutor(nextBlockExecutorCreator MantlemintExecutorCreator) {
+	mm.executor = nextBlockExecutorCreator(mm.db, mm.conn)
 }

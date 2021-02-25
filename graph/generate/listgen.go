@@ -5,8 +5,8 @@ import (
 	"github.com/terra-project/mantle-sdk/constants"
 	"github.com/terra-project/mantle-sdk/depsresolver"
 	"github.com/terra-project/mantle-sdk/graph"
+	"github.com/terra-project/mantle-sdk/graph/graph_types"
 	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
 	"reflect"
 	"sort"
 
@@ -35,9 +35,9 @@ func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Fiel
 		Description: "Limit",
 	}
 
-	// order scalars
+	// order graph_types
 	rangeArgs["Order"] = &graphql.ArgumentConfig{
-		Type:        types.Order,
+		Type:        graph_types.Order,
 		Description: "Sort order",
 	}
 

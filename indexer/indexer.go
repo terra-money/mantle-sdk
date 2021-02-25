@@ -78,11 +78,10 @@ func createIsolatedQuerier(
 	return func(query interface{}, variables types.GraphQLParams) error {
 		qs := generate.GenerateQuery(query, variables)
 		result := querier(qs, variables, indexerSelfOutput)
-		resultInternal := result.(*types.GraphQLInternalResult)
 
-		if resultInternal.HasErrors() {
-			var errorsString = make([]string, len(resultInternal.Errors))
-			for i, e := range resultInternal.Errors {
+		if result.HasErrors() {
+			var errorsString = make([]string, len(result.Errors))
+			for i, e := range result.Errors {
 				errorsString[i] = e.Error()
 			}
 
@@ -92,7 +91,7 @@ func createIsolatedQuerier(
 			)
 		}
 
-		return graph.UnmarshalInternalQueryResult(resultInternal, query)
+		return graph.UnmarshalInternalQueryResult(result, query)
 	}
 }
 
