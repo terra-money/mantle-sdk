@@ -1,7 +1,6 @@
 package testkit
 
 import (
-	"fmt"
 	TerraApp "github.com/terra-project/core/app"
 	"github.com/terra-project/core/x/auth"
 	"github.com/terra-project/mantle-compatibility/localclient"
@@ -19,7 +18,6 @@ func NewLocalQuerier(app *TerraApp.TerraApp) auth.NodeQuerier {
 }
 
 func (lc *LocalQuerier) QueryWithData(path string, data []byte) ([]byte, int64, error) {
-	fmt.Println(path, string(data))
 	res, err := lc.lc.ABCIQuery(path, data)
 	if err != nil {
 		return nil, 0, err

@@ -12,13 +12,16 @@ require (
 	github.com/go-openapi/swag v0.19.9
 	github.com/go-openapi/validate v0.19.10
 	github.com/golang/protobuf v1.4.2 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/websocket v1.4.2
 	github.com/graphql-go/graphql v0.7.9
 	github.com/graphql-go/handler v0.2.3
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/onsi/ginkgo v1.10.1 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
+	github.com/rs/cors v1.7.0
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/viper v1.7.0

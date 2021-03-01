@@ -155,7 +155,7 @@ func (mantle *Mantle) GetApp() *TerraApp.TerraApp {
 	return mantle.app
 }
 
-func (mantle *Mantle) SetBlockExecutor(be mantlemint.MantlemintExecutor) {
+func (mantle *Mantle) SetBlockExecutor(be mantlemint.MantlemintExecutorCreator) {
 	mantle.mantlemint.SetBlockExecutor(be)
 }
 
@@ -365,12 +365,7 @@ func (mantle *Mantle) LocalQuery(query interface{}, variables types.GraphQLParam
 		nil,
 	)
 
-	resCasted, ok := res.(*types.GraphQLInternalResult)
-	if !ok {
-		return fmt.Errorf("wrong type")
-	}
-
-	return graph.UnmarshalInternalQueryResult(resCasted, query)
+	return graph.UnmarshalInternalQueryResult(res, query)
 }
 
 func (mantle *Mantle) ExportStates() map[string]interface{} {

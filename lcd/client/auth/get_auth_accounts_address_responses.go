@@ -110,7 +110,7 @@ func NewGetAuthAccountsAddressInternalServerError() *GetAuthAccountsAddressInter
 
 /*GetAuthAccountsAddressInternalServerError handles this case with default header values.
 
-Server internal error
+Server proxy_resolver error
 */
 type GetAuthAccountsAddressInternalServerError struct {
 }

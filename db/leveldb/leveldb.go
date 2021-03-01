@@ -13,15 +13,18 @@ import (
 )
 
 type LevelDB struct {
-	db *leveldb.DB
+	db   *leveldb.DB
 	path string
-	gt db.Batch
+	gt   db.Batch
 }
 
-func NewLevelDB(path string) db.DB {
+// type check
+var _ db.DB = (*LevelDB)(nil)
+
+func NewLevelDB(path string) *LevelDB {
 	dbInstance := &LevelDB{
 		path: path,
-		gt: nil,
+		gt:   nil,
 	}
 
 	dbInstance.db = dbInstance.open(path)
@@ -71,7 +74,7 @@ func (ldb *LevelDB) GetCosmosAdapter() tmdb.DB {
 	return tmadapter.NewCosmosAdapter(ldb)
 }
 
-func (ldb *LevelDB) GetDB() *leveldb.DB{
+func (ldb *LevelDB) GetDB() *leveldb.DB {
 	return ldb.db
 }
 
@@ -179,7 +182,7 @@ func (it *LevelIterator) DocumentKey() []byte {
 
 type Batch struct {
 	batch *leveldb.Batch
-	db *leveldb.DB
+	db    *leveldb.DB
 }
 
 func (ldb *LevelDB) Batch() db.Batch {
@@ -188,7 +191,7 @@ func (ldb *LevelDB) Batch() db.Batch {
 	} else {
 		return &Batch{
 			batch: new(leveldb.Batch),
-			db: ldb.db,
+			db:    ldb.db,
 		}
 	}
 }
@@ -209,7 +212,9 @@ func (batch *Batch) Flush() error {
 }
 
 func (batch *Batch) Purge() {
-	if batch.batch == nil { return }
+	if batch.batch == nil {
+		return
+	}
 	batch.batch.Reset()
 }
 
@@ -224,4 +229,3 @@ func (batch *Batch) FlushGT() error {
 func (batch *Batch) Close() {
 	// noop, batch should never be closed on its own
 }
-
