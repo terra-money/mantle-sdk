@@ -24,19 +24,6 @@ func NewMantlemintExecutor(
 	)
 }
 
-func NewMantlemintSimulationExecutor(
-	db tmdb.DB,
-	AppConn abcicli.Client,
-) *state.BlockExecutor {
-	return state.NewBlockExecutor(
-		db,
-		log.NewTMLogger(ioutil.Discard),
-		AppConn,
-		mock.Mempool{},           // no mempool
-		state.MockEvidencePool{}, // no evidence pool
-	)
-}
-
 func NewMantleAppConn(
 	terraApp *TerraApp.TerraApp,
 ) abcicli.Client {

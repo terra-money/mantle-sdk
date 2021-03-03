@@ -26,6 +26,10 @@ func (ctx *TestkitContext) SetAutomaticInjection(validatorRounds []string) {
 	ctx.autoInjection.lastProposer = 0
 }
 
+func (ctx *TestkitContext) DeleteAutomaticInjection() {
+	ctx.autoInjection.isEnabled = false
+}
+
 func (ai *AutomaticInjection) NextProposer() sdk.ValAddress {
 	defer func() {
 		ai.lastProposer = (ai.lastProposer + 1) % uint64(len(ai.valRounds))

@@ -16,6 +16,8 @@ func RegisterTestkitRPC(
 
 	// manual injection
 	r.HandleFunc("/{ctxId}/inject", handleBlockPropose(ctx)).Methods("POST")
+	r.HandleFunc("/{ctxId}/automatic_injection", handleSetAutoInjection(ctx)).Methods("POST")
+	r.HandleFunc("/{ctxId}/automatic_injection", handleDisableAutoInjection(ctx)).Methods("DELETE")
 	r.HandleFunc("/{ctxId}/automatic_tx", handleAutoTxGet(ctx)).Methods("GET")
 	r.HandleFunc("/{ctxId}/automatic_tx", handleAutoTxRegister(ctx)).Methods("POST")
 	r.HandleFunc("/{ctxId}/automatic_tx", handleAutoTxClearAll(ctx)).Methods("DELETE")      // register
