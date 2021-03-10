@@ -137,6 +137,10 @@ func (iterator *RangeResolverIterator) Valid() bool {
 	prefixValid := iterator.it.Valid(iterator.prefix)
 	var withinRangeValid = false
 
+	if len(iterator.prefix) > len(iterator.it.Key()) {
+		return false
+	}
+
 	currentIndexKey := iterator.it.Key()[len(iterator.prefix):]
 	currentIndexKey = currentIndexKey[:len(iterator.endKey)]
 
