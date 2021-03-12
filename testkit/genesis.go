@@ -37,13 +37,14 @@ type TestkitGenesis struct {
 	genesisValidators []auth.StdTx
 	validatorMap      []TestkitGenesisAccountToPrivValMap
 	kb                keys.Keybase
+	time              time.Time
 
 	hdAccount uint64
 }
 
 var ZeroCommission = types.NewCommissionRates(sdk.NewDec(0), sdk.NewDec(1), sdk.NewDec(1))
 
-func NewTestkitGenesis(chainId string) *TestkitGenesis {
+func NewTestkitGenesis(chainId string, t time.Time) *TestkitGenesis {
 	config := sdk.GetConfig()
 	config.SetCoinType(core.CoinType)
 	config.SetFullFundraiserPath(core.FullFundraiserPath)
@@ -60,6 +61,7 @@ func NewTestkitGenesis(chainId string) *TestkitGenesis {
 		validatorMap:      []TestkitGenesisAccountToPrivValMap{},
 		kb:                ckeys.NewInMemoryKeyBase(),
 		hdAccount:         0,
+		time:              t,
 	}
 }
 
@@ -255,7 +257,7 @@ func (tg *TestkitGenesis) Seal() *tm.GenesisDoc {
 		ChainID:     tg.chainId,
 		Validators:  nil,
 		AppState:    genesisState,
-		GenesisTime: time.Now(),
+		GenesisTime: tg.time,
 	}
 
 	if gendocErr := gendoc.ValidateAndComplete(); gendocErr != nil {

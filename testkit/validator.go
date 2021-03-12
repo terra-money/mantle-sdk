@@ -113,6 +113,6 @@ func makeVote(
 		state.Validators,
 		privVal,
 		state.ChainID,
-		time.Now(),
+		state.LastBlockTime.Add(time.Second*6),
 	)
 }

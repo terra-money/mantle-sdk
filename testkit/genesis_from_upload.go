@@ -21,7 +21,7 @@ func NewGenesisFromFile(genesisBlob json.RawMessage) *TestkitGenesis {
 	}
 
 	// create testkit genesis, empty for now
-	tg := NewTestkitGenesis(gendoc.ChainID)
+	tg := NewTestkitGenesis(gendoc.ChainID, gendoc.GenesisTime)
 	tg.genesis = gendoc // use default genesis
 
 	return tg
