@@ -28,6 +28,7 @@ type RemoteMantle struct {
 	committerInstance    committer.Committer
 	indexerInstance      *indexer.IndexerBaseInstance
 	baseMantleEndpoint   string
+	lastKnownHeight      uint64
 }
 
 type RemoteSyncConfiguration struct {
@@ -91,6 +92,7 @@ func NewRemoteMantle(
 		committerInstance:    committerInstance,
 		indexerInstance:      indexerInstance,
 		baseMantleEndpoint:   baseMantleEndpoint,
+		lastKnownHeight:      0,
 	}
 
 	return
@@ -108,7 +110,6 @@ type LastSyncedHeightResponse struct {
 }
 
 func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
-	var lastKnownHeight uint64 = 0
 	// listen to LastSyncHeight change
 	// trigger indexer
 	// TODO: refactor this into gql subscription & reconnect logic
@@ -118,9 +119,11 @@ func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
 
 		// get currentHeight
 		currentHeight := getLastSyncedHeight(rmantle.baseMantleEndpoint)
-		if currentHeight <= lastKnownHeight {
+		if currentHeight <= rmantle.lastKnownHeight {
 			continue
 		}
+
+		rmantle.gqlInstance.SetLastKnownHeight(currentHeight)
 
 		// time
 		tStart := time.Now()
@@ -156,7 +159,8 @@ func (rmantle *RemoteMantle) Sync(config RemoteSyncConfiguration) {
 			tEnd.Sub(tStart).Milliseconds(),
 		)
 
-		lastKnownHeight = currentHeight
+		// update last known height
+		rmantle.lastKnownHeight = currentHeight
 
 		// release db lock
 		releaseErr := rmantle.db.ReleaseCriticalZone()

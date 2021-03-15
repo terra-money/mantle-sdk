@@ -15,6 +15,7 @@ import (
 type RemoteGraphQLInstance struct {
 	*GraphQLInstance
 	baseMantleEndpoint string
+	lastKnownHeight    uint64
 }
 
 func NewRemoteGraphQLInstance(
@@ -27,6 +28,10 @@ func NewRemoteGraphQLInstance(
 		GraphQLInstance:    NewGraphQLInstance(depsResolver, querier, schemabuilders...),
 		baseMantleEndpoint: baseMantleEndpoint,
 	}
+}
+
+func (server *RemoteGraphQLInstance) SetLastKnownHeight(lastKnownHeight uint64) {
+	server.lastKnownHeight = lastKnownHeight
 }
 
 // TODO: reimplement me without using graphql-go/handler
@@ -49,6 +54,7 @@ func (server *RemoteGraphQLInstance) ServeHTTP(port int) {
 	http.Handle("/", c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
 			NewGraphContext().
+				WithHeight(server.lastKnownHeight).
 				WithProxyResolverContext(server.baseMantleEndpoint).
 				WithDepsResolver(server.depsResolver).
 				WithQuerier(server.querier).
@@ -72,6 +78,7 @@ func (server *RemoteGraphQLInstance) QueryInternal(
 		RequestString:  gqlQuery,
 		VariableValues: variables,
 		Context: NewGraphContext().
+			WithHeight(server.lastKnownHeight).
 			WithProxyResolverContext(server.baseMantleEndpoint).
 			WithDepsResolver(server.depsResolver).
 			WithQuerier(server.querier).
