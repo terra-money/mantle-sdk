@@ -94,10 +94,12 @@ func (g graphContext) WithProxyResolverContext(baseMantleEndpoint string) graphC
 			return nil, fmt.Errorf("reference height not set")
 		}
 
+		var lastSyncedHeightUint64 = uint64(lastSyncedHeight)
+
 		// in such case, retry
-		if uint64(lastSyncedHeight) != referenceHeight {
+		if lastSyncedHeightUint64 < referenceHeight {
 			log.Printf("[proxyResolver] invalid height lastSyncedHeight %d != referenceHeight %d, retrying...", uint64(lastSyncedHeight), referenceHeight)
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			return remoteQuerier(query)
 		}
 
