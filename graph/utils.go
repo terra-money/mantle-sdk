@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"reflect"
 	"sync"
+	"time"
 )
 
 func byteArrayToByteArray() mapstructure.DecodeHookFuncKind {
@@ -163,7 +164,8 @@ func CreateRemoteMantleRequest(mantleEndpoint string, graphqlQuery []byte) []byt
 
 	res, err := http.Post(mantleEndpoint, "application/json", bytes.NewBuffer(requestJson))
 	if err != nil {
-		panic(err)
+		time.Sleep(200 * time.Millisecond)
+		return CreateRemoteMantleRequest(mantleEndpoint, graphqlQuery)
 	}
 
 	gqlResponse, err := ioutil.ReadAll(res.Body)
