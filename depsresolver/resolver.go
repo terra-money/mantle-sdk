@@ -100,6 +100,8 @@ func (resolver *DepsResolverInstance) Resolve(event reflect.Type) interface{} {
 }
 
 func (resolver *DepsResolverInstance) ResolveLatest(event reflect.Type) interface{} {
+	resolver.rmux.RLock()
+	defer resolver.rmux.RUnlock()
 	return resolver.latest[event]
 }
 
