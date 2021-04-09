@@ -43,7 +43,10 @@ type Mantle struct {
 	committerInstance    committer.Committer
 	indexerInstance      *indexer.IndexerBaseInstance
 	db                   db.DB
-	m                    *sync.Mutex
+	dbMtx                *sync.Mutex
+
+	// global query mtx being used for graphql-side client app and lcd-side client app
+	queryMtx *sync.Mutex
 }
 
 type SyncConfiguration struct {
@@ -76,11 +79,13 @@ func NewMantle(
 	depsResolverInstance := depsresolver.NewDepsResolver()
 	querierInstance := querier.NewQuerier(db, registry.KVIndexMap)
 
+	queryMtx := &sync.Mutex{}
+
 	// instantiate gql
 	gqlInstance := graph.NewGraphQLInstance(
 		depsResolverInstance,
 		querierInstance,
-		schemabuilders.CreateABCIStubSchemaBuilder(terraApp),
+		schemabuilders.CreateABCIStubSchemaBuilder(terraApp, queryMtx),
 		schemabuilders.CreateMantleStateSchemaBuilder(nil, nil),
 		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BlockState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.KVIndexMap, registry.Models...),
@@ -116,7 +121,8 @@ func NewMantle(
 		committerInstance:    committerInstance,
 		indexerInstance:      indexerInstance,
 		db:                   db,
-		m:                    new(sync.Mutex),
+		dbMtx:                new(sync.Mutex),
+		queryMtx:             queryMtx,
 	}
 
 	// create a signal handler
@@ -305,7 +311,7 @@ func (mantle *Mantle) Server(port int) {
 
 func (mantle *Mantle) LCDServer(port int) {
 	go func() {
-		lcd := server.NewMantleLCDServer()
+		lcd := server.NewMantleLCDServer(mantle.queryMtx)
 		lcd.Server(port, mantle.app)
 	}()
 }
@@ -321,15 +327,15 @@ func (mantle *Mantle) Inject(block *types.Block) (*types.BlockState, error) {
 			// if mantle reaches this point, there was a panic during injection.
 			// in such case db access is all gone, it is safe to NOT get a lock.
 			// but doing it, just in case :)
-			mantle.m.Lock() // never unlock
+			mantle.dbMtx.Lock() // never unlock
 			mantle.db.Purge(true)
 			log.Print("[mantle] shutdown done")
 			os.Exit(0)
 		}
 	}()
 
-	mantle.m.Lock()
-	defer mantle.m.Unlock()
+	mantle.dbMtx.Lock()
+	defer mantle.dbMtx.Unlock()
 
 	// set global global_transaction boundary for
 	// tendermint, cosmos, mantle
@@ -413,7 +419,7 @@ func (mantle *Mantle) gracefulShutdownOnSignal(
 		log.Printf("[mantle] received %v, cleanup...", received.String())
 		// wait until inject is cleared
 		log.Printf("[mantle] attempting graceful shutdown...")
-		mantle.m.Lock() // never unlock
+		mantle.dbMtx.Lock() // never unlock
 		callback()
 		log.Printf("[mantle] shutdown done")
 		os.Exit(0)

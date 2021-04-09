@@ -10,17 +10,19 @@ import (
 	"sync"
 )
 
-type MantleLCDProxy struct{}
+type MantleLCDProxy struct {
+	queryMtx *sync.Mutex
+}
 
-func NewMantleLCDServer() *MantleLCDProxy {
-	return &MantleLCDProxy{}
+func NewMantleLCDServer(queryMtx *sync.Mutex) *MantleLCDProxy {
+	return &MantleLCDProxy{
+		queryMtx: queryMtx,
+	}
 }
 
 func (lcd *MantleLCDProxy) Server(port int, app *terra.TerraApp) {
 	router := mux.NewRouter().SkipClean(true)
-	m := &sync.Mutex{}
-
-	localClient := compatlocalclient.NewLocalClient(app, m)
+	localClient := compatlocalclient.NewLocalClient(app, lcd.queryMtx)
 
 	ctx := client.
 		NewCLIContext().

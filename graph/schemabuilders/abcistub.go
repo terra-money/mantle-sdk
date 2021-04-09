@@ -13,12 +13,9 @@ import (
 	lcd "github.com/terra-project/mantle-sdk/lcd/client"
 )
 
-func CreateABCIStubSchemaBuilder(app *terra.TerraApp) graph.SchemaBuilder {
-
-	globalQueryMutex := new(sync.Mutex)
-
+func CreateABCIStubSchemaBuilder(app *terra.TerraApp, queryMtx *sync.Mutex) graph.SchemaBuilder {
 	return func(fields *graphql.Fields) error {
-		localClient := compatlocalclient.NewLocalClient(app, globalQueryMutex)
+		localClient := compatlocalclient.NewLocalClient(app, queryMtx)
 		stubTransport, err := abcistub.NewABCIStubTransport(localClient)
 		if err != nil {
 			return err
