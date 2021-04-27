@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"reflect"
@@ -57,7 +58,8 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 			r,
 		)
 	}))
-	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), nil)
+
+	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), cors.Default().Handler(h))
 }
 
 func (server *GraphQLInstance) UpdateState(data interface{}) {
