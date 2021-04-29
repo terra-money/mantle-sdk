@@ -47,19 +47,21 @@ func (server *GraphQLInstance) ServeHTTP(port int) {
 		Playground: true,
 	})
 
+	c := cors.AllowAll()
+
 	http.Handle("/status", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 	}))
-	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/", c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ContextHandler(
 			server.prepareResolverContext(nil, true),
 			w,
 			r,
 		)
-	}))
+	})))
 
-	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), cors.Default().Handler(h))
+	http.ListenAndServe(fmt.Sprintf(":%d", int(port)), nil)
 }
 
 func (server *GraphQLInstance) UpdateState(data interface{}) {
