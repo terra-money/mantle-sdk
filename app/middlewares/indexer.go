@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	abcicli "github.com/tendermint/tendermint/abci/client"
-	"github.com/tendermint/tendermint/abci/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/state"
 	"github.com/terra-project/mantle-sdk/app/mantlemint"
@@ -73,7 +72,7 @@ func (middleware *IndexerMiddleware) EndBlockAsync(req abci.RequestEndBlock) *ab
 	return nil
 }
 
-func (middleware *IndexerMiddleware) CommitSync() (*types.ResponseCommit, error) {
+func (middleware *IndexerMiddleware) CommitSync() (*abci.ResponseCommit, error) {
 	// set response to flush after running this function
 	defer func() {
 		middleware.responses = nil

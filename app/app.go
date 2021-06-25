@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/state"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -81,11 +82,17 @@ func NewMantle(
 
 	queryMtx := &sync.Mutex{}
 
+	// create abci call cache
+	abciCache, err := lru.New(1024)
+	if err != nil {
+		panic(err)
+	}
+
 	// instantiate gql
 	gqlInstance := graph.NewGraphQLInstance(
 		depsResolverInstance,
 		querierInstance,
-		schemabuilders.CreateABCIStubSchemaBuilder(terraApp, queryMtx),
+		schemabuilders.CreateABCIStubSchemaBuilder(terraApp, queryMtx, abciCache),
 		schemabuilders.CreateMantleStateSchemaBuilder(nil, nil),
 		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BlockState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.KVIndexMap, registry.Models...),
@@ -114,6 +121,12 @@ func NewMantle(
 			// use middlewares to run indexers (in CommitSync/CommitAsync)
 			middlewares.NewIndexerMiddleware(func(responses state.ABCIResponses) {
 				mantleApp.indexerLifecycle(responses)
+			}),
+
+			// purge cache at each cache middleware event
+			middlewares.NewCacheMiddleware(func(lastKnownHeight int64) {
+				log.Printf("[cache-middleware] purging cache at height %d, lastLength=%d\n", lastKnownHeight, abciCache.Len())
+				abciCache.Purge()
 			}),
 		),
 		gqlInstance:          gqlInstance,

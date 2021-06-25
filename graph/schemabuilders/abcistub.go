@@ -1,6 +1,7 @@
 package schemabuilders
 
 import (
+	lru "github.com/hashicorp/golang-lru"
 	"reflect"
 	"sync"
 
@@ -13,10 +14,11 @@ import (
 	lcd "github.com/terra-project/mantle-sdk/lcd/client"
 )
 
-func CreateABCIStubSchemaBuilder(app *terra.TerraApp, queryMtx *sync.Mutex) graph.SchemaBuilder {
+func CreateABCIStubSchemaBuilder(app *terra.TerraApp, queryMtx *sync.Mutex, cache *lru.Cache) graph.SchemaBuilder {
 	return func(fields *graphql.Fields) error {
 		localClient := compatlocalclient.NewLocalClient(app, queryMtx)
-		stubTransport, err := abcistub.NewABCIStubTransport(localClient)
+		stubTransport, err := abcistub.NewABCIStubTransport(localClient, cache)
+
 		if err != nil {
 			return err
 		}

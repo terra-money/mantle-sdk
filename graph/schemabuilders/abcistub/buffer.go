@@ -2,7 +2,6 @@ package abcistub
 
 import (
 	"bytes"
-	"io"
 	"net/http"
 )
 
@@ -13,7 +12,6 @@ type ResponseBuffer struct {
 	buf    *bytes.Buffer
 }
 
-////
 func (w *ResponseBuffer) Write(b []byte) (int, error) {
 	w.buf = bytes.NewBuffer(b)
 	return len(b), nil
@@ -45,7 +43,7 @@ func (w *ResponseBuffer) GetHeader(key string) string {
 	return ""
 }
 
-func (w *ResponseBuffer) Body() io.ReadCloser {
+func (w *ResponseBuffer) Body() ReaderCloser {
 	return ReaderCloser{
 		buf: w.buf,
 	}
@@ -53,6 +51,12 @@ func (w *ResponseBuffer) Body() io.ReadCloser {
 
 type ReaderCloser struct {
 	buf *bytes.Buffer
+}
+
+func (rc ReaderCloser) Clone() ReaderCloser {
+	return ReaderCloser{
+		buf: bytes.NewBuffer(rc.buf.Bytes()),
+	}
 }
 
 func (rc ReaderCloser) Read(p []byte) (n int, err error) {
