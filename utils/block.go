@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/cosmos/cosmos-sdk/codec"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 // ConvertBlockHeaderToTMHeader is to convert BlockHeader to its correct format

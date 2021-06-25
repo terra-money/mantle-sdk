@@ -1,9 +1,9 @@
 package app
 
 import (
-	compattypes "github.com/terra-project/mantle-compatibility/types"
-	"github.com/terra-project/mantle-sdk/db/leveldb"
-	"github.com/terra-project/mantle-sdk/types"
+	compattypes "github.com/terra-money/mantle-compatibility/types"
+	"github.com/terra-money/mantle-sdk/db/leveldb"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 type (

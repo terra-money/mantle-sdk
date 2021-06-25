@@ -3,7 +3,7 @@ package middlewares
 import (
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/terra-project/mantle-sdk/app/mantlemint"
+	"github.com/terra-money/mantle-sdk/app/mantlemint"
 )
 
 type CacheMiddlewareCallback func(lastKnownHeight int64)

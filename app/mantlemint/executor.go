@@ -6,7 +6,7 @@ import (
 	"github.com/tendermint/tendermint/mock"
 	"github.com/tendermint/tendermint/state"
 	tmdb "github.com/tendermint/tm-db"
-	TerraApp "github.com/terra-project/core/app"
+	TerraApp "github.com/terra-money/core/app"
 	"io/ioutil"
 	"sync"
 )

@@ -3,9 +3,9 @@ package querier
 import (
 	"fmt"
 
-	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/db/kvindex"
-	"github.com/terra-project/mantle-sdk/querier/queryhandler"
+	"github.com/terra-money/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db/kvindex"
+	"github.com/terra-money/mantle-sdk/querier/queryhandler"
 )
 
 type QuerierInstance struct {

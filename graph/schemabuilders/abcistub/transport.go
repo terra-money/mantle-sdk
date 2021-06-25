@@ -12,8 +12,8 @@ import (
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
-	terra "github.com/terra-project/core/app"
-	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
+	terra "github.com/terra-money/core/app"
+	compatlocalclient "github.com/terra-money/mantle-compatibility/localclient"
 )
 
 type RoundTripper struct {

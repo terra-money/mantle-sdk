@@ -1,8 +1,8 @@
 package queryhandler
 
 import (
-	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-money/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db/kvindex"
 )
 
 type QueryHandlerBuilder func(

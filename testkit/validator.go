@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/tendermint/tendermint/state"
 	tm "github.com/tendermint/tendermint/types"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/types"
 	"time"
 )
 

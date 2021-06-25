@@ -1,4 +1,4 @@
-module github.com/terra-project/mantle-sdk
+module github.com/terra-money/mantle-sdk
 
 go 1.15
 
@@ -27,8 +27,8 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/tendermint v0.33.7
 	github.com/tendermint/tm-db v0.5.2
-	github.com/terra-project/core v0.4.1
-	github.com/terra-project/mantle-compatibility v1.6.0-columbus-4
+	github.com/terra-money/core v0.4.1
+	github.com/terra-money/mantle-compatibility v1.6.0-columbus-4
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
@@ -37,4 +37,4 @@ require (
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
 
-replace github.com/CosmWasm/go-cosmwasm => github.com/terra-project/go-cosmwasm v0.10.3
+replace github.com/CosmWasm/go-cosmwasm => github.com/terra-money/go-cosmwasm v0.10.3

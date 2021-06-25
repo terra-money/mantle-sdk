@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/utils"
 )
 
 func GenerateQuery(v interface{}, variables map[string]interface{}) string {

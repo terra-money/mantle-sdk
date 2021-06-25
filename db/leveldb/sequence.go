@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/syndtr/goleveldb/leveldb"
 	"errors"
-	"github.com/terra-project/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db"
 	"sync"
 )
 

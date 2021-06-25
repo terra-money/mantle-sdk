@@ -5,7 +5,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	tmdb "github.com/tendermint/tm-db"
-	"github.com/terra-project/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db"
 )
 
 

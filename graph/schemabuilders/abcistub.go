@@ -7,11 +7,11 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/graphql-go/graphql"
-	terra "github.com/terra-project/core/app"
-	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
-	"github.com/terra-project/mantle-sdk/graph"
-	"github.com/terra-project/mantle-sdk/graph/schemabuilders/abcistub"
-	lcd "github.com/terra-project/mantle-sdk/lcd/client"
+	terra "github.com/terra-money/core/app"
+	compatlocalclient "github.com/terra-money/mantle-compatibility/localclient"
+	"github.com/terra-money/mantle-sdk/graph"
+	"github.com/terra-money/mantle-sdk/graph/schemabuilders/abcistub"
+	lcd "github.com/terra-money/mantle-sdk/lcd/client"
 )
 
 func CreateABCIStubSchemaBuilder(app *terra.TerraApp, queryMtx *sync.Mutex, cache *lru.Cache) graph.SchemaBuilder {

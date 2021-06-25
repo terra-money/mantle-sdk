@@ -4,8 +4,8 @@ import (
 	"fmt"
 	client "github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/gorilla/mux"
-	terra "github.com/terra-project/core/app"
-	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
+	terra "github.com/terra-money/core/app"
+	compatlocalclient "github.com/terra-money/mantle-compatibility/localclient"
 	"net/http"
 	"sync"
 )

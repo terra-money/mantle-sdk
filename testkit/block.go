@@ -2,7 +2,7 @@ package testkit
 
 import (
 	"github.com/tendermint/tendermint/state"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/types"
 	"time"
 )
 

@@ -9,10 +9,10 @@ import (
 	cauthtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	tm "github.com/tendermint/tendermint/types"
-	"github.com/terra-project/core/app"
-	core "github.com/terra-project/core/types"
-	"github.com/terra-project/core/x/auth"
-	"github.com/terra-project/core/x/genutil"
+	"github.com/terra-money/core/app"
+	core "github.com/terra-money/core/types"
+	"github.com/terra-money/core/x/auth"
+	"github.com/terra-money/core/x/genutil"
 	"time"
 )
 

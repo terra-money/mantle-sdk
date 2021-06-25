@@ -6,8 +6,8 @@ import (
 	tmstate "github.com/tendermint/tendermint/state"
 	tm "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
-	terra "github.com/terra-project/core/app"
-	"github.com/terra-project/mantle-sdk/types"
+	terra "github.com/terra-money/core/app"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 // type check

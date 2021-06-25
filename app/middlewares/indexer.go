@@ -4,7 +4,7 @@ import (
 	abcicli "github.com/tendermint/tendermint/abci/client"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/state"
-	"github.com/terra-project/mantle-sdk/app/mantlemint"
+	"github.com/terra-money/mantle-sdk/app/mantlemint"
 )
 
 type IndexerMiddlewareCallback func(responses state.ABCIResponses)

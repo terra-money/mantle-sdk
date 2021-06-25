@@ -2,7 +2,7 @@ package tm_adapter
 
 import (
 	tmdb "github.com/tendermint/tm-db"
-	"github.com/terra-project/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db"
 )
 
 type goLevelDBBatch struct {

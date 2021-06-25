@@ -2,9 +2,9 @@ package testkit
 
 import (
 	"fmt"
-	TerraApp "github.com/terra-project/core/app"
-	"github.com/terra-project/core/x/auth"
-	"github.com/terra-project/mantle-compatibility/localclient"
+	TerraApp "github.com/terra-money/core/app"
+	"github.com/terra-money/core/x/auth"
+	"github.com/terra-money/mantle-compatibility/localclient"
 	"sync"
 )
 

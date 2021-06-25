@@ -2,11 +2,11 @@ package subscriber
 
 import (
 	"encoding/json"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/utils"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 type BlockGetter func(height interface{}) (*types.Block, error)
