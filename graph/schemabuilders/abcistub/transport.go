@@ -32,7 +32,6 @@ func NewRoundTripper(mux *mux.Router, cache *lru.Cache) *RoundTripper {
 func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	cached, ok := rt.cache.Get(req.URL.String())
 	if ok {
-		log.Printf("[abci-cache] serving from cache, requestURI=%s\n", req.URL.String())
 		next := cached.(ReaderCloser).Clone()
 		return &http.Response{
 			StatusCode: 200,
