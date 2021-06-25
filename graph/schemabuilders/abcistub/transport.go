@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru"
-	"log"
 	"net/http"
 
 	client "github.com/cosmos/cosmos-sdk/client/context"
