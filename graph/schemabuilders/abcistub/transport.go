@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru"
+	"log"
 	"net/http"
 
 	client "github.com/cosmos/cosmos-sdk/client/context"
@@ -29,8 +30,9 @@ func NewRoundTripper(mux *mux.Router, cache *lru.Cache) *RoundTripper {
 }
 
 func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	cached, ok := rt.cache.Get(req.RequestURI)
+	cached, ok := rt.cache.Get(req.URL.String())
 	if ok {
+		log.Printf("[abci-cache] serving from cache, requestURI=%s\n", req.URL.String())
 		next := cached.(ReaderCloser).Clone()
 		return &http.Response{
 			StatusCode: 200,
@@ -77,7 +79,7 @@ func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	body := out.Body()
 
-	rt.cache.Add(req.RequestURI, body)
+	rt.cache.Add(req.URL.String(), body)
 
 	return &http.Response{
 		StatusCode: 200,
