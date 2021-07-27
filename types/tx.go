@@ -2,7 +2,7 @@ package types
 
 import (
 	"fmt"
-	terra "github.com/terra-money/core/app"
+	terra "github.com/terra-project/core/app"
 )
 
 //

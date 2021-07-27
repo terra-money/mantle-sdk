@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/graphql-go/graphql"
-	terra "github.com/terra-money/core/app"
+	terra "github.com/terra-project/core/app"
 	compatlocalclient "github.com/terra-money/mantle-compatibility/localclient"
 	"github.com/terra-money/mantle-sdk/graph"
 	"github.com/terra-money/mantle-sdk/graph/schemabuilders/abcistub"

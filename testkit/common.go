@@ -1,7 +1,7 @@
 package testkit
 
 import (
-	"github.com/terra-money/core/app"
+	"github.com/terra-project/core/app"
 )
 
 var (

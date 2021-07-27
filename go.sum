@@ -616,12 +616,10 @@ github.com/tendermint/tendermint v0.33.7/go.mod h1:0yUs9eIuuDq07nQql9BmI30FtYGcE
 github.com/tendermint/tm-db v0.5.1/go.mod h1:g92zWjHpCYlEvQXvy9M168Su8V1IBEeawpXVVBaK4f4=
 github.com/tendermint/tm-db v0.5.2 h1:QG3IxQZBubWlr7kGQcYIavyTNmZRO+r//nENxoq0g34=
 github.com/tendermint/tm-db v0.5.2/go.mod h1:VrPTx04QJhQ9d8TFUTc2GpPBvBf/U9vIdBIzkjBk7Lk=
-github.com/terra-money/core v0.4.1 h1:jbqgOdX2kkdT6/THiFhBBjFuWCD/4Gn73L5m+dodO9U=
-github.com/terra-money/core v0.4.1/go.mod h1:kPBkaYEsdH73eMITy+vWQRE7aqMi4BvjnqAcIpxYVh4=
-github.com/terra-money/go-cosmwasm v0.10.3 h1:fRLqM3R9iHKCsdGvWQALnRToDbb1jsPpix63/yD7BwE=
-github.com/terra-money/go-cosmwasm v0.10.3/go.mod h1:gAFCwllx97ejI+m9SqJQrmd2SBW7HA0fOjvWWJjM2uc=
-github.com/terra-money/mantle-compatibility v1.6.0-columbus-4 h1:nnHleM9Q0XPozIhMt80jULh969hqeAp639eE5oJ7L80=
-github.com/terra-money/mantle-compatibility v1.6.0-columbus-4/go.mod h1:B/8TUpnOlWOjVi9xnXwXxG4llumiZk0c48myYHvwxwQ=
+github.com/terra-money/go-cosmwasm v0.10.5 h1:gXlPFuSkVsRb80ZHkih2hONTpGcqkPXxneGEkFDViLc=
+github.com/terra-money/go-cosmwasm v0.10.5/go.mod h1:gAFCwllx97ejI+m9SqJQrmd2SBW7HA0fOjvWWJjM2uc=
+github.com/terra-project/core v0.4.1 h1:jbqgOdX2kkdT6/THiFhBBjFuWCD/4Gn73L5m+dodO9U=
+github.com/terra-project/core v0.4.1/go.mod h1:kPBkaYEsdH73eMITy+vWQRE7aqMi4BvjnqAcIpxYVh4=
 github.com/tidwall/pretty v1.0.0 h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=

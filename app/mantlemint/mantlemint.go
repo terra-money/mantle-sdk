@@ -8,8 +8,8 @@ import (
 	"github.com/tendermint/tendermint/state"
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
-	terra "github.com/terra-money/core/app"
-	core "github.com/terra-money/core/types"
+	terra "github.com/terra-project/core/app"
+	core "github.com/terra-project/core/types"
 	"github.com/terra-money/mantle-sdk/types"
 	"log"
 )

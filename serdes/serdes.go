@@ -1,7 +1,7 @@
 package serdes
 
 import (
-	"github.com/terra-money/core/app"
+	"github.com/terra-project/core/app"
 	"github.com/terra-money/mantle-sdk/types"
 	"github.com/vmihailenco/msgpack/v5"
 	"reflect"

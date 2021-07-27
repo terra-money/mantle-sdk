@@ -4,8 +4,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
-	TerraApp "github.com/terra-money/core/app"
-	"github.com/terra-money/core/x/auth"
+	TerraApp "github.com/terra-project/core/app"
+	"github.com/terra-project/core/x/auth"
 )
 
 var localQuerier auth.NodeQuerier

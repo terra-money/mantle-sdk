@@ -9,7 +9,7 @@ import (
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
-	terra "github.com/terra-money/core/app"
+	terra "github.com/terra-project/core/app"
 	compattypes "github.com/terra-money/mantle-compatibility/types"
 )
 

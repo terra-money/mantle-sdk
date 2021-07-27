@@ -6,13 +6,13 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/state"
 	tmtypes "github.com/tendermint/tendermint/types"
-	TerraApp "github.com/terra-money/core/app"
 	compatapp "github.com/terra-money/mantle-compatibility/app"
 	"github.com/terra-money/mantle-sdk/app/mantlemint"
 	"github.com/terra-money/mantle-sdk/app/middlewares"
 	"github.com/terra-money/mantle-sdk/graph/generate"
 	"github.com/terra-money/mantle-sdk/lcd/server"
 	"github.com/terra-money/mantle-sdk/utils"
+	TerraApp "github.com/terra-project/core/app"
 	"log"
 	"os"
 	"os/signal"
@@ -45,6 +45,7 @@ type Mantle struct {
 	indexerInstance      *indexer.IndexerBaseInstance
 	db                   db.DB
 	dbMtx                *sync.Mutex
+	abciCache            *lru.Cache
 
 	// global query mtx being used for graphql-side client app and lcd-side client app
 	queryMtx *sync.Mutex
@@ -110,8 +111,9 @@ func NewMantle(
 	)
 
 	mantleApp = &Mantle{
-		app:      terraApp,
-		registry: nil,
+		app:       terraApp,
+		abciCache: abciCache,
+		registry:  nil,
 		mantlemint: mantlemint.NewMantlemint(
 			tmdb,
 			terraApp,
@@ -324,7 +326,7 @@ func (mantle *Mantle) Server(port int) {
 
 func (mantle *Mantle) LCDServer(port int) {
 	go func() {
-		lcd := server.NewMantleLCDServer(mantle.queryMtx)
+		lcd := server.NewMantleLCDServer(mantle.queryMtx, mantle.abciCache)
 		lcd.Server(port, mantle.app)
 	}()
 }

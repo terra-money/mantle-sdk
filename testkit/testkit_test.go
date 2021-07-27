@@ -3,7 +3,7 @@ package testkit
 import (
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/terra-money/core/x/bank"
+	"github.com/terra-project/core/x/bank"
 	"github.com/terra-money/mantle-sdk/app"
 	"github.com/terra-money/mantle-sdk/app/mantlemint"
 	"github.com/terra-money/mantle-sdk/db/leveldb"
