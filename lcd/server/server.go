@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	lru "github.com/hashicorp/golang-lru"
 	compatlocalclient "github.com/terra-money/mantle-compatibility/localclient"
-	abcistub "github.com/terra-money/mantle-sdk/graph/schemabuilders/abcistub"
 	terra "github.com/terra-project/core/app"
 	"net/http"
 	"sync"
