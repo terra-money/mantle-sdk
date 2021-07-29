@@ -1,4 +1,4 @@
-module github.com/terra-project/mantle-sdk
+module github.com/terra-money/mantle-sdk
 
 go 1.15
 
