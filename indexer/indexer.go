@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/terra-project/mantle-sdk/graph"
-	"github.com/terra-project/mantle-sdk/graph/generate"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/graph"
+	"github.com/terra-money/mantle-sdk/graph/generate"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 type IndexerBaseInstance struct {

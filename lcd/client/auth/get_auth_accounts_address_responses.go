@@ -14,7 +14,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 
-	"github.com/terra-project/mantle-sdk/lcd/models"
+	"github.com/terra-money/mantle-sdk/lcd/models"
 )
 
 // GetAuthAccountsAddressReader is a Reader for the GetAuthAccountsAddress structure.

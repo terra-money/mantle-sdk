@@ -10,7 +10,7 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
 	terra "github.com/terra-project/core/app"
-	compattypes "github.com/terra-project/mantle-compatibility/types"
+	compattypes "github.com/terra-money/mantle-compatibility/types"
 )
 
 // MUST implement rpcclient.Client

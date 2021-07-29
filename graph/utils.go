@@ -2,8 +2,8 @@ package graph
 
 import (
 	"encoding/json"
-	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/serdes"
+	"github.com/terra-money/mantle-sdk/types"
 	"reflect"
 	"sync"
 )

@@ -7,7 +7,7 @@ import (
 	tm "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 	terra "github.com/terra-project/core/app"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 // type check

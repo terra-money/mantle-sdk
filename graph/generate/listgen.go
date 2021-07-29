@@ -2,17 +2,17 @@ package generate
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle-sdk/constants"
-	"github.com/terra-project/mantle-sdk/depsresolver"
-	"github.com/terra-project/mantle-sdk/graph"
-	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/constants"
+	"github.com/terra-money/mantle-sdk/depsresolver"
+	"github.com/terra-money/mantle-sdk/graph"
+	"github.com/terra-money/mantle-sdk/serdes"
+	"github.com/terra-money/mantle-sdk/types"
 	"reflect"
 	"sort"
 
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle-sdk/querier"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/querier"
+	"github.com/terra-money/mantle-sdk/utils"
 )
 
 func GenerateListGraphResolver(modelType reflect.Type, fieldConfig *graphql.Field) (*graphql.Field, error) {

@@ -2,12 +2,12 @@ package committer
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle-sdk/serdes"
+	"github.com/terra-money/mantle-sdk/serdes"
 	"reflect"
 
-	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/db/kvindex"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db/kvindex"
+	"github.com/terra-money/mantle-sdk/utils"
 )
 
 type CommitterInstance struct {

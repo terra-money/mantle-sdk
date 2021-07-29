@@ -4,10 +4,10 @@ import (
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/terra-project/core/x/bank"
-	"github.com/terra-project/mantle-sdk/app"
-	"github.com/terra-project/mantle-sdk/app/mantlemint"
-	"github.com/terra-project/mantle-sdk/db/leveldb"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/app"
+	"github.com/terra-money/mantle-sdk/app/mantlemint"
+	"github.com/terra-money/mantle-sdk/db/leveldb"
+	"github.com/terra-money/mantle-sdk/types"
 	"testing"
 )
 

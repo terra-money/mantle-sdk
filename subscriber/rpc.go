@@ -3,8 +3,8 @@ package subscriber
 import (
 	"encoding/json"
 	websocket "github.com/gorilla/websocket"
-	types "github.com/terra-project/mantle-sdk/types"
-	"github.com/terra-project/mantle-sdk/utils"
+	types "github.com/terra-money/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/utils"
 	"log"
 	"time"
 )

@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/terra-project/mantle-sdk/lcd/models"
+	"github.com/terra-money/mantle-sdk/lcd/models"
 )
 
 // PostWasmContractsContractAddressMigrateReader is a Reader for the PostWasmContractsContractAddressMigrate structure.

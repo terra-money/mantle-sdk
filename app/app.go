@@ -2,16 +2,17 @@ package app
 
 import (
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/state"
 	tmtypes "github.com/tendermint/tendermint/types"
+	compatapp "github.com/terra-money/mantle-compatibility/app"
+	"github.com/terra-money/mantle-sdk/app/mantlemint"
+	"github.com/terra-money/mantle-sdk/app/middlewares"
+	"github.com/terra-money/mantle-sdk/graph/generate"
+	"github.com/terra-money/mantle-sdk/lcd/server"
+	"github.com/terra-money/mantle-sdk/utils"
 	TerraApp "github.com/terra-project/core/app"
-	compatapp "github.com/terra-project/mantle-compatibility/app"
-	"github.com/terra-project/mantle-sdk/app/mantlemint"
-	"github.com/terra-project/mantle-sdk/app/middlewares"
-	"github.com/terra-project/mantle-sdk/graph/generate"
-	"github.com/terra-project/mantle-sdk/lcd/server"
-	"github.com/terra-project/mantle-sdk/utils"
 	"log"
 	"os"
 	"os/signal"
@@ -21,17 +22,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/terra-project/mantle-sdk/committer"
+	"github.com/terra-money/mantle-sdk/committer"
 
-	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/depsresolver"
-	"github.com/terra-project/mantle-sdk/graph"
-	"github.com/terra-project/mantle-sdk/graph/schemabuilders"
-	"github.com/terra-project/mantle-sdk/indexer"
-	"github.com/terra-project/mantle-sdk/querier"
-	reg "github.com/terra-project/mantle-sdk/registry"
-	"github.com/terra-project/mantle-sdk/subscriber"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/depsresolver"
+	"github.com/terra-money/mantle-sdk/graph"
+	"github.com/terra-money/mantle-sdk/graph/schemabuilders"
+	"github.com/terra-money/mantle-sdk/indexer"
+	"github.com/terra-money/mantle-sdk/querier"
+	reg "github.com/terra-money/mantle-sdk/registry"
+	"github.com/terra-money/mantle-sdk/subscriber"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 type Mantle struct {
@@ -44,6 +45,7 @@ type Mantle struct {
 	indexerInstance      *indexer.IndexerBaseInstance
 	db                   db.DB
 	dbMtx                *sync.Mutex
+	abciCache            *lru.Cache
 
 	// global query mtx being used for graphql-side client app and lcd-side client app
 	queryMtx *sync.Mutex
@@ -81,11 +83,17 @@ func NewMantle(
 
 	queryMtx := &sync.Mutex{}
 
+	// create abci call cache
+	abciCache, err := lru.New(1024)
+	if err != nil {
+		panic(err)
+	}
+
 	// instantiate gql
 	gqlInstance := graph.NewGraphQLInstance(
 		depsResolverInstance,
 		querierInstance,
-		schemabuilders.CreateABCIStubSchemaBuilder(terraApp, queryMtx),
+		schemabuilders.CreateABCIStubSchemaBuilder(terraApp, queryMtx, abciCache),
 		schemabuilders.CreateMantleStateSchemaBuilder(nil, nil),
 		schemabuilders.CreateModelSchemaBuilder(nil, reflect.TypeOf((*types.BlockState)(nil))),
 		schemabuilders.CreateModelSchemaBuilder(registry.KVIndexMap, registry.Models...),
@@ -103,8 +111,9 @@ func NewMantle(
 	)
 
 	mantleApp = &Mantle{
-		app:      terraApp,
-		registry: nil,
+		app:       terraApp,
+		abciCache: abciCache,
+		registry:  nil,
 		mantlemint: mantlemint.NewMantlemint(
 			tmdb,
 			terraApp,
@@ -114,6 +123,12 @@ func NewMantle(
 			// use middlewares to run indexers (in CommitSync/CommitAsync)
 			middlewares.NewIndexerMiddleware(func(responses state.ABCIResponses) {
 				mantleApp.indexerLifecycle(responses)
+			}),
+
+			// purge cache at each cache middleware event
+			middlewares.NewCacheMiddleware(func(lastKnownHeight int64) {
+				log.Printf("[cache-middleware] purging cache at height %d, lastLength=%d\n", lastKnownHeight, abciCache.Len())
+				abciCache.Purge()
 			}),
 		),
 		gqlInstance:          gqlInstance,
@@ -311,7 +326,7 @@ func (mantle *Mantle) Server(port int) {
 
 func (mantle *Mantle) LCDServer(port int) {
 	go func() {
-		lcd := server.NewMantleLCDServer(mantle.queryMtx)
+		lcd := server.NewMantleLCDServer(mantle.queryMtx, mantle.abciCache)
 		lcd.Server(port, mantle.app)
 	}()
 }

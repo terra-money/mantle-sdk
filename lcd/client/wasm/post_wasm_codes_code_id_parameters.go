@@ -16,7 +16,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 
-	"github.com/terra-project/mantle-sdk/lcd/models"
+	"github.com/terra-money/mantle-sdk/lcd/models"
 )
 
 // NewPostWasmCodesCodeIDParams creates a new PostWasmCodesCodeIDParams object

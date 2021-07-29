@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/terra-project/mantle-sdk/graph"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/graph"
+	"github.com/terra-money/mantle-sdk/types"
 )
 
 type BaseState struct {

@@ -2,16 +2,16 @@ package generate
 
 import (
 	"fmt"
-	"github.com/terra-project/mantle-sdk/serdes"
+	"github.com/terra-money/mantle-sdk/serdes"
 	"reflect"
 	"strings"
 
 	"github.com/graphql-go/graphql/language/ast"
 
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle-sdk/depsresolver"
-	"github.com/terra-project/mantle-sdk/querier"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/depsresolver"
+	"github.com/terra-money/mantle-sdk/querier"
+	"github.com/terra-money/mantle-sdk/utils"
 )
 
 var goTypeToGraphqlType = map[string]graphql.Type{

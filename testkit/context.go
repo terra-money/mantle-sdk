@@ -3,9 +3,9 @@ package testkit
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tm "github.com/tendermint/tendermint/types"
-	"github.com/terra-project/mantle-sdk/app"
-	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/app"
+	"github.com/terra-money/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/types"
 	"sync"
 )
 

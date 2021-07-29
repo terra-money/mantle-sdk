@@ -7,9 +7,9 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	tmdb "github.com/tendermint/tm-db"
-	"github.com/terra-project/mantle-sdk/db"
-	tmadapter "github.com/terra-project/mantle-sdk/db/leveldb/tm_adapter"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/db"
+	tmadapter "github.com/terra-money/mantle-sdk/db/leveldb/tm_adapter"
+	"github.com/terra-money/mantle-sdk/utils"
 )
 
 type LevelDB struct {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"net/http"
 
 	client "github.com/cosmos/cosmos-sdk/client/context"
@@ -12,20 +13,31 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
 	terra "github.com/terra-project/core/app"
-	compatlocalclient "github.com/terra-project/mantle-compatibility/localclient"
+	compatlocalclient "github.com/terra-money/mantle-compatibility/localclient"
 )
 
 type RoundTripper struct {
-	mux *mux.Router
+	mux   *mux.Router
+	cache *lru.Cache
 }
 
-func NewRoundTripper(mux *mux.Router) *RoundTripper {
+func NewRoundTripper(mux *mux.Router, cache *lru.Cache) *RoundTripper {
 	return &RoundTripper{
-		mux: mux,
+		mux:   mux,
+		cache: cache,
 	}
 }
 
 func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	cached, ok := rt.cache.Get(req.URL.String())
+	if ok {
+		next := cached.(ReaderCloser).Clone()
+		return &http.Response{
+			StatusCode: 200,
+			Body:       next,
+		}, nil
+	}
+
 	// create a stub response
 	out := &ResponseBuffer{}
 
@@ -63,19 +75,23 @@ func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 	}
 
+	body := out.Body()
+
+	rt.cache.Add(req.URL.String(), body)
+
 	return &http.Response{
 		StatusCode: 200,
-		Body:       out.Body(),
+		Body:       body.Clone(),
 	}, nil
 }
 
-func NewABCIStubTransport(localClient compatlocalclient.LocalClient) (*httptransport.Runtime, error) {
+func NewABCIStubTransport(localClient compatlocalclient.LocalClient, cache *lru.Cache) (*httptransport.Runtime, error) {
 	router := mux.NewRouter().SkipClean(true)
 
 	viper.Set(flags.FlagTrustNode, true)
 
 	f := httptransport.New("", "/", nil)
-	f.Transport = NewRoundTripper(router)
+	f.Transport = NewRoundTripper(router, cache)
 
 	ctx := client.
 		NewCLIContext().

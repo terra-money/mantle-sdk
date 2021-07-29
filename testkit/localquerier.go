@@ -4,7 +4,7 @@ import (
 	"fmt"
 	TerraApp "github.com/terra-project/core/app"
 	"github.com/terra-project/core/x/auth"
-	"github.com/terra-project/mantle-compatibility/localclient"
+	"github.com/terra-money/mantle-compatibility/localclient"
 	"sync"
 )
 

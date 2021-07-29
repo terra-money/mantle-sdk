@@ -10,7 +10,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 	terra "github.com/terra-project/core/app"
 	core "github.com/terra-project/core/types"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/types"
 	"log"
 )
 

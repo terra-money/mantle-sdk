@@ -1,12 +1,12 @@
 package queryhandler
 
 import (
-	"github.com/terra-project/mantle-sdk/constants"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/constants"
+	"github.com/terra-money/mantle-sdk/utils"
 	"math"
 
-	"github.com/terra-project/mantle-sdk/db"
-	"github.com/terra-project/mantle-sdk/db/kvindex"
+	"github.com/terra-money/mantle-sdk/db"
+	"github.com/terra-money/mantle-sdk/db/kvindex"
 )
 
 type SequentialResolver struct {

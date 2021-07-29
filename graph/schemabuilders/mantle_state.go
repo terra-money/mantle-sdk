@@ -3,12 +3,12 @@ package schemabuilders
 import (
 	"fmt"
 	"github.com/graphql-go/graphql"
-	"github.com/terra-project/mantle-sdk/db/kvindex"
-	"github.com/terra-project/mantle-sdk/graph"
-	"github.com/terra-project/mantle-sdk/querier"
-	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/db/kvindex"
+	"github.com/terra-money/mantle-sdk/graph"
+	"github.com/terra-money/mantle-sdk/querier"
+	"github.com/terra-money/mantle-sdk/serdes"
+	"github.com/terra-money/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/utils"
 	"reflect"
 )
 

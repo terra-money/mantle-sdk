@@ -2,8 +2,8 @@ package mantlemint
 
 import (
 	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/terra-project/mantle-sdk/types"
-	"github.com/terra-project/mantle-sdk/utils"
+	"github.com/terra-money/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/utils"
 )
 
 type EventCollector struct {

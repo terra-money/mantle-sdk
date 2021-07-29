@@ -6,8 +6,8 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 	"github.com/graphql-go/graphql/language/source"
-	"github.com/terra-project/mantle-sdk/serdes"
-	"github.com/terra-project/mantle-sdk/types"
+	"github.com/terra-money/mantle-sdk/serdes"
+	"github.com/terra-money/mantle-sdk/types"
 	"sync"
 )
 
