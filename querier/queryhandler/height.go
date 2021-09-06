@@ -31,6 +31,11 @@ func NewHeightResolver(
 	switch indexOption.(type) {
 	case []interface{}:
 		heightRange, _ := indexOption.([]interface{})
+
+		if len(heightRange) != 2 {
+			return nil, nil
+		}
+
 		return &HeightResolver{
 			db:          db,
 			entityName:  entityName,
