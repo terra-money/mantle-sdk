@@ -1,3 +1,5 @@
+> This package is deprecated. If you're looking for columbus-5 and onwards compatible version, (this)[https://github.com/terra-money/mantlemint] is what you're looking for.
+
 # Mantle
 
 Mantle is an `framework` for writing indexers on Terra network.
