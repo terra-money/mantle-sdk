@@ -32,8 +32,7 @@ require (
 	github.com/terra-project/core v0.4.1
 	github.com/terra-project/mantle-compatibility v1.6.0-columbus-4
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.1
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
-	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
